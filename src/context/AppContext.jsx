@@ -282,16 +282,23 @@ export const AppProvider = ({ children }) => {
   const fetchAllEmp = async () => {
     try {
       setLoading(true);
-      // Return static data with slight delay to simulate API call
-      setTimeout(() => {
-        setEmp(STATIC_EMPLOYEES);
-        calculateStats(STATIC_EMPLOYEES);
-        setLoading(false);
-      }, 500);
-      return STATIC_EMPLOYEES;
-    } catch (error) {
+      // Fetch employees from the backend API
+      const response = await axios.get('http://localhost:8282/api/employee/2/employee/all');
+      const employeesData = response.data;
+      
+      // Update state with fetched employees
+      setEmp(employeesData);
+      calculateStats(employeesData);
       setLoading(false);
-      throw error;
+      return employeesData;
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+      setLoading(false);
+      // If API fails, use static data as fallback
+      setEmp(STATIC_EMPLOYEES);
+      calculateStats(STATIC_EMPLOYEES);
+      toast.error('Failed to fetch employees: ' + (error.response?.data || error.message));
+      return STATIC_EMPLOYEES;
     }
   };
 

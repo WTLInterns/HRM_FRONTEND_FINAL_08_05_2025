@@ -68,7 +68,7 @@ const Login = () => {
           const parsedUser = JSON.parse(storedUser);
           console.log("Found user in localStorage:", parsedUser);
           
-          if (parsedUser.role === "SUBADMIN") {
+          if (parsedUser.role === "SUBADMIN" || parsedUser.role === "SUB_ADMIN") {
             navigate("/dashboard");
           } else if (parsedUser.role === "EMPLOYEE") {
             navigate("/userDashboard");
@@ -84,7 +84,7 @@ const Login = () => {
 
       // Check context user if localStorage check didn't redirect
       if (user) {
-        if (user.role === "SUBADMIN") {
+        if (user.role === "SUBADMIN" || user.role === "SUB_ADMIN") {
           navigate("/dashboard");
         } else if (user.role === "EMPLOYEE") {
           navigate("/userDashboard");
@@ -107,22 +107,50 @@ const Login = () => {
       setIsSubmitting(true);
       setLoading(true);
       
-      // Basic API call without any special configuration
-      // Use the exact URL format that works with your backend
-      const response = await axios.post(`http://localhost:8282/masteradmin/login?email=${email}&password=${password}`);
+      let response;
+      let userData;
       
-      const data = response.data;
-      console.log("Login response:", data);
+      // Determine which API endpoint to use based on input
+      // Try subadmin login first
+      try {
+        console.log("Attempting subadmin login...");
+        response = await axios.post(`http://localhost:8282/api/subadmin/login?email=${email}&password=${password}`);
+        
+        const data = response.data;
+        console.log("Subadmin login response:", data);
+        
+        if (data && data.role === "SUB_ADMIN") {
+          // Format subadmin data for frontend consistency
+          userData = {
+            ...data,
+            role: "SUBADMIN" // Normalize role format for frontend
+          };
+          console.log("Subadmin login successful:", userData);
+        } else {
+          throw new Error("Not a valid subadmin account");
+        }
+      } catch (subadminError) {
+        console.log("Subadmin login failed, trying masteradmin login...", subadminError);
+        
+        // If subadmin login fails, try masteradmin login
+        response = await axios.post(`http://localhost:8282/masteradmin/login?email=${email}&password=${password}`);
+        
+        const data = response.data;
+        console.log("Masteradmin login response:", data);
+        
+        if (data) {
+          // Convert 'roll' to 'role' for frontend consistency
+          userData = {
+            ...data,
+            role: data.roll
+          };
+          console.log("Masteradmin login successful:", userData);
+        } else {
+          throw new Error("Invalid response from server");
+        }
+      }
       
-      if (data) {
-        // Convert 'roll' to 'role' for frontend consistency
-        const userData = {
-          ...data,
-          role: data.roll
-        };
-        
-        console.log("Login successful:", userData);
-        
+      if (userData) {
         // Save user data to localStorage
         localStorage.setItem("user", JSON.stringify(userData));
         
@@ -146,7 +174,6 @@ const Login = () => {
             navigate("/dashboard", { replace: true });
           }
         }, 2000);
-        
       } else {
         throw new Error("Invalid response from server");
       }

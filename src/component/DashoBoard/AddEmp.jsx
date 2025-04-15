@@ -3,15 +3,12 @@
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { useApp } from "../../context/AppContext";
 import { CiEdit } from "react-icons/ci";
 import { MdDeleteOutline } from "react-icons/md";
 import { FaChevronLeft, FaChevronRight, FaTimes } from "react-icons/fa";
 import axios from "axios";
 
 export default function AddEmp() {
-  const { fetchAllEmp, emp, deleteEmployee, updateEmployee } = useApp();
-
   // States for Add/Update Employee fields
   const [firstName, setFname] = useState("");
   const [lastName, setLname] = useState("");
@@ -32,7 +29,6 @@ export default function AddEmp() {
   const [branchName, setbranchName] = useState("");
   const [salary, setsalary] = useState("");
   const [bankAccountNo, setbankAccountNo] = useState("");
-  const [companyName, setCompanyName] = useState("Tech Solutions Pvt Ltd");
 
   // Modal states: add modal and update modal
   const [modal, setModal] = useState(false);
@@ -44,37 +40,59 @@ export default function AddEmp() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const employeesPerPage = 5;
-  const totalPages = Math.ceil(
-    emp.filter(
-      (employee) =>
-        employee.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        employee.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        employee.email.toLowerCase().includes(searchTerm.toLowerCase())
-    ).length / employeesPerPage
-  );
+
+  // Get subadmin data from localStorage
+  const [subadminId, setSubadminId] = useState(null);
+  const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // No need to fetch on every render
-    // Only fetch if adding or updating employees
-    // This useEffect is triggered by the dependencies
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchAllEmp, updateEmployee]);
-
-  // Add a separate effect to fetch on initial load if needed
-  useEffect(() => {
-    if (!emp || emp.length === 0) {
-      fetchAllEmp();
+    // Get the subadmin data from localStorage
+    const userData = JSON.parse(localStorage.getItem("user"));
+    if (userData && userData.id) {
+      setSubadminId(userData.id);
+      console.log("Found user ID in localStorage:", userData.id);
+    } else {
+      console.log("No user data found in localStorage or missing ID");
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps  
   }, []);
 
+  // Fetch employees when subadminId is available
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      if (!subadminId) {
+        console.log("No subadminId available, can't fetch employees");
+        return;
+      }
+      
+      setLoading(true);
+      try {
+        console.log(`Fetching employees for subadmin ID: ${subadminId}`);
+        const response = await axios.get(`http://localhost:8282/api/employee/${subadminId}/employee/all`);
+        console.log("Fetched employees:", response.data);
+        setEmployees(response.data);
+      } catch (error) {
+        console.error("Error fetching employees:", error);
+        toast.error("Failed to fetch employees");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEmployees();
+  }, [subadminId]);
+
   // Filter employees based on search term
-  const filteredEmployees = emp.filter(
+  const filteredEmployees = employees.filter(
     (employee) =>
-      employee.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.email.toLowerCase().includes(searchTerm.toLowerCase())
+      employee.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+  
+  // Calculate totalPages based on employees data
+  const totalPages = Math.ceil(filteredEmployees.length / employeesPerPage);
+  
   const currentEmployees = filteredEmployees.slice(
     (currentPage - 1) * employeesPerPage,
     currentPage * employeesPerPage
@@ -98,108 +116,191 @@ export default function AddEmp() {
     return true;
   };
 
+  // Reset function to clear all form fields
+  const handleReset = (e) => {
+    e.preventDefault();
+    setFname("");
+    setLname("");
+    setEmail("");
+    setPhone("");
+    setaadharNo("");
+    setpanCard("");
+    seteducation("");
+    setbloodGroup("");
+    setjobRole("");
+    setgender("");
+    setaddress("");
+    setbirthDate("");
+    setjoiningDate("");
+    setstatus("");
+    setbankName("");
+    setbankAccountNo("");
+    setbankIfscCode("");
+    setbranchName("");
+    setsalary("");
+  };
+
   // Add Employee submission
   const handleAddEmp = async (e) => {
     e.preventDefault();
     if (!validateFields()) return;
+    
+    if (!subadminId) {
+      toast.error("Subadmin session expired. Please login again.");
+      return;
+    }
+    
     try {
-      // Create a temporary password (you might want to generate this or set a default)
-      const tempPassword = "employee@123"; // Using the default password from Postman example
-      
-      // Get current user data and company name
-      const storedUser = JSON.parse(localStorage.getItem("user"));
-      const companyName = storedUser?.registercompanyname || storedUser?.company || "default";
-      
-      const userData = {
-        firstName,
-        lastName,
-        email,
-        // Convert phone to a number as backend expects Long
-        phone: Number(phone),
-        aadharNo,
-        panCard,
-        education,
-        bloodGroup,
-        jobRole,
-        gender,
-        address,
-        birthDate,
-        joiningDate,
-        status,
-        bankName,
-        bankAccountNo,
-        bankIfscCode,
-        branchName,
-        // Convert salary to a number as backend expects Long
-        salary: Number(salary),
-        // Add missing fields required by backend
-        password: tempPassword,
-        roll: "EMPLOYEE", // Using the default value from your model
-        company: companyName, // Set company name explicitly
-        // Required Spring Security fields
-        enabled: true,
-        username: email, // Username is same as email
-        accountNonLocked: true,
-        accountNonExpired: true,
-        credentialsNonExpired: true,
-        // Add SUB_ADMIN information
-        subAdminId: storedUser?.id || null,
-        subAdminName: storedUser?.name + ' ' + (storedUser?.lastname || ''),
-        registerCompanyName: companyName // Use same value as company
-      };
-      
-      console.log("Sending employee data:", userData);
-      
-      // Use the API endpoint with the company name parameter
-      const encodedCompanyName = encodeURIComponent(companyName);
+      // Create FormData to send to the backend API
+      const formData = new URLSearchParams();
+      formData.append('firstName', firstName);
+      formData.append('lastName', lastName);
+      formData.append('email', email);
+      formData.append('phone', phone); 
+      formData.append('aadharNo', aadharNo);
+      formData.append('panCard', panCard);
+      formData.append('education', education);
+      formData.append('bloodGroup', bloodGroup);
+      formData.append('jobRole', jobRole);
+      formData.append('gender', gender);
+      formData.append('address', address);
+      formData.append('birthDate', birthDate);
+      formData.append('joiningDate', joiningDate);
+      formData.append('status', status);
+      formData.append('bankName', bankName);
+      formData.append('bankAccountNo', bankAccountNo);
+      formData.append('bankIfscCode', bankIfscCode);
+      formData.append('branchName', branchName);
+      formData.append('salary', salary);
+
+      console.log("Sending employee data to backend...");
+
+      // Use the dynamic subadminId from state
       const response = await axios.post(
-        `/api/subadmin/employee/${encodedCompanyName}/add`, 
-        userData,
+        `http://localhost:8282/api/subadmin/add-employee/${subadminId}`, 
+        formData,
         {
           headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
+            'Content-Type': 'application/x-www-form-urlencoded'
           }
         }
       );
-      
+
       console.log("API response:", response);
       toast.success("Employee Registered Successfully");
       setModal(false);
       handleReset(e);
-      fetchAllEmp(); // Refresh the employee list after adding
+      
+      // Refresh the employee list
+      const refreshResponse = await axios.get(`http://localhost:8282/api/employee/${subadminId}/employee/all`);
+      setEmployees(refreshResponse.data);
+      
     } catch (err) {
       toast.error("Failed to register employee: " + (err.response?.data?.message || err.message));
       console.error(err);
     }
   };
 
-  // Delete Employee
-  const handleDeleteEmp = async (empId) => {
+  // Handle Update Employee submission
+  const handleUpdateEmp = async (e) => {
+    e.preventDefault();
+    if (!validateFields() || !selectedEmployee) return;
+    
+    if (!subadminId) {
+      toast.error("Subadmin session expired. Please login again.");
+      return;
+    }
+    
     try {
-      // Get the company name - can either use the globally set company name
-      // or look it up from the employee list if available
-      const employee = emp.find(e => e.empId === empId);
-      const targetCompany = employee?.company || companyName;
-      const encodedCompanyName = encodeURIComponent(targetCompany);
+      // Create the updated employee object
+      const updatedEmployee = {
+        empId: selectedEmployee.empId,
+        firstName: firstName,
+        lastName: lastName,
+        email: email,
+        phone: Number(phone),
+        aadharNo: aadharNo,
+        panCard: panCard,
+        education: education,
+        bloodGroup: bloodGroup,
+        jobRole: jobRole,
+        gender: gender,
+        address: address,
+        birthDate: birthDate,
+        joiningDate: joiningDate,
+        status: status,
+        bankName: bankName,
+        bankAccountNo: bankAccountNo,
+        bankIfscCode: bankIfscCode,
+        branchName: branchName,
+        salary: Number(salary),
+        role: "EMPLOYEE"
+      };
+
+      console.log("Updating employee data:", updatedEmployee);
       
-      console.log(`Deleting employee with ID: ${empId} from company: ${targetCompany}`);
-      
-      // Use the new API endpoint directly
-      const response = await axios.delete(
-        `/api/subadmin/employee/${encodedCompanyName}/delete?fullName=${encodeURIComponent(employee?.firstName + ' ' + employee?.lastName)}`,
+      // Use the dynamic subadminId from state
+      const response = await axios.put(
+        `http://localhost:8282/api/employee/${subadminId}/update/${selectedEmployee.empId}`,
+        updatedEmployee,
         {
           headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      console.log("Update API response:", response);
+      toast.success("Employee Updated Successfully");
+      setUpdateModal(false);
+      handleReset(e);
+      
+      // Refresh the employee list
+      const refreshResponse = await axios.get(`http://localhost:8282/api/employee/${subadminId}/employee/all`);
+      setEmployees(refreshResponse.data);
+      
+    } catch (err) {
+      toast.error("Failed to update employee: " + (err.response?.data || err.message));
+      console.error(err);
+    }
+  };
+
+  // Delete Employee
+  const handleDeleteEmp = async (empId) => {
+    if (!subadminId) {
+      toast.error("Subadmin session expired. Please login again.");
+      return;
+    }
+    
+    try {
+      // Get the employee to delete
+      const employee = employees.find(e => e.empId === empId);
+      if (!employee) {
+        toast.error("Employee not found");
+        return;
+      }
+      
+      console.log(`Deleting employee with ID: ${empId}`);
+      
+      // Use the dynamic subadminId from state
+      const response = await axios.delete(
+        `http://localhost:8282/api/employee/${subadminId}/delete/${empId}`,
+        {
+          headers: {
+            'Content-Type': 'application/json'
           }
         }
       );
       
       console.log("API response:", response);
       toast.success("Employee deleted successfully");
-      fetchAllEmp();
+      
+      // Refresh the employee list
+      const refreshResponse = await axios.get(`http://localhost:8282/api/employee/${subadminId}/employee/all`);
+      setEmployees(refreshResponse.data);
+      
     } catch (err) {
-      toast.error("Failed to delete employee: " + (err.response?.data?.message || err.message));
+      toast.error("Failed to delete employee: " + (err.response?.data || err.message));
       console.error(err);
     }
   };
@@ -226,108 +327,11 @@ export default function AddEmp() {
     setbankIfscCode(employee.bankIfscCode);
     setbranchName(employee.branchName);
     setsalary(employee.salary);
-    setCompanyName(employee.company || "Tech Solutions Pvt Ltd");
     setUpdateModal(true);
   };
 
-  // Reset function to clear all form fields
-  const handleReset = async (e) => {
-    e.preventDefault();
-    setFname("");
-    setLname("");
-    setEmail("");
-    setPhone("");
-    setaadharNo("");
-    setpanCard("");
-    seteducation("");
-    setbloodGroup("");
-    setjobRole("");
-    setgender("");
-    setaddress("");
-    setbirthDate("");
-    setjoiningDate("");
-    setstatus("");
-    setbankName("");
-    setbankAccountNo("");
-    setbankIfscCode("");
-    setbranchName("");
-    setsalary("");
-  };
-
-  // Update Employee submission
-  const handleUpdateEmp = async (e) => {
-    e.preventDefault();
-    if (!validateFields()) return;
-    try {
-      const updatedData = {
-        firstName,
-        lastName,
-        email,
-        // Convert phone to a number as backend expects Long
-        phone: Number(phone),
-        aadharNo,
-        panCard,
-        education,
-        bloodGroup,
-        jobRole,
-        gender,
-        address,
-        birthDate,
-        joiningDate,
-        status,
-        bankName,
-        bankAccountNo,
-        bankIfscCode,
-        branchName,
-        // Convert salary to a number as backend expects Long
-        salary: Number(salary),
-        // Maintain these fields if they exist in the backend
-        roll: "EMPLOYEE",
-        company: companyName,
-        // Required Spring Security fields
-        password: selectedEmployee.password || "employee@123",
-        enabled: true,
-        username: email, // Username is same as email
-        accountNonLocked: true,
-        accountNonExpired: true,
-        credentialsNonExpired: true,
-        // Add SUB_ADMIN information
-        subAdminId: selectedEmployee.subAdminId,
-        subAdminName: selectedEmployee.subAdminName,
-        registerCompanyName: companyName // Use same value as company
-      };
-      
-      console.log("Updating employee data:", updatedData);
-      
-      // Use the new API endpoint directly
-      const encodedCompanyName = encodeURIComponent(companyName);
-      const fullName = `${firstName} ${lastName}`; // For the API route
-      const encodedFullName = encodeURIComponent(fullName);
-      
-      const response = await axios.put(
-        `/api/subadmin/employee/${encodedCompanyName}/update?fullName=${encodedFullName}`,
-        updatedData,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        }
-      );
-      
-      console.log("API response:", response);
-      toast.success("Employee updated successfully");
-      setUpdateModal(false);
-      setSelectedEmployee(null);
-      fetchAllEmp();
-    } catch (err) {
-      toast.error("Failed to update employee: " + (err.response?.data?.message || err.message));
-      console.error(err);
-    }
-  };
-
   return (
-    <div className="p-4 min-h-screen bg-slate-900 text-gray-100">
-      {/* Page heading and add employee button */}
+    <div>
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold text-blue-400">Employee Management</h1>
         <button
@@ -386,12 +390,6 @@ export default function AddEmp() {
                     Status
                   </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    Role
-                  </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    Company
-                  </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -427,12 +425,6 @@ export default function AddEmp() {
                         {employee.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-300">{employee.roll || "EMPLOYEE"}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-300">{employee.company || "-"}</div>
-                    </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex space-x-2">
                         <button
@@ -441,13 +433,6 @@ export default function AddEmp() {
                           title="Edit"
                         >
                           Edit
-                        </button>
-                        <button
-                          onClick={() => handleEditEmp(employee)}
-                          className="text-green-400 hover:text-green-300 transition-colors px-2 py-1 bg-green-900/50 rounded-md"
-                          title="Update"
-                        >
-                          Update
                         </button>
                         <button
                           onClick={() => handleDeleteEmp(employee.empId)}
@@ -676,19 +661,6 @@ export default function AddEmp() {
                         className="block w-full px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
                       />
                     </div>
-
-                    {/* <div className="space-y-2">
-                      <label htmlFor="companyName" className="block text-sm font-medium text-gray-300">
-                        Company Name:
-                      </label>
-                      <input
-                        id="companyName"
-                        value={companyName}
-                        onChange={(e) => setCompanyName(e.target.value)}
-                        placeholder="Enter company name"
-                        className="block w-full px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
-                      />
-                    </div> */}
 
                     <div className="space-y-2">
                       <label htmlFor="education" className="block text-sm font-medium text-gray-300">
@@ -1002,18 +974,6 @@ export default function AddEmp() {
                   value={panCard}
                   onChange={(e) => setpanCard(e.target.value)}
                   placeholder="Enter your PAN card (e.g., ABCDE1234F)"
-                  className="block w-full px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
-                />
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="companyNameUpd" className="block text-sm font-medium text-gray-300">
-                  Company Name:
-                </label>
-                <input
-                  id="companyNameUpd"
-                  value={companyName}
-                  onChange={(e) => setCompanyName(e.target.value)}
-                  placeholder="Enter company name"
                   className="block w-full px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
                 />
               </div>

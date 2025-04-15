@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Link, Routes, Route } from "react-router-dom";
 import Attendance from "./Attendance";
 import SalarySheet from "./SalarySheet";
@@ -38,6 +38,36 @@ const Dashboard = () => {
     inactiveSalary: 0,
     profitLoss: 0
   });
+
+  // Add user data state
+  const [userData, setUserData] = useState({
+    name: "",
+    lastname: "",
+    companylogo: "",
+    registercompanyname: "WTL HRM Dashboard"
+  });
+  
+  // Add image load tracking
+  const [logoLoadAttempt, setLogoLoadAttempt] = useState(0);
+  
+  // Get backend URL
+  const BACKEND_URL = useMemo(() => "http://localhost:8282", []);
+  
+  // Default image
+  const defaultImage = "/image/admin-profile.jpg";
+  
+  // Load user data from localStorage
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (user) {
+      setUserData({
+        name: user.name || "",
+        lastname: user.lastname || "",
+        companylogo: user.companylogo || "",
+        registercompanyname: user.registercompanyname || "WTL HRM Dashboard"
+      });
+    }
+  }, []);
 
   useEffect(() => {
     if (!emp || emp.length === 0) {
@@ -309,6 +339,17 @@ const Dashboard = () => {
     { to: "/dashboard/salaryslip", label: "Salary Slip", icon: <FaReceipt /> },
   ];
 
+  // Handle logo error without infinite loops
+  const handleLogoError = () => {
+    console.log("Error loading dashboard logo, using fallback.");
+    
+    // Don't update state if we've already tried too many times
+    if (logoLoadAttempt > 1) return;
+    
+    // Increment the attempt counter
+    setLogoLoadAttempt(prev => prev + 1);
+  };
+
   return (
     <div className="flex h-screen overflow-hidden bg-gradient-to-br from-slate-900 to-blue-900 text-gray-100">
       
@@ -324,7 +365,7 @@ const Dashboard = () => {
 
       {/* Mobile Header - only visible on small screens */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-center p-4 bg-slate-800 text-white shadow-md">
-        <h1 className="text-xl font-bold animate-pulse-slow">WTL HRM Dashboard</h1>
+        <h1 className="text-xl font-bold animate-pulse-slow">{userData.registercompanyname || "WTL HRM Dashboard"}</h1>
       </div>
 
       {/* Sidebar */}
@@ -335,24 +376,38 @@ const Dashboard = () => {
       >
         <div className="flex flex-col items-center px-4 py-5 bg-slate-900 border-b border-slate-700">
           <Link to="/dashboard/profileform" className="group transition-all duration-300">
-            {/* 
-              Admin profile image is defined here
-              The image path is /image/admin-profile.jpg 
-              To change the admin profile image:
-              1. Replace the file at HRM_frontend_7-4-25/public/image/admin-profile.jpg
-              2. Or change this path to point to a different image
-              The fallback image is lap2.jpg if admin-profile.jpg is not found
-            */}
             <div className="w-24 h-24 rounded-full bg-slate-100 border-4 border-blue-800 overflow-hidden mb-4 group-hover:border-blue-400 transition-all duration-300 shadow-lg group-hover:shadow-blue-900/40">
-              <img 
-                src="/image/admin-profile.jpg" 
-                alt="Admin" 
-                className="w-full h-full object-cover group-hover:scale-110 transition-all duration-300"
-                onError={(e) => {e.target.src = "/image/lap2.jpg"}}
-              />
+              {userData.companylogo && logoLoadAttempt < 1 ? (
+                <img 
+                  src={`${BACKEND_URL}/upload/${userData.companylogo}`} 
+                  alt="Company Logo" 
+                  className="w-full h-full object-cover group-hover:scale-110 transition-all duration-300"
+                  onError={(e) => {
+                    handleLogoError();
+                    e.target.src = defaultImage;
+                    e.target.onerror = null; // Prevent infinite loop
+                  }}
+                />
+              ) : (
+                <img 
+                  src={defaultImage} 
+                  alt="Admin" 
+                  className="w-full h-full object-cover group-hover:scale-110 transition-all duration-300"
+                  onError={(e) => {
+                    e.target.src = "/image/lap2.jpg"; 
+                    e.target.onerror = null;
+                  }}
+                />
+              )}
             </div>
-            <h2 className="text-xl font-bold text-white group-hover:text-blue-400 transition-all duration-300">WTL HRM Dashboard</h2>
-            {/* <p className="text-blue-400 group-hover:text-blue-300 transition-all duration-300">Sub-Admin</p> */}
+            <h2 className="text-xl font-bold text-white group-hover:text-blue-400 transition-all duration-300 text-center">
+              {userData.registercompanyname || "WTL HRM Dashboard"}
+            </h2>
+            {userData.name && (
+              <p className="text-blue-400 group-hover:text-blue-300 transition-all duration-300 text-center">
+                {userData.name} {userData.lastname}
+              </p>
+            )}
           </Link>
         </div>
 

@@ -1,24 +1,121 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FaCalendarAlt, FaRegEnvelope, FaPhone, FaUser, FaStamp, FaSignature, FaEdit, FaSave, FaTimes, FaCheck, FaIdCard, FaBriefcase, FaBuilding, FaUserTie } from "react-icons/fa";
+import axios from "axios";
+import { toast } from "react-toastify";
 
 const ProfileForm = () => {
-  // Mock admin data (in a real app, this would come from API/context)
+  // State for user data from localStorage
   const [profileData, setProfileData] = useState({
-    firstName: "Admin",
-    lastName: "User",
-    email: "admin@wtlhrm.com",
-    phoneNo: "+91 9876543210",
-    companyName: "WTL Technologies",
+    id: "",
+    name: "",
+    lastname: "",
+    email: "",
+    phoneno: "",
+    registercompanyname: "",
+    status: "",
+    stampImg: "",
+    signature: "",
+    companylogo: ""
   });
   
+  // Loading and error states
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [tempData, setTempData] = useState({...profileData});
   
-  // Images
-  const [companyLogo, setCompanyLogo] = useState("/image/admin-profile.jpg");
-  const [stampImage, setStampImage] = useState("");
-  const [signature, setSignature] = useState("");
+  // Files to upload
+  const [companyLogoFile, setCompanyLogoFile] = useState(null);
+  const [stampImgFile, setStampImgFile] = useState(null);
+  const [signatureFile, setSignatureFile] = useState(null);
+  
+  // Image preview URLs
+  const [companyLogoPreview, setCompanyLogoPreview] = useState("");
+  const [stampImgPreview, setStampImgPreview] = useState("");
+  const [signaturePreview, setSignaturePreview] = useState("");
+  
+  // Load user data on component mount
+  useEffect(() => {
+    const userData = JSON.parse(localStorage.getItem("user"));
+    if (userData) {
+      console.log("User data loaded from localStorage:", userData);
+      setProfileData({
+        id: userData.id || "",
+        name: userData.name || "",
+        lastname: userData.lastname || "",
+        email: userData.email || "",
+        phoneno: userData.phoneno || "",
+        registercompanyname: userData.registercompanyname || "",
+        status: userData.status || "active",
+        stampImg: userData.stampImg || "",
+        signature: userData.signature || "",
+        companylogo: userData.companylogo || ""
+      });
+      
+      // Set default images rather than trying to load missing files
+      setCompanyLogoPreview("/image/lap2.jpg");
+      setStampImgPreview("/image/lap2.jpg");
+      setSignaturePreview("/image/lap2.jpg");
+      
+      setTempData({
+        id: userData.id || "",
+        name: userData.name || "",
+        lastname: userData.lastname || "",
+        email: userData.email || "",
+        phoneno: userData.phoneno || "",
+        registercompanyname: userData.registercompanyname || "",
+        status: userData.status || "active",
+        stampImg: userData.stampImg || "",
+        signature: userData.signature || "",
+        companylogo: userData.companylogo || ""
+      });
+      
+      setLoading(false);
+    } else {
+      setError("No user data found. Please login again.");
+      setLoading(false);
+    }
+  }, []);
+  
+  // Function to get the correct image URL with fallback
+  const getImageUrl = (imagePath, defaultImage = '/image/lap2.jpg') => {
+    // Just use default images since we've verified the real images aren't available
+    return defaultImage;
+  };
+
+  // Function to fetch images from the server - not used due to 500 error
+  const fetchImages = async (subadminId) => {
+    if (!subadminId) {
+      console.error("No subadminId provided");
+      return;
+    }
+
+    console.log(`Setting up image paths for subadmin ID: ${subadminId}`);
+    
+    // Just use static image paths instead of API calls
+    setCompanyLogoPreview(getImageUrl(profileData.companylogo));
+    setStampImgPreview(getImageUrl(profileData.stampImg));
+    setSignaturePreview(getImageUrl(profileData.signature));
+    
+    // We won't try to fetch from API anymore since it gives 500 error
+    console.log("Using static image paths:", {
+      logo: getImageUrl(profileData.companylogo),
+      stamp: getImageUrl(profileData.stampImg),
+      signature: getImageUrl(profileData.signature)
+    });
+  };
+
+  // Dedicated effect for setting up images
+  useEffect(() => {
+    if (profileData && profileData.id) {
+      console.log("Setting up default images");
+      // Just set default images since real ones aren't available
+      setCompanyLogoPreview("/image/lap2.jpg");
+      setStampImgPreview("/image/lap2.jpg");
+      setSignaturePreview("/image/lap2.jpg");
+    }
+  }, [profileData.id]); // Only re-run when the ID changes
   
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -35,17 +132,75 @@ const ProfileForm = () => {
 
   const handleCancel = () => {
     setEditMode(false);
+    // Reset file states
+    setCompanyLogoFile(null);
+    setStampImgFile(null);
+    setSignatureFile(null);
+    
+    // Reset preview URLs to default images
+    setCompanyLogoPreview("/image/lap2.jpg");
+    setStampImgPreview("/image/lap2.jpg");
+    setSignaturePreview("/image/lap2.jpg");
   };
 
-  const handleSave = () => {
-    setProfileData({...tempData});
-    setEditMode(false);
-    setShowSuccessModal(true);
-    
-    // Hide success modal after 3 seconds
-    setTimeout(() => {
-      setShowSuccessModal(false);
-    }, 3000);
+  const handleSave = async () => {
+    try {
+      setLoading(true);
+      
+      // Create form data for the API
+      const formData = new FormData();
+      formData.append('name', tempData.name);
+      formData.append('lastname', tempData.lastname);
+      formData.append('email', tempData.email);
+      formData.append('phoneno', tempData.phoneno);
+      formData.append('registercompanyname', tempData.registercompanyname);
+      formData.append('status', tempData.status || 'active');
+      
+      // Add files if selected
+      if (companyLogoFile) {
+        formData.append('companylogo', companyLogoFile);
+      }
+      
+      if (stampImgFile) {
+        formData.append('stampImg', stampImgFile);
+      }
+      
+      if (signatureFile) {
+        formData.append('signature', signatureFile);
+      }
+      
+      // Call the API
+      const response = await axios.put(
+        `http://localhost:8282/api/subadmin/update-fields/${profileData.id}`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
+      
+      console.log("Profile update response:", response.data);
+      
+      // Update local storage with the new data
+      const updatedUser = response.data;
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      
+      // Update state
+      setProfileData(updatedUser);
+      setEditMode(false);
+      setShowSuccessModal(true);
+      
+      // Hide success modal after 3 seconds
+      setTimeout(() => {
+        setShowSuccessModal(false);
+      }, 3000);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast.error(error.response?.data || "Failed to update profile. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleImageUpload = (e, type) => {
@@ -57,18 +212,37 @@ const ProfileForm = () => {
     
     switch(type) {
       case 'logo':
-        setCompanyLogo(previewUrl);
+        setCompanyLogoFile(file);
+        setCompanyLogoPreview(previewUrl);
         break;
       case 'stamp':
-        setStampImage(previewUrl);
+        setStampImgFile(file);
+        setStampImgPreview(previewUrl);
         break;
       case 'signature':
-        setSignature(previewUrl);
+        setSignatureFile(file);
+        setSignaturePreview(previewUrl);
         break;
       default:
         break;
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-full">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-900/30 rounded-lg p-4 text-red-200">
+        <p>{error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-slate-800 text-white rounded-lg shadow-xl p-6 max-w-5xl mx-auto animate-fadeIn">
@@ -83,13 +257,24 @@ const ProfileForm = () => {
             <div className="flex gap-2">
               <button
                 onClick={handleSave}
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-all duration-300"
+                disabled={loading}
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-all duration-300 disabled:opacity-50"
               >
-                <FaSave /> Save
+                {loading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  <>
+                    <FaSave /> Save
+                  </>
+                )}
               </button>
               <button
                 onClick={handleCancel}
-                className="bg-slate-600 hover:bg-slate-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-all duration-300"
+                disabled={loading}
+                className="bg-slate-600 hover:bg-slate-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-all duration-300 disabled:opacity-50"
               >
                 <FaTimes /> Cancel
               </button>
@@ -122,13 +307,13 @@ const ProfileForm = () => {
                   {editMode ? (
                     <input
                       type="text"
-                      name="firstName"
-                      value={tempData.firstName}
+                      name="name"
+                      value={tempData.name}
                       onChange={handleInputChange}
                       className="bg-slate-800 px-3 py-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   ) : (
-                    <span className="text-white">{profileData.firstName}</span>
+                    <span className="text-white">{profileData.name}</span>
                   )}
                 </div>
               </div>
@@ -140,13 +325,13 @@ const ProfileForm = () => {
                   {editMode ? (
                     <input
                       type="text"
-                      name="lastName"
-                      value={tempData.lastName}
+                      name="lastname"
+                      value={tempData.lastname}
                       onChange={handleInputChange}
                       className="bg-slate-800 px-3 py-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   ) : (
-                    <span className="text-white">{profileData.lastName}</span>
+                    <span className="text-white">{profileData.lastname}</span>
                   )}
                 </div>
               </div>
@@ -176,13 +361,13 @@ const ProfileForm = () => {
                   {editMode ? (
                     <input
                       type="text"
-                      name="phoneNo"
-                      value={tempData.phoneNo}
+                      name="phoneno"
+                      value={tempData.phoneno}
                       onChange={handleInputChange}
                       className="bg-slate-800 px-3 py-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   ) : (
-                    <span className="text-white">{profileData.phoneNo}</span>
+                    <span className="text-white">{profileData.phoneno}</span>
                   )}
                 </div>
               </div>
@@ -203,13 +388,33 @@ const ProfileForm = () => {
                   {editMode ? (
                     <input
                       type="text"
-                      name="companyName"
-                      value={tempData.companyName}
+                      name="registercompanyname"
+                      value={tempData.registercompanyname}
                       onChange={handleInputChange}
                       className="bg-slate-800 px-3 py-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   ) : (
-                    <span className="text-white">{profileData.companyName}</span>
+                    <span className="text-white">{profileData.registercompanyname}</span>
+                  )}
+                </div>
+              </div>
+              
+              <div>
+                <p className="text-gray-400 text-sm mb-1">Status</p>
+                <div className="flex items-center gap-2">
+                  <FaUserTie className="text-blue-400" />
+                  {editMode ? (
+                    <select
+                      name="status"
+                      value={tempData.status}
+                      onChange={handleInputChange}
+                      className="bg-slate-800 px-3 py-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="active">Active</option>
+                      <option value="inactive">Inactive</option>
+                    </select>
+                  ) : (
+                    <span className="text-white capitalize">{profileData.status}</span>
                   )}
                 </div>
               </div>
@@ -229,12 +434,16 @@ const ProfileForm = () => {
           <div>
             <p className="text-gray-400 text-sm mb-2">Company Logo</p>
             <div className="relative bg-slate-800 rounded-lg overflow-hidden flex flex-col items-center justify-center border-2 border-dashed border-slate-600 p-4 h-48">
-              {companyLogo ? (
+              {companyLogoPreview ? (
                 <img 
-                  src={companyLogo} 
+                  src={companyLogoPreview} 
                   alt="Company Logo" 
                   className="max-h-40 max-w-full object-contain"
-                  onError={(e) => {e.target.src = "/image/lap2.jpg"}}
+                  onError={(e) => {
+                    console.log("Using default logo image");
+                    e.target.src = "/image/lap2.jpg";
+                    e.target.onerror = null; // Prevent infinite loop
+                  }}
                 />
               ) : (
                 <div className="text-center text-gray-400">
@@ -267,11 +476,16 @@ const ProfileForm = () => {
           <div>
             <p className="text-gray-400 text-sm mb-2">Stamp Image</p>
             <div className="relative bg-slate-800 rounded-lg overflow-hidden flex flex-col items-center justify-center border-2 border-dashed border-slate-600 p-4 h-48">
-              {stampImage ? (
+              {stampImgPreview ? (
                 <img 
-                  src={stampImage} 
+                  src={stampImgPreview} 
                   alt="Stamp" 
                   className="max-h-40 max-w-full object-contain"
+                  onError={(e) => {
+                    console.log("Using default stamp image");
+                    e.target.src = "/image/lap2.jpg";
+                    e.target.onerror = null; // Prevent infinite loop
+                  }}
                 />
               ) : (
                 <div className="text-center text-gray-400">
@@ -304,11 +518,16 @@ const ProfileForm = () => {
           <div>
             <p className="text-gray-400 text-sm mb-2">Signature</p>
             <div className="relative bg-slate-800 rounded-lg overflow-hidden flex flex-col items-center justify-center border-2 border-dashed border-slate-600 p-4 h-48">
-              {signature ? (
+              {signaturePreview ? (
                 <img 
-                  src={signature} 
+                  src={signaturePreview} 
                   alt="Signature" 
                   className="max-h-40 max-w-full object-contain"
+                  onError={(e) => {
+                    console.log("Using default signature image");
+                    e.target.src = "/image/lap2.jpg";
+                    e.target.onerror = null; // Prevent infinite loop
+                  }}
                 />
               ) : (
                 <div className="text-center text-gray-400">
@@ -345,13 +564,15 @@ const ProfileForm = () => {
           <div className="flex gap-2">
             <button
               onClick={handleSave}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-all duration-300"
+              disabled={loading}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-all duration-300 disabled:opacity-50"
             >
-              <FaSave /> Save
+              {loading ? "Saving..." : <><FaSave /> Save</>}
             </button>
             <button
               onClick={handleCancel}
-              className="bg-slate-600 hover:bg-slate-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-all duration-300"
+              disabled={loading}
+              className="bg-slate-600 hover:bg-slate-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-all duration-300 disabled:opacity-50"
             >
               <FaTimes /> Cancel
             </button>
