@@ -18,10 +18,12 @@ const ResetPassword = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [invalidOtp, setInvalidOtp] = useState(false);
+  const [userType, setUserType] = useState("masteradmin"); // Default to masteradmin
 
-  // Get email from localStorage - OTP will be entered by user
+  // Get email and user type from localStorage - OTP will be entered by user
   useEffect(() => {
     const resetEmail = localStorage.getItem("resetEmail");
+    const userType = localStorage.getItem("resetUserType") || "masteradmin"; // Default to masteradmin for backwards compatibility
     
     if (!resetEmail) {
       toast.error("Session expired. Please restart the password reset process.");
@@ -30,7 +32,9 @@ const ResetPassword = () => {
     }
     
     setEmail(resetEmail);
+    setUserType(userType);
     console.log("Retrieved email from localStorage:", resetEmail);
+    console.log("User type for password reset:", userType);
   }, [navigate]);
 
   // Handle password reset submission
@@ -58,20 +62,34 @@ const ResetPassword = () => {
     setLoading(true);
     
     try {
-      console.log("Verifying OTP - Email:", email, "OTP:", otp);
+      console.log("Verifying OTP - Email:", email, "OTP:", otp, "User type:", userType);
       
-      // Verify OTP and reset password in one step using the MasterAdmin API
-      const response = await axios.post(
-        `http://localhost:8282/masteradmin/forgot-password/verify?email=${email}&otp=${otp}&newPassword=${newPassword}`
-      );
+      let response;
       
-      console.log("Password reset response:", response.data);
+      // Choose the appropriate API endpoint based on user type
+      if (userType === "masteradmin") {
+        // Use Master Admin API for password reset
+        response = await axios.post(
+          `http://localhost:8282/masteradmin/forgot-password/verify?email=${email}&otp=${otp}&newPassword=${newPassword}`
+        );
+        console.log("Master Admin password reset response:", response.data);
+      } else if (userType === "subadmin") {
+        // Use Subadmin API for password reset
+        response = await axios.post(
+          `http://localhost:8282/api/subadmin/forgot-password/verify?email=${email}&otp=${otp}&newPassword=${newPassword}`
+        );
+        console.log("Subadmin password reset response:", response.data);
+      } else {
+        throw new Error("Unknown user type for password reset");
+      }
+      
       toast.success("Password reset successful!");
       setPasswordUpdated(true);
       setLoading(false);
       
       // Clear reset data from localStorage
       localStorage.removeItem("resetEmail");
+      localStorage.removeItem("resetUserType");
       localStorage.removeItem("resetOtp");
       
       // Redirect to login after success

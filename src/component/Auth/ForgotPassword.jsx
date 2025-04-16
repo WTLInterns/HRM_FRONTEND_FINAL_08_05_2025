@@ -20,26 +20,53 @@ const ForgotPassword = () => {
 
     try {
       console.log("Requesting OTP for email:", email);
-      const response = await axios.post(
-        `http://localhost:8282/masteradmin/forgot-password/request?email=${email}`
-      );
       
-      console.log("OTP request response:", response.data);
-      toast.success("OTP sent to your email. You will be redirected to reset your password.");
-      
-      // Store email in localStorage for the reset password page
-      localStorage.setItem("resetEmail", email);
-      console.log("Saved email to localStorage:", email);
-      
-      // Navigate to reset password page after a short delay
-      setTimeout(() => {
-        navigate("/reset-password");
-      }, 1500);
-      
-      setLoading(false);
+      // Try masteradmin reset first
+      try {
+        const masterAdminResponse = await axios.post(
+          `http://localhost:8282/masteradmin/forgot-password/request?email=${email}`
+        );
+        
+        console.log("Master Admin OTP request response:", masterAdminResponse.data);
+        toast.success("OTP sent to your email. You will be redirected to reset your password.");
+        
+        // Store email and user type in localStorage for the reset password page
+        localStorage.setItem("resetEmail", email);
+        localStorage.setItem("resetUserType", "masteradmin");
+        console.log("Saved email to localStorage:", email);
+        
+        // Navigate to reset password page after a short delay
+        setTimeout(() => {
+          navigate("/reset-password");
+        }, 1500);
+        
+        setLoading(false);
+        return; // Exit if masteradmin request succeeds
+      } catch (masterAdminError) {
+        console.log("Not a master admin user, trying subadmin endpoint");
+        // If masteradmin request fails, try subadmin endpoint
+        const subadminResponse = await axios.post(
+          `http://localhost:8282/api/subadmin/forgot-password/request?email=${email}`
+        );
+        
+        console.log("Subadmin OTP request response:", subadminResponse.data);
+        toast.success("OTP sent to your email. You will be redirected to reset your password.");
+        
+        // Store email and user type in localStorage for the reset password page
+        localStorage.setItem("resetEmail", email);
+        localStorage.setItem("resetUserType", "subadmin");
+        console.log("Saved email to localStorage:", email);
+        
+        // Navigate to reset password page after a short delay
+        setTimeout(() => {
+          navigate("/reset-password");
+        }, 1500);
+        
+        setLoading(false);
+      }
     } catch (error) {
       console.error("Error requesting OTP:", error.response || error);
-      setError(error.response?.data || "Failed to send OTP. Please try again.");
+      setError(error.response?.data || "Failed to send OTP. Please check if the email is registered.");
       toast.error(error.response?.data || "Failed to send OTP");
       setLoading(false);
     }

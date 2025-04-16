@@ -331,11 +331,13 @@ const ViewCompany = () => {
                       {/* Status */}
                       <td className="px-3 py-2 whitespace-nowrap">
                         <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full shadow-sm ${
-                          company.status === 'Active' 
+                          company.status && company.status.toLowerCase() === 'active' 
                             ? 'bg-green-900/50 text-green-400 border border-green-800' 
                             : 'bg-red-900/50 text-red-400 border border-red-800'
                         }`}>
-                          {company.status}
+                          {company.status && company.status.toLowerCase() === 'active' 
+                            ? 'Active' 
+                            : 'Inactive'}
                         </span>
                       </td>
                       

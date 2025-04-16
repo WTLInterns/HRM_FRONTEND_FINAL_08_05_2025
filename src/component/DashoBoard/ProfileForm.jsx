@@ -15,7 +15,11 @@ const ProfileForm = () => {
     status: "",
     stampImg: "",
     signature: "",
-    companylogo: ""
+    companylogo: "",
+    gstno: "",
+    cinno: "",
+    companyurl: "",
+    address: ""
   });
   
   // Loading and error states
@@ -37,45 +41,106 @@ const ProfileForm = () => {
   
   // Load user data on component mount
   useEffect(() => {
-    const userData = JSON.parse(localStorage.getItem("user"));
-    if (userData) {
-      console.log("User data loaded from localStorage:", userData);
-      setProfileData({
-        id: userData.id || "",
-        name: userData.name || "",
-        lastname: userData.lastname || "",
-        email: userData.email || "",
-        phoneno: userData.phoneno || "",
-        registercompanyname: userData.registercompanyname || "",
-        status: userData.status || "active",
-        stampImg: userData.stampImg || "",
-        signature: userData.signature || "",
-        companylogo: userData.companylogo || ""
-      });
-      
-      // Set default images rather than trying to load missing files
-      setCompanyLogoPreview("/image/lap2.jpg");
-      setStampImgPreview("/image/lap2.jpg");
-      setSignaturePreview("/image/lap2.jpg");
-      
-      setTempData({
-        id: userData.id || "",
-        name: userData.name || "",
-        lastname: userData.lastname || "",
-        email: userData.email || "",
-        phoneno: userData.phoneno || "",
-        registercompanyname: userData.registercompanyname || "",
-        status: userData.status || "active",
-        stampImg: userData.stampImg || "",
-        signature: userData.signature || "",
-        companylogo: userData.companylogo || ""
-      });
-      
-      setLoading(false);
-    } else {
-      setError("No user data found. Please login again.");
-      setLoading(false);
-    }
+    const fetchSubadminData = async () => {
+      try {
+        setLoading(true);
+        
+        // Get email from localStorage for the API call
+        const userFromStorage = JSON.parse(localStorage.getItem("user"));
+        if (!userFromStorage || !userFromStorage.email) {
+          throw new Error("No user email found in localStorage");
+        }
+        
+        // Call the API to get full subadmin details by email
+        const response = await axios.get(
+          `http://localhost:8282/api/subadmin/subadmin-by-email/${userFromStorage.email}`
+        );
+        
+        console.log("Subadmin data from API:", response.data);
+        
+        if (response.data) {
+          const userData = response.data;
+          
+          // Update state with the fetched data
+          setProfileData({
+            id: userData.id || "",
+            name: userData.name || "",
+            lastname: userData.lastname || "",
+            email: userData.email || "",
+            phoneno: userData.phoneno || "",
+            registercompanyname: userData.registercompanyname || "",
+            status: userData.status || "active",
+            stampImg: userData.stampImg || "",
+            signature: userData.signature || "",
+            companylogo: userData.companylogo || "",
+            gstno: userData.gstno || "",
+            cinno: userData.cinno || "",
+            companyurl: userData.companyurl || "",
+            address: userData.address || ""
+          });
+          
+          setTempData({
+            id: userData.id || "",
+            name: userData.name || "",
+            lastname: userData.lastname || "",
+            email: userData.email || "",
+            phoneno: userData.phoneno || "",
+            registercompanyname: userData.registercompanyname || "",
+            status: userData.status || "active",
+            stampImg: userData.stampImg || "",
+            signature: userData.signature || "",
+            companylogo: userData.companylogo || "",
+            gstno: userData.gstno || "",
+            cinno: userData.cinno || "",
+            companyurl: userData.companyurl || "",
+            address: userData.address || ""
+          });
+          
+          // Also update the localStorage with this more complete data
+          localStorage.setItem("user", JSON.stringify(userData));
+        }
+        
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching subadmin data:", error);
+        setError("Failed to load profile data. Please try again.");
+        
+        // Fallback to localStorage if API fails
+        const fallbackData = JSON.parse(localStorage.getItem("user"));
+        if (fallbackData) {
+          console.log("Falling back to localStorage data");
+          setProfileData({
+            id: fallbackData.id || "",
+            name: fallbackData.name || "",
+            lastname: fallbackData.lastname || "",
+            email: fallbackData.email || "",
+            phoneno: fallbackData.phoneno || "",
+            registercompanyname: fallbackData.registercompanyname || "",
+            status: fallbackData.status || "active",
+            stampImg: fallbackData.stampImg || "",
+            signature: fallbackData.signature || "",
+            companylogo: fallbackData.companylogo || ""
+          });
+          
+          setTempData({
+            id: fallbackData.id || "",
+            name: fallbackData.name || "",
+            lastname: fallbackData.lastname || "",
+            email: fallbackData.email || "",
+            phoneno: fallbackData.phoneno || "",
+            registercompanyname: fallbackData.registercompanyname || "",
+            status: fallbackData.status || "active",
+            stampImg: fallbackData.stampImg || "",
+            signature: fallbackData.signature || "",
+            companylogo: fallbackData.companylogo || ""
+          });
+        }
+        
+        setLoading(false);
+      }
+    };
+    
+    fetchSubadminData();
   }, []);
   
   // Function to get the correct image URL with fallback
@@ -228,6 +293,111 @@ const ProfileForm = () => {
     }
   };
 
+  // Separate component for image with fallbacks
+  const ImageWithFallback = ({ filename, altText, type, onLoaded }) => {
+    const [srcIndex, setSrcIndex] = useState(0);
+    const [error, setError] = useState(false);
+    const [attempted, setAttempted] = useState(false);
+    
+    // Only try one direct API call on initial mount to prevent excessive console errors
+    useEffect(() => {
+      if (attempted || !filename) {
+        return;
+      }
+      
+      setAttempted(true);
+      
+      // Define local fallback images to use when remote images fail
+      const localFallbacks = {
+        logo: "/image/lap2.jpg",
+        stamp: "/image/lap2.jpg",
+        signature: "/image/lap2.jpg"
+      };
+      
+      // Define all possible image source paths in priority order
+      const sources = [
+        // Add direct paths that might work
+        `http://localhost:8282/images/${filename}`,
+        `http://localhost:8282/upload/${filename}`,
+        `http://localhost:8282/static/images/${filename}`,
+        `http://localhost:8282/static/resources/${filename}`,
+        // Use local fallback as last resort
+        localFallbacks[type]
+      ];
+      
+      // Try to load the image directly
+      const img = new Image();
+      let currentSourceIndex = 0;
+      
+      img.onload = () => {
+        setSrcIndex(currentSourceIndex);
+        console.log(`Successfully loaded ${type} image from ${sources[currentSourceIndex]}`);
+        onLoaded();
+      };
+      
+      img.onerror = () => {
+        currentSourceIndex++;
+        if (currentSourceIndex < sources.length) {
+          console.log(`Trying next source for ${type}: ${sources[currentSourceIndex]}`);
+          img.src = sources[currentSourceIndex];
+        } else {
+          console.log(`All sources failed for ${type}, using placeholder`);
+          setError(true);
+          onLoaded();
+        }
+      };
+      
+      // Start loading the first source
+      img.src = sources[currentSourceIndex];
+      
+    }, [filename, type, onLoaded, attempted]);
+    
+    // Define local fallback images to use when remote images fail
+    const localFallbacks = {
+      logo: "/image/lap2.jpg",
+      stamp: "/image/lap2.jpg",
+      signature: "/image/lap2.jpg"
+    };
+    
+    // All sources failed, show placeholder
+    if (error || !filename) {
+      return (
+        <div className="text-center text-gray-400">
+          {type === 'logo' && <FaBuilding size={32} className="mx-auto mb-2" />}
+          {type === 'stamp' && <FaStamp size={32} className="mx-auto mb-2" />}
+          {type === 'signature' && <FaSignature size={32} className="mx-auto mb-2" />}
+          <p>No {altText.toLowerCase()} available</p>
+        </div>
+      );
+    }
+    
+    // Define all possible image source paths in priority order
+    const sources = [
+      `http://localhost:8282/images/${filename}`,
+      `http://localhost:8282/upload/${filename}`,
+      `http://localhost:8282/static/images/${filename}`,
+      `http://localhost:8282/static/resources/${filename}`,
+      localFallbacks[type]
+    ];
+    
+    return (
+      <img 
+        src={srcIndex < sources.length ? sources[srcIndex] : localFallbacks[type]} 
+        alt={altText} 
+        className="max-h-40 max-w-full object-contain"
+        onError={() => {
+          if (srcIndex < sources.length - 1) {
+            setSrcIndex(prevIndex => prevIndex + 1);
+          } else {
+            setError(true);
+            onLoaded();
+          }
+        }}
+        onLoad={onLoaded}
+      />
+    );
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-full">
@@ -247,7 +417,7 @@ const ProfileForm = () => {
   return (
     <div className="bg-slate-800 text-white rounded-lg shadow-xl p-6 max-w-5xl mx-auto animate-fadeIn">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-blue-400 flex items-center">
+        <h2 className="text-2xl font-bold text-blue-400 flex items-center gap-2">
           <FaUser className="mr-2" /> Profile Information
         </h2>
         
@@ -434,29 +604,25 @@ const ProfileForm = () => {
           <div>
             <p className="text-gray-400 text-sm mb-2">Company Logo</p>
             <div className="relative bg-slate-800 rounded-lg overflow-hidden flex flex-col items-center justify-center border-2 border-dashed border-slate-600 p-4 h-48">
-              {companyLogoPreview ? (
-                <img 
-                  src={companyLogoPreview} 
-                  alt="Company Logo" 
-                  className="max-h-40 max-w-full object-contain"
-                  onError={(e) => {
-                    console.log("Using default logo image");
-                    e.target.src = "/image/lap2.jpg";
-                    e.target.onerror = null; // Prevent infinite loop
-                  }}
-                />
-              ) : (
-                <div className="text-center text-gray-400">
-                  <FaBuilding size={32} className="mx-auto mb-2" />
-                  <p>No logo uploaded</p>
-                </div>
-              )}
+              {/* <ImageWithFallback
+                filename={profileData.companylogo}
+                altText="Company Logo"
+                type="logo"
+                onLoaded={() => console.log("Company logo loaded")}
+              /> */}
+
+              <img 
+                src={`http://localhost:8282/images/profile/${profileData.companylogo}`} 
+                alt="Company Logo" 
+                className="max-h-40 max-w-full object-contain"
+              />
               
               {editMode && (
                 <div className="absolute bottom-2 right-2">
                   <input
                     type="file"
                     id="companyLogoUpload"
+                    value={tempData.companylogo}
                     accept="image/*"
                     className="hidden"
                     onChange={(e) => handleImageUpload(e, 'logo')}
@@ -476,23 +642,18 @@ const ProfileForm = () => {
           <div>
             <p className="text-gray-400 text-sm mb-2">Stamp Image</p>
             <div className="relative bg-slate-800 rounded-lg overflow-hidden flex flex-col items-center justify-center border-2 border-dashed border-slate-600 p-4 h-48">
-              {stampImgPreview ? (
-                <img 
-                  src={stampImgPreview} 
-                  alt="Stamp" 
-                  className="max-h-40 max-w-full object-contain"
-                  onError={(e) => {
-                    console.log("Using default stamp image");
-                    e.target.src = "/image/lap2.jpg";
-                    e.target.onerror = null; // Prevent infinite loop
-                  }}
-                />
-              ) : (
-                <div className="text-center text-gray-400">
-                  <FaStamp size={32} className="mx-auto mb-2" />
-                  <p>No stamp uploaded</p>
-                </div>
-              )}
+              {/* <ImageWithFallback
+                filename={profileData.stampImg}
+                altText="Stamp"
+                type="stamp"
+                onLoaded={() => console.log("Stamp image loaded")}
+              /> */}
+
+              <img 
+                src={`http://localhost:8282/images/profile/${profileData.stampImg}`} 
+                alt="Stamp" 
+                className="max-h-40 max-w-full object-contain"
+              />
               
               {editMode && (
                 <div className="absolute bottom-2 right-2">
@@ -518,23 +679,19 @@ const ProfileForm = () => {
           <div>
             <p className="text-gray-400 text-sm mb-2">Signature</p>
             <div className="relative bg-slate-800 rounded-lg overflow-hidden flex flex-col items-center justify-center border-2 border-dashed border-slate-600 p-4 h-48">
-              {signaturePreview ? (
-                <img 
-                  src={signaturePreview} 
-                  alt="Signature" 
-                  className="max-h-40 max-w-full object-contain"
-                  onError={(e) => {
-                    console.log("Using default signature image");
-                    e.target.src = "/image/lap2.jpg";
-                    e.target.onerror = null; // Prevent infinite loop
-                  }}
-                />
-              ) : (
-                <div className="text-center text-gray-400">
-                  <FaSignature size={32} className="mx-auto mb-2" />
-                  <p>No signature uploaded</p>
-                </div>
-              )}
+              {/* <ImageWithFallback
+                filename={profileData.signature}
+                altText="Signature"
+                type="signature"
+                onLoaded={() => console.log("Signature image loaded")}
+              /> */}
+
+              <img 
+                src={`http://localhost:8282/images/profile/${profileData.signature}`} 
+                value={tempData.signature}
+                alt="Signature" 
+                className="max-h-40 max-w-full object-contain"
+              />
               
               {editMode && (
                 <div className="absolute bottom-2 right-2">

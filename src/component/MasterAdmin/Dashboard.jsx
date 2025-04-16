@@ -18,15 +18,29 @@ const Dashboard = () => {
   const [isProfitable, setIsProfitable] = useState(false);
 
   useEffect(() => {
-    // Function to calculate stats
-    const calculateStats = () => {
+    // Function to fetch companies and calculate stats
+    const fetchCompaniesAndCalculateStats = async () => {
       try {
         setLoading(true);
         
-        const companies = JSON.parse(localStorage.getItem('companies') || '[]');
+        // Fetch companies directly from the API instead of localStorage
+        const response = await fetch('http://localhost:8282/api/subadmin/all');
         
-        const activeCompanies = companies.filter(company => company.status === 'Active').length;
-        const inactiveCompanies = companies.filter(company => company.status === 'Inactive').length;
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        
+        const companies = await response.json();
+        console.log('Fetched companies for dashboard:', companies);
+        
+        // Calculate stats from the fetched companies
+        const activeCompanies = companies.filter(company => 
+          company.status && company.status.toLowerCase() === 'active'
+        ).length;
+        
+        const inactiveCompanies = companies.filter(company => 
+          !company.status || company.status.toLowerCase() !== 'active'
+        ).length;
         
         // Determine profitability - more active than inactive companies
         const profitable = activeCompanies > inactiveCompanies;
@@ -37,21 +51,22 @@ const Dashboard = () => {
           activeCompanies,
           inactiveCompanies
         });
+        
         setLoading(false);
       } catch (error) {
-        console.error("Error calculating stats:", error);
+        console.error("Error fetching companies and calculating stats:", error);
         setLoading(false);
       }
     };
     
-    // Calculate stats on mount
-    calculateStats();
+    // Fetch companies and calculate stats on mount
+    fetchCompaniesAndCalculateStats();
     
     // Add event listener for updates
-    window.addEventListener('companiesUpdated', calculateStats);
+    window.addEventListener('companiesUpdated', fetchCompaniesAndCalculateStats);
     
     return () => {
-      window.removeEventListener('companiesUpdated', calculateStats);
+      window.removeEventListener('companiesUpdated', fetchCompaniesAndCalculateStats);
     };
   }, []);
 

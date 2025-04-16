@@ -54,6 +54,28 @@ export default function Attendance() {
     return `${day}-${month}-${year}`;
   };
 
+  // Check existing attendance for a specific date and employee
+  const checkExistingAttendance = async (fullName, date) => {
+    try {
+      console.log(`Checking attendance for ${fullName} on ${date}`);
+      const response = await axios.get(`http://localhost:8282/api/employee/bulk/${encodeURIComponent(fullName)}/${date}`);
+      console.log('Existing attendance response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error checking attendance:', error);
+      return [];
+    }
+  };
+
+  // Convert local date string to API format (YYYY-MM-DD)
+  const formatDateForApi = (dateString) => {
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   // Open the status dropdown when a calendar cell is clicked.
   const handleTileClick = ({ date, view }, event) => {
     if (view === "month") {
@@ -78,33 +100,189 @@ export default function Attendance() {
   };
 
   // Handle status selection.
-  // If the record exists and the status is different, update it.
-  // If the record exists and the status is the same, warn the user.
-  // If the record does not exist, add it as new.
-  const handleStatusSelect = (status) => {
-    const dateStr = selectedDate;
-    const existingRecord = attendanceRecords.find(r => r.date === dateStr);
-
-    if (existingRecord) {
-      if (existingRecord.status === status) {
-        toast.info(`Attendance for ${formatDate(dateStr)} is already marked as "${status}".`);
-      } else {
-        const oldStatus = existingRecord.status;
-        setAttendanceRecords(prev =>
-          prev.map(record =>
-            record.date === dateStr ? { ...record, status: status } : record
-          )
-        );
-        toast.success(`Changed attendance for ${formatDate(dateStr)} from "${oldStatus}" to "${status}".`);
-      }
-    } else {
-      setSelectedDates(prev => [...prev, dateStr]);
-      setAttendanceRecords(prev => [
-        ...prev,
-        { date: dateStr, status: status, employeeName: employeeName || "" }
-      ]);
-      toast.success(`Attendance for ${formatDate(dateStr)} added as "${status}".`);
+  const handleStatusSelect = async (status) => {
+    if (!employeeName || employeeName.trim() === '') {
+      toast.error('Please enter employee name first');
+      setShowStatusDropdown(false);
+      return;
     }
+    
+    // Get the clicked date and convert to API format
+    const clickedDate = new Date(selectedDate);
+    clickedDate.setHours(12, 0, 0, 0); // Set to noon to avoid timezone issues
+    const apiFormattedDate = formatDateForApi(clickedDate);
+    const formattedDateForDisplay = formatDate(clickedDate);
+    
+    try {
+      // Get subadmin ID from localStorage
+      const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+      const subAdminId = storedUser?.subAdminId || storedUser?.id || 2;
+      console.log('User data:', storedUser);
+      console.log('Using subAdmin ID:', subAdminId);
+      
+      const encodedEmployeeName = encodeURIComponent(employeeName);
+      console.log(`Employee: ${employeeName}, Encoded: ${encodedEmployeeName}`);
+      console.log(`Date: ${apiFormattedDate}`);
+      
+      // First check if attendance exists for this date
+      const existingAttendance = await checkExistingAttendance(employeeName, apiFormattedDate);
+      
+      // Prepare payload
+      const attendancePayload = [{
+        date: apiFormattedDate,
+        status: status,
+        employeeName: employeeName
+      }];
+      
+      console.log('Initial payload:', attendancePayload);
+      
+      let response;
+      let existingStatus = '';
+      let updateUrl = `http://localhost:8282/api/employee/${subAdminId}/${encodedEmployeeName}/attendance/update/bulk`;
+      let addUrl = `http://localhost:8282/api/employee/${subAdminId}/${encodedEmployeeName}/attendance/add/bulk`;
+      
+      if (existingAttendance && existingAttendance.length > 0) {
+        // Attendance exists, use PUT to update
+        console.log('Found existing attendance:', existingAttendance);
+        existingStatus = existingAttendance[0].status;
+        
+        // Include the id from existing attendance
+        attendancePayload[0].id = existingAttendance[0].id;
+        
+        console.log('PUT URL:', updateUrl);
+        console.log('PUT payload:', JSON.stringify(attendancePayload));
+        
+        response = await axios.put(
+          updateUrl,
+          attendancePayload,
+          {
+            headers: { 'Content-Type': 'application/json' }
+          }
+        );
+        
+        console.log('PUT response:', response);
+        
+        if (existingStatus === status) {
+          // Use toast without .info since it might not be available
+          toast(`Attendance for ${formattedDateForDisplay} is already marked as "${status}"`);
+        } else {
+          toast.success(`Updated attendance for ${formattedDateForDisplay} from "${existingStatus}" to "${status}"`);
+        }
+        
+        // Update the local state with the updated record
+        const recordToUpdate = attendanceRecords.find(record => {
+          const recordDate = new Date(record.date);
+          recordDate.setHours(12, 0, 0, 0);
+          const clicked = new Date(selectedDate);
+          clicked.setHours(12, 0, 0, 0);
+          return recordDate.getTime() === clicked.getTime();
+        });
+        
+        if (recordToUpdate) {
+          console.log('Found record to update in state:', recordToUpdate);
+          setAttendanceRecords(prev => 
+            prev.map(record => {
+              const recordDate = new Date(record.date);
+              recordDate.setHours(12, 0, 0, 0);
+              const clicked = new Date(selectedDate);
+              clicked.setHours(12, 0, 0, 0);
+              
+              if (recordDate.getTime() === clicked.getTime()) {
+                console.log('Updating record state:', { ...record, status });
+                return { ...record, status };
+              }
+              return record;
+            })
+          );
+        } else {
+          // If not found in state, add it
+          console.log('Adding updated record to state');
+          setSelectedDates(prev => {
+            if (prev.find(d => {
+              const prevDate = new Date(d);
+              prevDate.setHours(12, 0, 0, 0);
+              const clicked = new Date(selectedDate);
+              clicked.setHours(12, 0, 0, 0);
+              return prevDate.getTime() === clicked.getTime();
+            })) {
+              return prev;
+            }
+            return [...prev, selectedDate];
+          });
+          
+          setAttendanceRecords(prev => [
+            ...prev,
+            {
+              date: selectedDate,
+              status,
+              employeeName,
+              id: existingAttendance[0].id
+            }
+          ]);
+        }
+      } else {
+        // No attendance record exists, use POST to create
+        console.log('No existing attendance found, creating with POST');
+        console.log('POST URL:', addUrl);
+        console.log('POST payload:', JSON.stringify(attendancePayload));
+        
+        response = await axios.post(
+          addUrl,
+          attendancePayload,
+          {
+            headers: { 'Content-Type': 'application/json' }
+          }
+        );
+        
+        console.log('POST response:', response);
+        
+        toast.success(`Marked new attendance as "${status}" for ${formattedDateForDisplay}`);
+        
+        // Add the new record to state
+        if (response.data && response.data.length > 0) {
+          const newRecord = response.data[0];
+          console.log('Adding new record to state:', newRecord);
+          
+          setSelectedDates(prev => {
+            if (prev.find(d => {
+              const prevDate = new Date(d);
+              prevDate.setHours(12, 0, 0, 0);
+              const clicked = new Date(selectedDate);
+              clicked.setHours(12, 0, 0, 0);
+              return prevDate.getTime() === clicked.getTime();
+            })) {
+              return prev;
+            }
+            return [...prev, selectedDate];
+          });
+          
+          setAttendanceRecords(prev => [
+            ...prev,
+            {
+              date: selectedDate,
+              status,
+              employeeName,
+              id: newRecord.id
+            }
+          ]);
+        }
+      }
+    } catch (error) {
+      console.error('Error managing attendance:', error);
+      if (error.response) {
+        console.error('Error response:', error.response.data);
+        console.error('Status:', error.response.status);
+        console.error('Headers:', error.response.headers);
+      } else if (error.request) {
+        console.error('No response received:', error.request);
+      } else {
+        console.error('Error details:', error.message);
+      }
+      
+      const errorMessage = error.response?.data || error.message;
+      toast.error(`Failed to manage attendance: ${errorMessage}`);
+    }
+    
     setShowStatusDropdown(false);
   };
 

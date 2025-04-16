@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { 
@@ -43,7 +42,9 @@ const RegisterCompany = () => {
     hasSignature: false,
     hasStamp: false,
     status: "Active",
-    gstno: ""
+    gstno: "",
+    cinNo: "",
+    companyUrl: ""
   };
 
   const [formData, setFormData] = useState(initialFormState);
@@ -52,19 +53,40 @@ const RegisterCompany = () => {
     if (isEditMode) {
       const companyToEdit = JSON.parse(localStorage.getItem('companyToEdit') || 'null');
       if (companyToEdit) {
-        setFormData(companyToEdit);
+        // Map the backend field names to our form field names
+        const mappedData = {
+          id: companyToEdit.id,
+          name: companyToEdit.name,
+          lastName: companyToEdit.lastname,
+          registerCompanyName: companyToEdit.registercompanyname,
+          email: companyToEdit.email,
+          phoneno: companyToEdit.phoneno,
+          address: companyToEdit.address,
+          gstno: companyToEdit.gstno,
+          cinNo: companyToEdit.cinNo || '',
+          companyUrl: companyToEdit.companyUrl || '',
+          status: companyToEdit.status,
+          logo: companyToEdit.logo || companyToEdit.companylogo,
+          signature: companyToEdit.signature,
+          stampImage: companyToEdit.stampImg,
+          hasSignature: !!companyToEdit.signature,
+          hasStamp: !!companyToEdit.stampImg
+        };
+        
+        console.log('Loading company data for edit:', mappedData);
+        setFormData(mappedData);
         
         // Set preview images if they exist in the company data
-        if (companyToEdit.logo && typeof companyToEdit.logo === 'string') {
-          setLogoPreview(companyToEdit.logo);
+        if (mappedData.logo && typeof mappedData.logo === 'string') {
+          setLogoPreview(mappedData.logo);
         }
         
-        if (companyToEdit.signature && typeof companyToEdit.signature === 'string') {
-          setSignaturePreview(companyToEdit.signature);
+        if (mappedData.signature && typeof mappedData.signature === 'string') {
+          setSignaturePreview(mappedData.signature);
         }
         
-        if (companyToEdit.stampImage && typeof companyToEdit.stampImage === 'string') {
-          setStampPreview(companyToEdit.stampImage);
+        if (mappedData.stampImage && typeof mappedData.stampImage === 'string') {
+          setStampPreview(mappedData.stampImage);
         }
       }
     }
@@ -106,6 +128,22 @@ const RegisterCompany = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // Additional validation for required files
+    if (!isEditMode) {
+      if (!formData.logo) {
+        alert('Please upload a company logo');
+        return;
+      }
+      if (!formData.signature) {
+        alert('Please upload a signature');
+        return;
+      }
+      if (!formData.stampImage) {
+        alert('Please upload a company stamp');
+        return;
+      }
+    }
+    
     try {
       if (isEditMode) {
         // Update existing company using the API
@@ -118,8 +156,26 @@ const RegisterCompany = () => {
         formDataToSend.append("registercompanyname", formData.registerCompanyName);
         formDataToSend.append("email", formData.email);
         formDataToSend.append("phoneno", formData.phoneno);
-        formDataToSend.append("gstno", formData.gstno);
         formDataToSend.append("status", formData.status);
+        formDataToSend.append("gstno", formData.gstno);
+        
+        // Fix parameter names to match backend
+        formDataToSend.append("cinno", formData.cinNo);
+        formDataToSend.append("companyurl", formData.companyUrl);
+        formDataToSend.append("address", formData.address || "");
+        
+        console.log("Sending update with parameters:", {
+          id: formData.id,
+          name: formData.name,
+          lastname: formData.lastName,
+          registercompanyname: formData.registerCompanyName,
+          email: formData.email,
+          phoneno: formData.phoneno,
+          status: formData.status,
+          cinno: formData.cinNo,
+          companyurl: formData.companyUrl,
+          address: formData.address
+        });
         
         // Append the files if they exist
         if (formData.logo) {
@@ -138,8 +194,13 @@ const RegisterCompany = () => {
         });
         
         if (!response.ok) {
-          throw new Error("Failed to update company");
+          const errorText = await response.text();
+          console.error("Error updating company:", errorText);
+          throw new Error(`Failed to update company: ${errorText}`);
         }
+        
+        const updatedCompany = await response.json();
+        console.log("Company updated successfully:", updatedCompany);
         
         localStorage.removeItem('companyToEdit');
         setSuccessMessage("Company updated successfully!");
@@ -158,6 +219,8 @@ const RegisterCompany = () => {
         formDataToSend.append("phoneno", formData.phoneno);
         formDataToSend.append("password", formData.phoneno); // Use phone number as password
         formDataToSend.append("gstno", formData.gstno);
+        formDataToSend.append("cinNo", formData.cinNo);
+        formDataToSend.append("companyUrl", formData.companyUrl);
         formDataToSend.append("status", formData.status);
         
         // Append the files if they exist
@@ -336,26 +399,7 @@ const RegisterCompany = () => {
               </div>
             </div>
             
-            <div className="space-y-2">
-              <label htmlFor="email" className="block text-sm font-medium">
-                Email <span className="text-red-400">*</span>
-              </label>
-              <div className="relative rounded-md shadow-sm">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FaEnvelope className="text-blue-400" />
-                </div>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  className="block w-full pl-10 pr-3 py-2 bg-slate-700 border border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 text-gray-100"
-                  placeholder="company@example.com"
-                />
-              </div>
-            </div>
+
             
             <div className="space-y-2">
               <label htmlFor="gstno" className="block text-sm font-medium">
@@ -374,6 +418,46 @@ const RegisterCompany = () => {
                   required
                   className="block w-full pl-10 pr-3 py-2 bg-slate-700 border border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 text-gray-100"
                   placeholder="22AAAAA0000A1Z5"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="cinNo" className="block text-sm font-medium">
+                CIN Number
+              </label>
+              <div className="relative rounded-md shadow-sm">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <FaFileSignature className="text-blue-400" />
+                </div>
+                <input
+                  type="text"
+                  id="cinNo"
+                  name="cinNo"
+                  value={formData.cinNo}
+                  onChange={handleChange}
+                  className="block w-full pl-10 pr-3 py-2 bg-slate-700 border border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 text-gray-100"
+                  placeholder="L12345AB6789CDE012345"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="companyUrl" className="block text-sm font-medium">
+                Company URL
+              </label>
+              <div className="relative rounded-md shadow-sm">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <FaEnvelope className="text-blue-400" />
+                </div>
+                <input
+                  type="url"
+                  id="companyUrl"
+                  name="companyUrl"
+                  value={formData.companyUrl}
+                  onChange={handleChange}
+                  className="block w-full pl-10 pr-3 py-2 bg-slate-700 border border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 text-gray-100"
+                  placeholder="https://www.example.com"
                 />
               </div>
             </div>
@@ -400,6 +484,27 @@ const RegisterCompany = () => {
                   required
                   className="block w-full pl-10 pr-3 py-2 bg-slate-700 border border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 text-gray-100"
                   placeholder="123-456-7890"
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <label htmlFor="email" className="block text-sm font-medium">
+                Email <span className="text-red-400">*</span>
+              </label>
+              <div className="relative rounded-md shadow-sm">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <FaEnvelope className="text-blue-400" />
+                </div>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                  className="block w-full pl-10 pr-3 py-2 bg-slate-700 border border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 text-gray-100"
+                  placeholder="company@example.com"
                 />
               </div>
             </div>
@@ -432,7 +537,7 @@ const RegisterCompany = () => {
           {/* Company Logo */}
           <div className="bg-slate-900/30 p-4 rounded-lg border border-slate-700 shadow-sm">
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Company Logo
+              Company Logo <span className="text-red-400">*</span>
             </label>
             <div className="flex flex-col items-center space-y-2">
               <div className="w-full h-32 border-2 border-dashed border-blue-700/50 rounded-lg flex flex-col justify-center items-center p-2 hover:border-blue-500 transition-all duration-300 relative overflow-hidden bg-slate-800/50 shadow-sm">
@@ -466,6 +571,7 @@ const RegisterCompany = () => {
                   accept="image/*"
                   onChange={(e) => handleFileChange(e, 'logo')}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  required={!logoPreview && !isEditMode}
                 />
               </div>
             </div>
@@ -474,7 +580,7 @@ const RegisterCompany = () => {
           {/* Signature */}
           <div className="bg-slate-900/30 p-4 rounded-lg border border-slate-700 shadow-sm">
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Signature
+              Signature <span className="text-red-400">*</span>
             </label>
             <div className="flex flex-col items-center space-y-2">
               <div className="w-full h-32 border-2 border-dashed border-blue-700/50 rounded-lg flex flex-col justify-center items-center p-2 hover:border-blue-500 transition-all duration-300 relative overflow-hidden bg-slate-800/50 shadow-sm">
@@ -508,6 +614,7 @@ const RegisterCompany = () => {
                   accept="image/*"
                   onChange={(e) => handleFileChange(e, 'signature')}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  required={!signaturePreview && !isEditMode}
                 />
               </div>
             </div>
@@ -516,7 +623,7 @@ const RegisterCompany = () => {
           {/* Company Stamp */}
           <div className="bg-slate-900/30 p-4 rounded-lg border border-slate-700 shadow-sm">
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Company Stamp
+              Company Stamp <span className="text-red-400">*</span>
             </label>
             <div className="flex flex-col items-center space-y-2">
               <div className="w-full h-32 border-2 border-dashed border-blue-700/50 rounded-lg flex flex-col justify-center items-center p-2 hover:border-blue-500 transition-all duration-300 relative overflow-hidden bg-slate-800/50 shadow-sm">
@@ -550,6 +657,7 @@ const RegisterCompany = () => {
                   accept="image/*"
                   onChange={(e) => handleFileChange(e, 'stampImage')}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  required={!stampPreview && !isEditMode}
                 />
               </div>
             </div>

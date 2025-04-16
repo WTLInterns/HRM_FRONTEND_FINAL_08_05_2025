@@ -100,6 +100,7 @@ const calculateSalaryComponents = (yearlyCTC) => {
 
 export default function SalaryReport() {
   const [employeeName, setEmployeeName] = useState("")
+  // Company details will be retrieved from local storage
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
   const [yearlyCTC, setYearlyCTC] = useState(0)
@@ -109,6 +110,16 @@ export default function SalaryReport() {
   const [s, setS] = useState(null)
   const [showReport, setShowReport] = useState(false)
   const [generating, setGenerating] = useState(false)
+  
+  // Get company details from localStorage
+  const getCompanyDetails = () => {
+    return {
+      companyName: localStorage.getItem('companyName') || 'TECH mahindra',
+      companyAddress: localStorage.getItem('companyAddress') || 'A Wing 1st Floor City Vista Office no-016 kharadi Pune-411014',
+      signatureImage: localStorage.getItem('signatureImage') || WtlSign, // Fallback to default
+      stampImage: localStorage.getItem('stampImage') || companyLogo // Fallback to default
+    };
+  }
 
   // Colors
   const faintGreen = [220, 230, 195]
@@ -155,16 +166,28 @@ export default function SalaryReport() {
     setLoading(true)
     setError(null)
     try {
-      const response = await fetch(
-        `/public/generateReport?employeeName=${employeeName}&startDate=${startDate}&endDate=${endDate}`
+      // Get company name from local storage (assuming it's stored when user logs in)
+      const companyDetails = getCompanyDetails();
+      
+      // Using the new API endpoint format
+      const response = await axios.get(
+        `http://localhost:8282/api/employee/employee/${encodeURIComponent(companyDetails.companyName)}/${encodeURIComponent(employeeName)}/attendance/report?startDate=${startDate}&endDate=${endDate}`
       )
-      if (!response.ok) {
+      
+      if (response.status !== 200) {
         throw new Error("Failed to fetch salary report")
       }
-      const data = await response.json()
+      
+      const data = response.data
+      console.log("API Response:", data)
       setSalaryReport(data)
+      setS(data) // Set s to the same data for consistency
+      setShowReport(true)
+      setYearlyCTC(data.grossSalary * 12) // Set yearly CTC based on gross salary
     } catch (err) {
-      setError(err.message)
+      console.error("Error fetching salary report:", err)
+      setError(err.message || "Failed to fetch data")
+      setShowReport(false)
     } finally {
       setLoading(false)
     }
@@ -210,6 +233,9 @@ export default function SalaryReport() {
       // Outer container start
       const slipStartY = yPos
 
+      // Get company details from localStorage
+      const companyDetails = getCompanyDetails();
+      
       // 1) HEADER with green background
       const headerBoxHeight = 14
       doc.setFillColor(...faintGreen)
@@ -220,25 +246,26 @@ export default function SalaryReport() {
       doc.setTextColor(0, 0, 0)
       doc.setFontSize(20)
       doc.setFont("helvetica", "bold")
-      const companyText = "WTL TOURISM PVT. LTD."
+      // Use dynamic company name
+      const companyText = companyDetails.companyName.toUpperCase()
       doc.textWithLink(
         companyText,
         margin + (contentWidth / 2),
         yPos + headerBoxHeight / 2,
         {
-          url: "https://worldtriplink.com/",
+          url: "#",
           align: "center",
         }
       )
       yPos += headerBoxHeight
 
-      // 2) Company address row
+      // 2) Company address row with dynamic address
       createCell(
         margin,
         yPos,
         contentWidth,
         12,
-        "Company Address :- A Wing 1st Floor City Vista Office no-016 kharadi Pune-411014",
+        `Company Address :- ${companyDetails.companyAddress}`,
         12,
         "center",
         true,
@@ -572,10 +599,14 @@ export default function SalaryReport() {
       createCell(margin, yPos, sigColumnWidth, signatureRowHeight, "", 10, "left")
       createCell(margin + sigColumnWidth, yPos, sigColumnWidth, signatureRowHeight, "", 10, "left")
 
-      // Left column: WTL sign (smaller image)
+      // Left column: Signature image (dynamic from localStorage or fallback to WtlSign)
       try {
+        // Try to use the signature image from localStorage if it's a valid data URL
+        const signatureImageSrc = companyDetails.signatureImage.startsWith('data:') ? 
+          companyDetails.signatureImage : WtlSign;
+          
         doc.addImage(
-          WtlSign,
+          signatureImageSrc,
           "JPEG",
           margin + 10,   // x
           yPos + 5,      // y offset
@@ -583,14 +614,17 @@ export default function SalaryReport() {
           35             // height (decreased)
         )
       } catch (error) {
-        console.error("Error adding WTL sign on left:", error)
+        console.error("Error adding signature image on left:", error)
       }
 
-      // Right column: first the company logo, then a smaller WTL sign below it
+      // Right column: Stamp image (dynamic from localStorage or fallback to company logo)
       try {
-        // Company logo near top
+        // Try to use the stamp image from localStorage if it's a valid data URL
+        const stampImageSrc = companyDetails.stampImage.startsWith('data:') ? 
+          companyDetails.stampImage : companyLogo;
+          
         doc.addImage(
-          companyLogo,
+          stampImageSrc,
           "JPEG",
           margin + sigColumnWidth + 10,
           yPos + 5,
@@ -598,7 +632,7 @@ export default function SalaryReport() {
           35  // smaller height
         )
       } catch (error) {
-        console.error("Error adding images on right column:", error)
+        console.error("Error adding stamp image on right column:", error)
       }
 
       yPos += signatureRowHeight
@@ -626,10 +660,10 @@ export default function SalaryReport() {
       
       {/* Form */}
       <div className="mb-8 bg-slate-800 p-5 rounded-lg shadow-lg border border-slate-700">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-1 gap-4 mb-4">
           <div>
             <label htmlFor="employeeName" className="text-sm font-semibold mb-1 text-gray-300">
-              Employee Name
+              Employee Full Name
             </label>
             <input
               type="text"
@@ -637,9 +671,11 @@ export default function SalaryReport() {
               value={employeeName}
               onChange={(e) => setEmployeeName(e.target.value)}
               className="w-full p-2 border border-slate-600 rounded-md bg-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Enter Employee Name"
+              placeholder="Enter Full Name (e.g. Rohit More)"
             />
           </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label htmlFor="startDate" className="text-sm font-semibold mb-1 text-gray-300">
               Start Date
@@ -699,45 +735,69 @@ export default function SalaryReport() {
                   <div>
                     <p className="text-sm text-gray-400">Name</p>
                     <p className="font-medium">
-                      {s?.firstName} {s?.lastName}
+                      {salaryReport?.firstName} {salaryReport?.lastName}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-400">Bank</p>
-                    <p className="font-medium">{s?.bankName}</p>
+                    <p className="text-sm text-gray-400">Designation</p>
+                    <p className="font-medium">{salaryReport?.jobRole || "N/A"}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-400">Account</p>
-                    <p className="font-medium">{s?.bankAccountNo}</p>
+                    <p className="text-sm text-gray-400">UID</p>
+                    <p className="font-medium">{salaryReport?.uid || "N/A"}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-400">IFSC</p>
-                    <p className="font-medium">{s?.bankIfscCode}</p>
+                    <p className="text-sm text-gray-400">Joining Date</p>
+                    <p className="font-medium">{formatDate(salaryReport?.joiningDate) || "N/A"}</p>
                   </div>
                 </div>
               </div>
             </div>
             
             <div>
-              <h3 className="text-lg font-medium mb-2 text-gray-300">Attendance Summary</h3>
+              <h3 className="text-lg font-medium mb-2 text-gray-300">Bank Details</h3>
               <div className="bg-slate-700 p-4 rounded-md">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <p className="text-sm text-gray-400">Present Days</p>
-                    <p className="font-medium">{salaryReport.presentDays || "0"}</p>
+                    <p className="text-sm text-gray-400">Bank Name</p>
+                    <p className="font-medium">{salaryReport?.bankName || "N/A"}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-400">Absent Days</p>
-                    <p className="font-medium">{salaryReport.absentDays || "0"}</p>
+                    <p className="text-sm text-gray-400">Account No</p>
+                    <p className="font-medium">{salaryReport?.bankAccountNo || "N/A"}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-400">Half Days</p>
-                    <p className="font-medium">{salaryReport.halfDays || "0"}</p>
+                    <p className="text-sm text-gray-400">IFSC Code</p>
+                    <p className="font-medium">{salaryReport?.ifscCode || "N/A"}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-400">Off Days</p>
-                    <p className="font-medium">{salaryReport.totalOffDays || "0"}</p>
+                    <p className="text-sm text-gray-400">Branch</p>
+                    <p className="font-medium">{salaryReport?.branchName || "N/A"}</p>
                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-6">
+            <h3 className="text-lg font-medium mb-2 text-gray-300">Attendance Summary</h3>
+            <div className="bg-slate-700 p-4 rounded-md">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div>
+                  <p className="text-sm text-gray-400">Working Days</p>
+                  <p className="font-medium">{salaryReport?.workingDays || "0"}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">Payable Days</p>
+                  <p className="font-medium">{salaryReport?.payableDays || "0"}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">Leave Taken</p>
+                  <p className="font-medium">{salaryReport?.leaveTaken || "0"}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">Half Days</p>
+                  <p className="font-medium">{salaryReport?.halfDay || "0"}</p>
                 </div>
               </div>
             </div>
@@ -746,30 +806,70 @@ export default function SalaryReport() {
           <div className="mt-6">
             <h3 className="text-lg font-medium mb-2 text-gray-300">Salary Details</h3>
             <div className="bg-slate-700 p-4 rounded-md">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <div>
                   <p className="text-sm text-gray-400">Basic</p>
-                  <p className="font-medium">₹{Math.round(yearlyCTC / 12 * 0.5)}</p>
+                  <p className="font-medium">₹{salaryReport?.basic || 0}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-400">HRA</p>
-                  <p className="font-medium">₹{Math.round(yearlyCTC / 12 * 0.2)}</p>
+                  <p className="font-medium">₹{salaryReport?.hra || 0}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-400">DA</p>
-                  <p className="font-medium">₹{Math.round(yearlyCTC / 12 * 0.5 * 0.53)}</p>
+                  <p className="text-sm text-gray-400">DA Allowance</p>
+                  <p className="font-medium">₹{salaryReport?.daAllowance || 0}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-400">Special Allowance</p>
-                  <p className="font-medium">₹{Math.round(yearlyCTC / 12 - (Math.round(yearlyCTC / 12 * 0.5) + Math.round(yearlyCTC / 12 * 0.2) + Math.round(yearlyCTC / 12 * 0.5 * 0.53)))}</p>
+                  <p className="font-medium">₹{salaryReport?.specialAllowance || 0}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">Total Allowance</p>
+                  <p className="font-medium">₹{salaryReport?.totalAllowance || 0}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-400">Gross Salary</p>
-                  <p className="font-medium">₹{Math.round(yearlyCTC / 12)}</p>
+                  <p className="font-medium">₹{salaryReport?.grossSalary || 0}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-6">
+            <h3 className="text-lg font-medium mb-2 text-gray-300">Deductions</h3>
+            <div className="bg-slate-700 p-4 rounded-md">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div>
+                  <p className="text-sm text-gray-400">Professional Tax</p>
+                  <p className="font-medium">₹{salaryReport?.professionalTax || 0}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-400">Net Pay</p>
-                  <p className="font-medium text-lg text-green-400">₹{Math.round(salaryReport.finalSalary || 0)}</p>
+                  <p className="text-sm text-gray-400">TDS</p>
+                  <p className="font-medium">₹{salaryReport?.tds || 0}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">Advance</p>
+                  <p className="font-medium">₹{salaryReport?.advance || 0}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">Total Deductions</p>
+                  <p className="font-medium">₹{salaryReport?.totalDeductions || 0}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-6">
+            <h3 className="text-lg font-medium mb-2 text-gray-300">Net Payable</h3>
+            <div className="bg-slate-700 p-4 rounded-md">
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <p className="text-sm text-gray-400">Net Payable Salary</p>
+                  <p className="font-medium text-xl text-green-400">₹{salaryReport?.netPayable || 0}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">Amount in Words</p>
+                  <p className="font-medium italic">{salaryReport?.amountInWords || ""}</p>
                 </div>
               </div>
             </div>
