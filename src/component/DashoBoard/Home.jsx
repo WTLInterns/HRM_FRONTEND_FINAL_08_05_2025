@@ -1,19 +1,51 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useApp } from "../../context/AppContext";
+import axios from "axios";
 import "./animations.css";
 import { FaUsers, FaUserCheck, FaUserMinus, FaBriefcase, FaArrowUp, FaArrowDown } from "react-icons/fa";
 import { Pie, Bar } from 'react-chartjs-2';
 
 const Home = () => {
   const { emp } = useApp();
+  const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [subadminId, setSubadminId] = useState(null);
   
-  // Calculate stats locally if not provided from context
-  const activeEmp = emp.filter((employee) => employee.status === "Active" || employee.status === "active");
-  const inactiveEmp = emp.filter((employee) => employee.status === "Inactive" || employee.status === "inactive");
+  // Fetch the actual employee data from API
+  useEffect(() => {
+    // Get the subadmin data from localStorage
+    const userData = JSON.parse(localStorage.getItem("user"));
+    if (userData && userData.id) {
+      setSubadminId(userData.id);
+      fetchEmployees(userData.id);
+    } else {
+      setError("No user data found in localStorage or missing ID");
+      setLoading(false);
+    }
+  }, []);
+  
+  const fetchEmployees = async (id) => {
+    try {
+      console.log(`Fetching employees for subadmin ID: ${id}`);
+      const response = await axios.get(`http://localhost:8282/api/employee/${id}/employee/all`);
+      console.log("Employee data received:", response.data);
+      setEmployees(response.data);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching employees:", error);
+      setError("Failed to fetch employees");
+      setLoading(false);
+    }
+  };
+  
+  // Calculate stats based on actual data
+  const activeEmp = employees.filter((employee) => employee.status === "Active" || employee.status === "active");
+  const inactiveEmp = employees.filter((employee) => employee.status === "Inactive" || employee.status === "inactive");
   const activeEmpCount = activeEmp.length;
   const inactiveEmpCount = inactiveEmp.length;
   
-  // For salary calculations
+  // For salary calculations using actual data
   const activeSalary = activeEmp.reduce((sum, emp) => sum + (parseFloat(emp.salary) || 0), 0);
   const inactiveSalary = inactiveEmp.reduce((sum, emp) => sum + (parseFloat(emp.salary) || 0), 0);
   const totalSalary = activeSalary + inactiveSalary;
@@ -22,7 +54,7 @@ const Home = () => {
   const isProfitable = profitLoss > 0;
   
   const stats = {
-    totalEmployees: emp.length,
+    totalEmployees: employees.length,
     activeEmployees: activeEmpCount,
     inactiveEmployees: inactiveEmpCount,
     totalSalary,
@@ -31,7 +63,7 @@ const Home = () => {
     profitLoss
   };
 
-  // Prepare pie chart data
+  // Prepare pie chart data with actual salary info
   const pieChartData = {
     labels: ['Active Salary', 'Inactive Salary'],
     datasets: [
@@ -59,7 +91,7 @@ const Home = () => {
     ],
   };
 
-  // Mock yearly data for the bar chart
+  // Mock yearly data for the bar chart - keeping this as is
   const yearlyData = [
     { year: 2020, profit: 150000, loss: 50000 },
     { year: 2021, profit: 200000, loss: 30000 },
@@ -177,9 +209,21 @@ const Home = () => {
     }
   };
 
-  // Group employees by job role and count active/inactive for each role
-  const jobRoleSummary = emp.reduce((acc, employee) => {
-    const role = employee.jobRole;
+  // Group employees by job role and count active/inactive for each role using actual data
+  const jobRoleSummary = employees.reduce((acc, employee) => {
+    // Normalize job role names to handle case sensitivity and trailing spaces
+    let role = employee.jobRole || "Undefined";
+    
+    // Normalize MERN STACK DEVELOPER variations
+    if (role.toUpperCase().includes("MERN") && role.toUpperCase().includes("STACK") && role.toUpperCase().includes("DEVELOPER")) {
+      role = "MERN STACK DEVELOPER";
+    }
+    
+    // Handle other common role normalizations
+    if (role.toUpperCase().includes("JAVA") && role.toUpperCase().includes("FULL") && role.toUpperCase().includes("STACK")) {
+      role = "JAVA FULL STACK";
+    }
+    
     if (!acc[role]) {
       acc[role] = { active: 0, inactive: 0 };
     }
@@ -191,6 +235,30 @@ const Home = () => {
     return acc;
   }, {});
 
+  // Create a table-like data structure for job roles and their statuses
+  const jobRoleTable = Object.entries(jobRoleSummary).map(([role, counts]) => ({
+    role,
+    active: counts.active,
+    inactive: counts.inactive,
+    total: counts.active + counts.inactive
+  }));
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-full">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-900/30 rounded-lg p-4 text-red-200">
+        <p>{error}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="animate-fadeIn">
       {/* Stats Cards - responsive grid */}
@@ -200,7 +268,7 @@ const Home = () => {
             <FaUsers className="text-blue-400 text-4xl animate-float" />
           </div>
           <h2 className="text-lg md:text-xl font-bold text-gray-100">Total Employees</h2>
-          <p className="text-2xl md:text-3xl font-semibold text-blue-400 mt-2">{emp.length}</p>
+          <p className="text-2xl md:text-3xl font-semibold text-blue-400 mt-2">{employees.length}</p>
         </div>
         <div className="bg-slate-800 shadow-md p-6 rounded-lg text-center transition-all duration-300 hover:shadow-xl card-hover animate-fadeIn border border-blue-900 hover:border-blue-700" style={{ animationDelay: '0.2s' }}>
           <div className="flex justify-center mb-3">
@@ -224,58 +292,22 @@ const Home = () => {
           <FaBriefcase className="mr-2 text-blue-400" /> Employees by Job Role
         </h2>
         <div className="flex flex-wrap gap-4 mt-4">
-          {Object.entries(jobRoleSummary).map(([role, counts], index) => (
+          {jobRoleTable.map((item, index) => (
             <div
-              key={role}
+              key={item.role}
               className="flex flex-col bg-slate-700 p-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 hover:bg-slate-600 animate-fadeIn border border-blue-900"
               style={{ animationDelay: `${0.5 + (index * 0.1)}s` }}
             >
-              <div className="text-sm font-semibold truncate text-blue-300">{role}</div>
+              <div className="text-sm font-semibold truncate text-blue-300">{item.role}</div>
               <div className="flex items-center text-sm mt-2 text-gray-200">
                 <span className="w-3 h-3 rounded-full bg-green-500 mr-1 animate-pulse-slow"></span>
-                <span className="font-medium">{counts.active}</span>
+                <span className="font-medium">{item.active}</span>
                 <span className="mx-2 text-gray-400">|</span>
                 <span className="w-3 h-3 rounded-full bg-red-500 mr-1 animate-pulse-slow"></span>
-                <span className="font-medium">{counts.inactive}</span>
+                <span className="font-medium">{item.inactive}</span>
               </div>
             </div>
           ))}
-        </div>
-      </div>
-
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-slate-800 p-6 rounded-lg shadow-lg">
-          <h3 className="text-gray-400 text-sm mb-2">Total Employees</h3>
-          <p className="text-2xl font-bold text-white">{stats.totalEmployees}</p>
-        </div>
-        <div className="bg-slate-800 p-6 rounded-lg shadow-lg">
-          <h3 className="text-gray-400 text-sm mb-2">Active Employees</h3>
-          <p className="text-2xl font-bold text-blue-400">{stats.activeEmployees}</p>
-        </div>
-        <div className="bg-slate-800 p-6 rounded-lg shadow-lg">
-          <h3 className="text-gray-400 text-sm mb-2">Inactive Employees</h3>
-          <p className="text-2xl font-bold text-red-400">{stats.inactiveEmployees}</p>
-        </div>
-        <div className="bg-slate-800 p-6 rounded-lg shadow-lg">
-          <h3 className="text-gray-400 text-sm mb-2">Company Status</h3>
-          <div className="flex items-center">
-            <p className="text-2xl font-bold mr-2">
-              {isProfitable ? (
-                <span className="text-green-400">Profit</span>
-              ) : (
-                <span className="text-red-400">Loss</span>
-              )}
-            </p>
-            {isProfitable ? (
-              <FaArrowUp className="text-green-400" />
-            ) : (
-              <FaArrowDown className="text-red-400" />
-            )}
-          </div>
-          <p className="text-sm text-gray-400 mt-1">
-            {isProfitable ? '₹' + stats.profitLoss.toLocaleString() : '₹' + Math.abs(stats.profitLoss).toLocaleString()}
-          </p>
         </div>
       </div>
 

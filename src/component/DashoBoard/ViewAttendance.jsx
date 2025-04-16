@@ -8,8 +8,12 @@ import { FaCalendarAlt, FaUserCheck, FaSearch, FaTimes } from 'react-icons/fa';
 import { toast } from "react-hot-toast";
 
 export default function ViewAttendance() {
-  // Component States
-  const [empId, setEmpId] = useState("");
+  // Attempt to get the logged-in user from localStorage
+  const [loggedUser, setLoggedUser] = useState(null);
+
+  // We'll store only the employee's full name in a local state
+  const [empFullName, setEmpFullName] = useState("");
+
   const [empName, setEmpName] = useState("");
   const [attendanceData, setAttendanceData] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -21,6 +25,14 @@ export default function ViewAttendance() {
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const [tooltipContent, setTooltipContent] = useState({});
 
+  // On mount, fetch the user from localStorage
+  useEffect(() => {
+    const userData = localStorage.getItem("user");
+    if (userData) {
+      setLoggedUser(JSON.parse(userData));
+    }
+  }, []);
+
   // Format date to dd-mm-yyyy
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -30,15 +42,20 @@ export default function ViewAttendance() {
     return `${day}-${month}-${year}`;
   };
 
-  // Handle input change
-  const handleInputChange = (e) => {
-    setEmpId(e.target.value);
+  // Handle only the Employee Full Name input
+  const handleFullNameInputChange = (e) => {
+    setEmpFullName(e.target.value);
   };
 
   // Fetch attendance data
   const fetchAttendance = async () => {
-    if (!empId.trim()) {
-      setError("Please enter an Employee ID or Name");
+    if (!empFullName.trim()) {
+      setError("Please enter an Employee Full Name");
+      return;
+    }
+    // Make sure we have a valid user with ID
+    if (!loggedUser || !loggedUser.id) {
+      setError("No Subadmin found in localStorage. Please log in again.");
       return;
     }
 
@@ -46,13 +63,20 @@ export default function ViewAttendance() {
     setError("");
 
     try {
-      const encodedName = encodeURIComponent(empId);
-      console.log(`Fetching attendance for ${encodedName}`);
-      const response = await axios.get(`/public/getAttendanceByName/${encodedName}`);
+      const subadminId = loggedUser.id; // Retrieve subadminId from the logged-in user
+      const encodedFullName = encodeURIComponent(empFullName);
+      console.log(`Fetching attendance for Subadmin ID ${subadminId} and name ${encodedFullName}`);
+
+      const response = await axios.get(
+        `http://localhost:8282/api/employee/${subadminId}/${encodedFullName}/attendance`
+      );
       console.log("Attendance data:", response.data);
+
       setAttendanceData(response.data);
       setEmpName(response.data[0]?.employee?.firstName || "Employee");
-      updateStats(response.data);
+      
+      // If you have a function like updateStats, call it here if needed
+      // updateStats(response.data);
     } catch (error) {
       console.error("Error fetching attendance:", error);
       toast.error("Failed to load attendance data");
@@ -64,7 +88,7 @@ export default function ViewAttendance() {
   };
 
   const clearAttendance = () => {
-    setEmpId("");
+    setEmpFullName("");
     setAttendanceData([]);
     setError("");
     setEmpName("");
@@ -165,9 +189,9 @@ export default function ViewAttendance() {
             <div className="relative">
               <input
                 type="text"
-                value={empId}
-                onChange={handleInputChange}
-                placeholder="Enter Employee Name"
+                value={empFullName}
+                onChange={handleFullNameInputChange}
+                placeholder="Enter Employee Full Name"
                 className="w-full pl-10 pr-4 py-2 bg-slate-700 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-100 placeholder-gray-400 transition-all duration-300"
               />
               <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />

@@ -1,21 +1,36 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { FaTimes, FaSearch } from "react-icons/fa";
 
 const SalarySheet = () => {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     async function fetchSalaryData() {
       try {
         setLoading(true);
-        const response = await axios.get("/public/getAllSalary");
+        
+        // Get the subadmin ID from localStorage
+        const userData = JSON.parse(localStorage.getItem("user"));
+        if (!userData || !userData.id) {
+          throw new Error("User data not found. Please login again.");
+        }
+        
+        const subadminId = userData.id;
+        console.log("Fetching employees for subadmin ID:", subadminId);
+        
+        // Call the API with the correct endpoint
+        const response = await axios.get(`http://localhost:8282/api/employee/${subadminId}/employee/all`);
+        
+        console.log("Employee data received:", response.data);
         setEmployees(response.data);
       } catch (error) {
         console.error("Error fetching salary data:", error);
-        setError("Failed to load salary data");
+        setError(error.response?.data || "Failed to load salary data. " + error.message);
       } finally {
         setLoading(false);
       }
@@ -23,6 +38,13 @@ const SalarySheet = () => {
 
     fetchSalaryData();
   }, []);
+
+  // Filter employees based on search term
+  const filteredEmployees = employees.filter(
+    (employee) =>
+      employee.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.lastName?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (loading) {
     return (
@@ -50,8 +72,39 @@ const SalarySheet = () => {
 
   return (
     <div className="p-3 sm:p-6 bg-slate-900 min-h-screen text-gray-100">
-      <h1 className="text-xl sm:text-2xl font-bold mb-2 sm:mb-4 text-blue-400">WTL Tourism Pvt.Ltd</h1>
+      <h1 className="text-xl sm:text-2xl font-bold mb-2 sm:mb-4 text-blue-400">{employees[0]?.subadminName || "Employee"} Salary Sheet</h1>
       <p className="italic mb-4 text-gray-300">Employee Salary Sheet</p>
+      
+      {/* Search bar */}
+      <div className="mb-6 bg-slate-800 p-4 rounded-lg shadow-md border border-slate-700">
+        <div className="flex items-center">
+          <div className="relative flex-grow">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <FaSearch className="text-gray-400" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search by employee name..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="block w-full pl-10 pr-3 py-2 bg-slate-700 border border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100 placeholder-gray-400"
+            />
+          </div>
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm("")}
+              className="ml-2 p-2 bg-slate-700 rounded-md text-gray-400 hover:text-white transition-colors"
+            >
+              <FaTimes />
+            </button>
+          )}
+        </div>
+        {searchTerm && (
+          <div className="mt-2 text-sm text-gray-400">
+            Found {filteredEmployees.length} {filteredEmployees.length === 1 ? 'employee' : 'employees'}
+          </div>
+        )}
+      </div>
       
       {/* Desktop view - Full table */}
       <div className="hidden md:block overflow-x-auto">
@@ -69,9 +122,9 @@ const SalarySheet = () => {
             </tr>
           </thead>
           <tbody>
-            {employees.map((employee, index) => (
+            {filteredEmployees.map((employee, index) => (
               <tr
-                key={employee.id}
+                key={employee.empId}
                 className={index % 2 === 0 ? "bg-slate-800" : "bg-slate-700"}
               >
                 <td className="border border-slate-600 px-4 py-2">{employee.email}</td>
@@ -90,9 +143,9 @@ const SalarySheet = () => {
 
       {/* Mobile view - Card-based list */}
       <div className="md:hidden grid grid-cols-1 gap-4">
-        {employees.map((employee, index) => (
+        {filteredEmployees.map((employee, index) => (
           <div 
-            key={employee.id} 
+            key={employee.empId} 
             className="bg-slate-800 rounded-lg shadow-md p-4 border border-slate-700"
             onClick={() => viewEmployeeDetails(employee)}
           >
