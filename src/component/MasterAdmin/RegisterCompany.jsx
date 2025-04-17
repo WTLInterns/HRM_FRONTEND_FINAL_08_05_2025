@@ -103,25 +103,26 @@ const RegisterCompany = () => {
   const handleFileChange = (e, fileType) => {
     const file = e.target.files[0];
     if (file) {
+      console.log(`Selected ${fileType} file:`, file.name);
+      
+      // Create a preview URL using URL.createObjectURL for immediate display
+      const previewUrl = URL.createObjectURL(file);
+      
       setFormData({
         ...formData,
         [fileType]: file,
       });
       
-      // Create preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (fileType === 'logo') {
-          setLogoPreview(reader.result);
-        } else if (fileType === 'signature') {
-          setSignaturePreview(reader.result);
-          setFormData(prev => ({ ...prev, hasSignature: true }));
-        } else if (fileType === 'stampImage') {
-          setStampPreview(reader.result);
-          setFormData(prev => ({ ...prev, hasStamp: true }));
-        }
-      };
-      reader.readAsDataURL(file);
+      // Use the blob URL directly for immediate preview
+      if (fileType === 'logo') {
+        setLogoPreview(previewUrl);
+      } else if (fileType === 'signature') {
+        setSignaturePreview(previewUrl);
+        setFormData(prev => ({ ...prev, hasSignature: true }));
+      } else if (fileType === 'stampImage') {
+        setStampPreview(previewUrl);
+        setFormData(prev => ({ ...prev, hasStamp: true }));
+      }
     }
   };
 
@@ -544,8 +545,8 @@ const RegisterCompany = () => {
                 {logoPreview ? (
                   <div className="w-full h-full flex justify-center items-center">
                     <img 
-                      src={logoPreview} 
-                      alt="Logo Preview" 
+                      src={typeof formData.logo === 'string' ? `http://localhost:8282/images/profile/${formData.logo}` : logoPreview}
+                      alt="Company Logo" 
                       className="max-h-full max-w-full object-contain" 
                     />
                     <button
@@ -587,8 +588,8 @@ const RegisterCompany = () => {
                 {signaturePreview ? (
                   <div className="w-full h-full flex justify-center items-center">
                     <img 
-                      src={signaturePreview} 
-                      alt="Signature Preview" 
+                      src={typeof formData.signature === 'string' ? `http://localhost:8282/images/profile/${formData.signature}` : signaturePreview}
+                      alt="Signature" 
                       className="max-h-full max-w-full object-contain" 
                     />
                     <button
@@ -630,8 +631,8 @@ const RegisterCompany = () => {
                 {stampPreview ? (
                   <div className="w-full h-full flex justify-center items-center">
                     <img 
-                      src={stampPreview} 
-                      alt="Stamp Preview" 
+                      src={typeof formData.stampImage === 'string' ? `http://localhost:8282/images/profile/${formData.stampImage}` : stampPreview}
+                      alt="Company Stamp" 
                       className="max-h-full max-w-full object-contain" 
                     />
                     <button

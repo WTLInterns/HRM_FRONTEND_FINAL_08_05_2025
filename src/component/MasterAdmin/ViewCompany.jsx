@@ -309,22 +309,79 @@ const ViewCompany = () => {
                       {/* Documents */}
                       <td className="px-3 py-2 whitespace-nowrap">
                         <div className="flex flex-col space-y-1">
-                          <span 
-                            className={`px-1 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              company.signature ? 'bg-green-900/50 text-green-400 border border-green-800' : 'bg-gray-900/50 text-gray-400 border border-gray-800'
-                            } shadow-sm`}
-                            title="Signature"
-                          >
-                            <FaSignature className="mr-1" /> {company.signature ? "Yes" : "No"}
-                          </span>
-                          <span 
-                            className={`px-1 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              company.stampImg ? 'bg-green-900/50 text-green-400 border border-green-800' : 'bg-gray-900/50 text-gray-400 border border-gray-800'
-                            } shadow-sm`}
-                            title="Company Stamp"
-                          >
-                            <FaStamp className="mr-1" /> {company.stampImg ? "Yes" : "No"}
-                          </span>
+                          {company.signature ? (
+                            <div className="flex items-center bg-green-900/50 text-green-400 border border-green-800 px-1 py-0.5 rounded-full">
+                              <FaSignature className="mr-1" /> 
+                              <span className="text-xs font-semibold">Yes</span>
+                              <button 
+                                onClick={() => window.open(`http://localhost:8282/images/profile/${company.signature}`, '_blank')}
+                                className="ml-1 hover:text-blue-300 transition-colors"
+                                title="View signature"
+                              >
+                                <img 
+                                  src={`http://localhost:8282/images/profile/${company.signature}`}
+                                  alt="Signature"
+                                  className="h-4 w-4 rounded-sm object-cover inline-block ml-1"
+                                  onError={(e) => {
+                                    console.log(`Error loading signature for ${company.name}`);
+                                    e.target.style.display = 'none';
+                                  }}
+                                />
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="px-1 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-900/50 text-gray-400 border border-gray-800 shadow-sm">
+                              <FaSignature className="mr-1" /> No
+                            </span>
+                          )}
+                          
+                          {company.stampImg ? (
+                            <div className="flex items-center bg-green-900/50 text-green-400 border border-green-800 px-1 py-0.5 rounded-full">
+                              <FaStamp className="mr-1" /> 
+                              <span className="text-xs font-semibold">Yes</span>
+                              <button 
+                                onClick={() => window.open(`http://localhost:8282/images/profile/${company.stampImg}`, '_blank')}
+                                className="ml-1 hover:text-blue-300 transition-colors"
+                                title="View stamp"
+                              >
+                                <img 
+                                  src={`http://localhost:8282/images/profile/${company.stampImg}`}
+                                  alt="Stamp"
+                                  className="h-4 w-4 rounded-sm object-cover inline-block ml-1"
+                                  onError={(e) => {
+                                    console.log(`Error loading stamp for ${company.name}`);
+                                    e.target.style.display = 'none';
+                                  }}
+                                />
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="px-1 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-900/50 text-gray-400 border border-gray-800 shadow-sm">
+                              <FaStamp className="mr-1" /> No
+                            </span>
+                          )}
+                          
+                          {company.companylogo ? (
+                            <div className="flex items-center bg-green-900/50 text-green-400 border border-green-800 px-1 py-0.5 rounded-full">
+                              <FaBuilding className="mr-1" /> 
+                              <span className="text-xs font-semibold">Logo</span>
+                              <button 
+                                onClick={() => window.open(`http://localhost:8282/images/profile/${company.companylogo}`, '_blank')}
+                                className="ml-1 hover:text-blue-300 transition-colors"
+                                title="View logo"
+                              >
+                                <img 
+                                  src={`http://localhost:8282/images/profile/${company.companylogo}`}
+                                  alt="Logo"
+                                  className="h-4 w-4 rounded-sm object-cover inline-block ml-1"
+                                  onError={(e) => {
+                                    console.log(`Error loading logo for ${company.name}`);
+                                    e.target.style.display = 'none';
+                                  }}
+                                />
+                              </button>
+                            </div>
+                          ) : null}
                         </div>
                       </td>
                       

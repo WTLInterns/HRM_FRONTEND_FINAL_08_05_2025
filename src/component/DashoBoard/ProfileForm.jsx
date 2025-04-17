@@ -1,7 +1,184 @@
-import React, { useState, useEffect } from "react";
-import { FaCalendarAlt, FaRegEnvelope, FaPhone, FaUser, FaStamp, FaSignature, FaEdit, FaSave, FaTimes, FaCheck, FaIdCard, FaBriefcase, FaBuilding, FaUserTie } from "react-icons/fa";
+import React, { useState, useEffect, useMemo, useRef } from "react";
+import { FaCalendarAlt, FaRegEnvelope, FaPhone, FaUser, FaStamp, FaSignature, FaEdit, FaSave, FaTimes, FaCheck, FaIdCard, FaBriefcase, FaBuilding, FaUserTie, FaImage } from "react-icons/fa";
 import axios from "axios";
 import { toast } from "react-toastify";
+
+// ImageWithFallback component to handle image loading errors
+const ImageWithFallback = ({ src, alt, className, fallbackSrc, fallbackIcon: FallbackIcon, ...rest }) => {
+  const [imgSrc, setImgSrc] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  
+  const imageRef = useRef(null);
+
+  useEffect(() => {
+    if (!src) {
+      setImgSrc('');
+      setLoading(false);
+      setError(true);
+      return;
+    }
+
+    setLoading(true);
+    setError(false);
+
+    // Handle blob URLs directly
+    const isBlobUrl = src.startsWith('blob:');
+    if (isBlobUrl) {
+      setImgSrc(src);
+      setLoading(false);
+      return;
+    }
+
+    // Full path check - if it's a full URL, use it directly
+    const isFullPath = src.startsWith('http://') || src.startsWith('https://');
+    
+    // For local images stored on the server, construct the URL
+    let url = isFullPath ? src : `http://localhost:8282/images/profile/${src}`;
+    
+    // Add cache-busting parameter to avoid browser cache issues
+    url = `${url}${url.includes('?') ? '&' : '?'}t=${new Date().getTime()}`;
+    
+    // Create a new image to preload
+    const img = new Image();
+    
+    // Track if component unmounts during loading
+    let isMounted = true;
+    
+    img.onload = () => {
+      if (isMounted) {
+        setImgSrc(url);
+        setLoading(false);
+      }
+    };
+    
+    img.onerror = () => {
+      if (isMounted) {
+        setError(true);
+        setLoading(false);
+      }
+    };
+    
+    // Set the source to start loading
+    img.src = url;
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [src]);
+
+  if (!src || error) {
+    return (
+      <div className={`flex flex-col justify-center items-center bg-gray-100 ${className || ''}`}>
+        {FallbackIcon && <FallbackIcon className="text-gray-400 text-4xl" />}
+        {!FallbackIcon && (
+          <img 
+            src={fallbackSrc || "https://via.placeholder.com/150?text=No+Image"} 
+            alt={alt || "Placeholder"} 
+            className={`max-h-full max-w-full object-contain ${className || ''}`}
+            {...rest} 
+          />
+        )}
+        <span className="text-xs text-gray-500 mt-2">
+          {!src ? "No image available" : "Image not available"}
+        </span>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className={`flex flex-col justify-center items-center ${className || ''}`}>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-2"></div>
+        <span className="text-xs text-gray-500">Loading...</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative w-full h-full">
+      <img 
+        ref={imageRef} 
+        src={imgSrc} 
+        alt={alt} 
+        className={className || ''} 
+        {...rest} 
+      />
+    </div>
+  );
+};
+
+// Before component definition, add this debug utility
+// const debugImageLoading = false; // Set to true when debugging image loading issues
+
+// Helper function to check if server has CORS issues
+// const checkServerCorsSetup = async (url) => { ... };
+
+// Add this new component for better image upload previews
+const ImageUploadPreview = ({ 
+  label, 
+  preview, 
+  file, 
+  loading, 
+  onUpload, 
+  editMode, 
+  fallbackIcon: FallbackIcon 
+}) => {
+  return (
+    <div>
+      <p className="text-gray-400 text-sm mb-2">{label} {label === "Company Logo" && <span className="text-red-400">*</span>}</p>
+      <div className="relative w-32 h-32 md:w-40 md:h-40 bg-slate-800 rounded-lg overflow-hidden border border-slate-600">
+        {/* Show direct preview for new files */}
+        {file ? (
+          <div className="w-full h-full flex justify-center items-center bg-gray-800">
+            <img 
+              src={preview} 
+              alt={`${label}`} 
+              className="max-h-full max-w-full object-contain" 
+            />
+          </div>
+        ) : preview ? (
+          <ImageWithFallback
+            src={preview}
+            alt={label}
+            className="w-full h-full object-contain"
+            fallbackIcon={FallbackIcon}
+          />
+        ) : (
+          <div className="w-full h-full flex flex-col justify-center items-center">
+            {FallbackIcon && <FallbackIcon className="text-gray-400 text-4xl mb-2" />}
+            <span className="text-xs text-gray-400">No {label}</span>
+          </div>
+        )}
+        
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+          </div>
+        )}
+        
+        {editMode && (
+          <div className="absolute bottom-2 right-2 z-10">
+            <input
+              type="file"
+              id={`${label.replace(/\s+/g, '')}-upload`}
+              accept="image/jpeg,image/png,image/gif"
+              className="hidden"
+              onChange={onUpload}
+            />
+            <label 
+              htmlFor={`${label.replace(/\s+/g, '')}-upload`}
+              className="cursor-pointer bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 transition-all duration-300"
+              title={`Upload ${label}`}
+            >
+              <FaEdit />
+            </label>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
 const ProfileForm = () => {
   // State for user data from localStorage
@@ -38,6 +215,26 @@ const ProfileForm = () => {
   const [companyLogoPreview, setCompanyLogoPreview] = useState("");
   const [stampImgPreview, setStampImgPreview] = useState("");
   const [signaturePreview, setSignaturePreview] = useState("");
+  
+  // Debug toggle
+  // const [debugImages, setDebugImages] = useState(debugImageLoading);
+  
+  // Add these new states to track image loading status
+  const [logoLoading, setLogoLoading] = useState(false);
+  const [stampLoading, setStampLoading] = useState(false);
+  const [signatureLoading, setSignatureLoading] = useState(false);
+  
+  // Add state for tracking CORS issues
+  // const [corsStatus, setCorsStatus] = useState({ checked: false, working: true, message: "" });
+
+  // Add a function to help diagnose image loading issues
+  // const diagnoseSingleImageLoadIssue = async (filename, type) => { ... };
+
+  // Add a function to diagnose all image loading issues
+  // const diagnoseAllImageLoadIssues = async () => { ... };
+  
+  // Add effect to check for CORS issues on mount
+  // useEffect(() => { if (debugImages) { ... } }, [debugImages]);
   
   // Load user data on component mount
   useEffect(() => {
@@ -143,10 +340,17 @@ const ProfileForm = () => {
     fetchSubadminData();
   }, []);
   
-  // Function to get the correct image URL with fallback
-  const getImageUrl = (imagePath, defaultImage = '/image/lap2.jpg') => {
-    // Just use default images since we've verified the real images aren't available
-    return defaultImage;
+  // Modified function to fetch image URLs with the correct pattern
+  const getImageUrl = (filename) => {
+    if (!filename) return null;
+    
+    // First, check if it's an absolute URL
+    if (filename.startsWith('http://') || filename.startsWith('https://')) {
+      return filename;
+    }
+    
+    // Use the server URL pattern
+    return `http://localhost:8282/images/profile/${filename}`;
   };
 
   // Function to fetch images from the server - not used due to 500 error
@@ -171,16 +375,31 @@ const ProfileForm = () => {
     });
   };
 
-  // Dedicated effect for setting up images
+  // Update this effect to use the simpler getImageUrl function
   useEffect(() => {
-    if (profileData && profileData.id) {
-      console.log("Setting up default images");
-      // Just set default images since real ones aren't available
-      setCompanyLogoPreview("/image/lap2.jpg");
-      setStampImgPreview("/image/lap2.jpg");
-      setSignaturePreview("/image/lap2.jpg");
+    if (profileData) {
+      // Reset all image states first
+      setCompanyLogoPreview("");
+      setStampImgPreview("");
+      setSignaturePreview("");
+      
+      setTimeout(() => {
+        // Set image previews if available - just passing the filename
+        if (profileData.companylogo) {
+          console.log(`Setting company logo preview to filename: ${profileData.companylogo}`);
+          setCompanyLogoPreview(profileData.companylogo);
+        }
+        if (profileData.stampImg) {
+          console.log(`Setting stamp preview to filename: ${profileData.stampImg}`);
+          setStampImgPreview(profileData.stampImg);
+        }
+        if (profileData.signature) {
+          console.log(`Setting signature preview to filename: ${profileData.signature}`);
+          setSignaturePreview(profileData.signature);
+        }
+      }, 100); // Small delay to ensure reset happens first
     }
-  }, [profileData.id]); // Only re-run when the ID changes
+  }, [profileData]);
   
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -192,20 +411,53 @@ const ProfileForm = () => {
 
   const handleEdit = () => {
     setTempData({...profileData});
+    
+    // Make sure image previews are set when entering edit mode
+    if (profileData.companylogo) {
+      console.log(`Setting company logo preview for edit mode: ${profileData.companylogo}`);
+      // We'll pass the filename directly - the ImageWithFallback component will construct the URL
+      setCompanyLogoPreview(profileData.companylogo);
+    }
+    
+    if (profileData.stampImg) {
+      console.log(`Setting stamp preview for edit mode: ${profileData.stampImg}`);
+      setStampImgPreview(profileData.stampImg);
+    }
+    
+    if (profileData.signature) {
+      console.log(`Setting signature preview for edit mode: ${profileData.signature}`);
+      setSignaturePreview(profileData.signature);
+    }
+    
     setEditMode(true);
   };
 
   const handleCancel = () => {
     setEditMode(false);
+    
     // Reset file states
     setCompanyLogoFile(null);
     setStampImgFile(null);
     setSignatureFile(null);
     
-    // Reset preview URLs to default images
-    setCompanyLogoPreview("/image/lap2.jpg");
-    setStampImgPreview("/image/lap2.jpg");
-    setSignaturePreview("/image/lap2.jpg");
+    // Reset preview URLs to the current values from profileData
+    if (profileData.companylogo) {
+      setCompanyLogoPreview(profileData.companylogo);
+    } else {
+      setCompanyLogoPreview("");
+    }
+    
+    if (profileData.stampImg) {
+      setStampImgPreview(profileData.stampImg);
+    } else {
+      setStampImgPreview("");
+    }
+    
+    if (profileData.signature) {
+      setSignaturePreview(profileData.signature);
+    } else {
+      setSignaturePreview("");
+    }
   };
 
   const handleSave = async () => {
@@ -214,6 +466,22 @@ const ProfileForm = () => {
       
       // Create form data for the API
       const formData = new FormData();
+      
+      console.log("Preparing form data with values:", {
+        id: profileData.id,
+        name: tempData.name,
+        lastname: tempData.lastname,
+        email: tempData.email,
+        phoneno: tempData.phoneno,
+        registercompanyname: tempData.registercompanyname,
+        status: tempData.status || 'active',
+        gstno: tempData.gstno || '',
+        cinno: tempData.cinno || '',
+        companyurl: tempData.companyurl || '',
+        address: tempData.address || ''
+      });
+      
+      // Required fields from API endpoint
       formData.append('name', tempData.name);
       formData.append('lastname', tempData.lastname);
       formData.append('email', tempData.email);
@@ -221,48 +489,201 @@ const ProfileForm = () => {
       formData.append('registercompanyname', tempData.registercompanyname);
       formData.append('status', tempData.status || 'active');
       
-      // Add files if selected
+      // Make sure to include all required params even if they're empty
+      formData.append('gstno', tempData.gstno || '');
+      formData.append('cinno', tempData.cinno || '');
+      formData.append('companyurl', tempData.companyurl || '');
+      formData.append('address', tempData.address || '');
+      
+      // The logic for handling files - for each file, either upload a new one or pass the existing filename
+      let hasUploadedFiles = false;
+      
+      // Company Logo handling
       if (companyLogoFile) {
-        formData.append('companylogo', companyLogoFile);
+        // New file being uploaded
+        const fileExt = companyLogoFile.name.split('.').pop().toLowerCase();
+        if (['jpg', 'jpeg', 'png', 'gif'].includes(fileExt)) {
+          if (companyLogoFile.size <= 20 * 1024 * 1024) {
+            formData.append('companylogo', companyLogoFile);
+            console.log('Adding new company logo file:', companyLogoFile.name);
+            hasUploadedFiles = true;
+          } else {
+            toast.warning(`Logo file is too large (${Math.round(companyLogoFile.size/1024/1024)} MB). Maximum size is 20MB.`);
+          }
+        } else {
+          toast.warning(`Invalid file type for logo: ${fileExt}. Use jpg, jpeg, png, or gif.`);
+        }
+      } else {
+        // Pass empty parameter to avoid null pointer exception
+        formData.append('companylogo', new Blob([], {type: 'application/octet-stream'}));
+        console.log('No new company logo, sending empty file');
       }
       
+      // Stamp Image handling
       if (stampImgFile) {
-        formData.append('stampImg', stampImgFile);
+        // New file being uploaded
+        const fileExt = stampImgFile.name.split('.').pop().toLowerCase();
+        if (['jpg', 'jpeg', 'png', 'gif'].includes(fileExt)) {
+          if (stampImgFile.size <= 20 * 1024 * 1024) {
+            formData.append('stampImg', stampImgFile);
+            console.log('Adding new stamp image file:', stampImgFile.name);
+            hasUploadedFiles = true;
+          } else {
+            toast.warning(`Stamp file is too large (${Math.round(stampImgFile.size/1024/1024)} MB). Maximum size is 20MB.`);
+          }
+        } else {
+          toast.warning(`Invalid file type for stamp: ${fileExt}. Use jpg, jpeg, png, or gif.`);
+        }
+      } else {
+        // Pass empty parameter to avoid null pointer exception
+        formData.append('stampImg', new Blob([], {type: 'application/octet-stream'}));
+        console.log('No new stamp image, sending empty file');
       }
       
+      // Signature handling
       if (signatureFile) {
-        formData.append('signature', signatureFile);
+        // New file being uploaded
+        const fileExt = signatureFile.name.split('.').pop().toLowerCase();
+        if (['jpg', 'jpeg', 'png', 'gif'].includes(fileExt)) {
+          if (signatureFile.size <= 20 * 1024 * 1024) {
+            formData.append('signature', signatureFile);
+            console.log('Adding new signature file:', signatureFile.name);
+            hasUploadedFiles = true;
+          } else {
+            toast.warning(`Signature file is too large (${Math.round(signatureFile.size/1024/1024)} MB). Maximum size is 20MB.`);
+          }
+        } else {
+          toast.warning(`Invalid file type for signature: ${fileExt}. Use jpg, jpeg, png, or gif.`);
+        }
+      } else {
+        // Pass empty parameter to avoid null pointer exception
+        formData.append('signature', new Blob([], {type: 'application/octet-stream'}));
+        console.log('No new signature, sending empty file');
+      }
+      
+      // Add existing filenames as text fields for reference
+      if (profileData.companylogo) {
+        formData.append('existingCompanyLogo', profileData.companylogo);
+        console.log('Including existing company logo reference:', profileData.companylogo);
+      }
+      
+      if (profileData.stampImg) {
+        formData.append('existingStampImg', profileData.stampImg);
+        console.log('Including existing stamp image reference:', profileData.stampImg);
+      }
+      
+      if (profileData.signature) {
+        formData.append('existingSignature', profileData.signature);
+        console.log('Including existing signature reference:', profileData.signature);
+      }
+      
+      // Log the form data for debugging
+      console.log('Submitting form data with the following fields:');
+      for (let pair of formData.entries()) {
+        console.log(pair[0], typeof pair[1] === 'object' ? 'File: ' + pair[1].name : pair[1]);
       }
       
       // Call the API
-      const response = await axios.put(
-        `http://localhost:8282/api/subadmin/update-fields/${profileData.id}`,
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data'
+      try {
+        console.log(`Sending update request to: http://localhost:8282/api/subadmin/update-fields/${profileData.id}`);
+        const response = await axios.put(
+          `http://localhost:8282/api/subadmin/update-fields/${profileData.id}`,
+          formData,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            },
+            timeout: 30000
           }
+        );
+        
+        console.log("Profile update response:", response.data);
+        
+        // Handle successful update
+        toast.success("Profile updated successfully!");
+        
+        // Fetch updated data
+        try {
+          // Add a small delay to allow server to complete file processing
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          // Fetch the updated user data
+          const fetchResponse = await axios.get(
+            `http://localhost:8282/api/subadmin/subadmin-by-email/${response.data.email}`
+          );
+          
+          if (fetchResponse.data) {
+            const updatedUser = fetchResponse.data;
+            localStorage.setItem("user", JSON.stringify(updatedUser));
+            
+            // Reset file states since upload is complete
+            setCompanyLogoFile(null);
+            setStampImgFile(null);
+            setSignatureFile(null);
+            
+            // Update state with the newest data
+            setProfileData(updatedUser);
+            
+            // Set image previews with the updated filenames
+            setTimeout(() => {
+              if (updatedUser.companylogo) {
+                console.log(`Setting company logo preview to: ${updatedUser.companylogo}`);
+                setCompanyLogoPreview(updatedUser.companylogo);
+              }
+              
+              if (updatedUser.stampImg) {
+                console.log(`Setting stamp preview to: ${updatedUser.stampImg}`);
+                setStampImgPreview(updatedUser.stampImg);
+              }
+              
+              if (updatedUser.signature) {
+                console.log(`Setting signature preview to: ${updatedUser.signature}`);
+                setSignaturePreview(updatedUser.signature);
+              }
+            }, 500);
+          }
+        } catch (fetchError) {
+          console.error("Error fetching updated user data:", fetchError);
+          // Fall back to using the data from the update response
+          const updatedUser = response.data;
+          localStorage.setItem("user", JSON.stringify(updatedUser));
+          setProfileData(updatedUser);
+          
+          // Set image previews with a delay
+          setTimeout(() => {
+            if (updatedUser.companylogo) {
+              setCompanyLogoPreview(updatedUser.companylogo);
+            }
+            
+            if (updatedUser.stampImg) {
+              setStampImgPreview(updatedUser.stampImg);
+            }
+            
+            if (updatedUser.signature) {
+              setSignaturePreview(updatedUser.signature);
+            }
+          }, 500);
         }
-      );
-      
-      console.log("Profile update response:", response.data);
-      
-      // Update local storage with the new data
-      const updatedUser = response.data;
-      localStorage.setItem("user", JSON.stringify(updatedUser));
-      
-      // Update state
-      setProfileData(updatedUser);
-      setEditMode(false);
-      setShowSuccessModal(true);
-      
-      // Hide success modal after 3 seconds
-      setTimeout(() => {
-        setShowSuccessModal(false);
-      }, 3000);
+        
+        setEditMode(false);
+        setShowSuccessModal(true);
+        
+        // Hide success modal after 3 seconds
+        setTimeout(() => {
+          setShowSuccessModal(false);
+        }, 3000);
+      } catch (axiosError) {
+        console.error("Error updating profile:", axiosError);
+        
+        // Get detailed error message from the server if available
+        const errorMessage = axiosError.response?.data || "Failed to update profile. Please try again.";
+        console.log("Backend error details:", errorMessage);
+        
+        toast.error(typeof errorMessage === 'string' ? errorMessage : "Failed to update profile. Please try again.");
+      }
     } catch (error) {
-      console.error("Error updating profile:", error);
-      toast.error(error.response?.data || "Failed to update profile. Please try again.");
+      console.error("Error in form submission:", error);
+      toast.error("An unexpected error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -272,7 +693,9 @@ const ProfileForm = () => {
     const file = e.target.files[0];
     if (!file) return;
     
-    // Create a preview URL for the image
+    console.log(`Selected ${type} file:`, file.name);
+    
+    // Create a preview URL using URL.createObjectURL
     const previewUrl = URL.createObjectURL(file);
     
     switch(type) {
@@ -293,114 +716,87 @@ const ProfileForm = () => {
     }
   };
 
-  // Separate component for image with fallbacks
-  const ImageWithFallback = ({ filename, altText, type, onLoaded }) => {
-    const [srcIndex, setSrcIndex] = useState(0);
-    const [error, setError] = useState(false);
-    const [attempted, setAttempted] = useState(false);
+  // Function to handle loading of images and provide fallbacks
+  const handleImageLoad = (type) => {
+    let imageUrl = null;
+    let filename = null;
     
-    // Only try one direct API call on initial mount to prevent excessive console errors
-    useEffect(() => {
-      if (attempted || !filename) {
-        return;
-      }
-      
-      setAttempted(true);
-      
-      // Define local fallback images to use when remote images fail
-      const localFallbacks = {
-        logo: "/image/lap2.jpg",
-        stamp: "/image/lap2.jpg",
-        signature: "/image/lap2.jpg"
-      };
-      
-      // Define all possible image source paths in priority order
-      const sources = [
-        // Add direct paths that might work
-        `http://localhost:8282/images/${filename}`,
-        `http://localhost:8282/upload/${filename}`,
-        `http://localhost:8282/static/images/${filename}`,
-        `http://localhost:8282/static/resources/${filename}`,
-        // Use local fallback as last resort
-        localFallbacks[type]
-      ];
-      
-      // Try to load the image directly
-      const img = new Image();
-      let currentSourceIndex = 0;
-      
-      img.onload = () => {
-        setSrcIndex(currentSourceIndex);
-        console.log(`Successfully loaded ${type} image from ${sources[currentSourceIndex]}`);
-        onLoaded();
-      };
-      
-      img.onerror = () => {
-        currentSourceIndex++;
-        if (currentSourceIndex < sources.length) {
-          console.log(`Trying next source for ${type}: ${sources[currentSourceIndex]}`);
-          img.src = sources[currentSourceIndex];
-        } else {
-          console.log(`All sources failed for ${type}, using placeholder`);
-          setError(true);
-          onLoaded();
-        }
-      };
-      
-      // Start loading the first source
-      img.src = sources[currentSourceIndex];
-      
-    }, [filename, type, onLoaded, attempted]);
-    
-    // Define local fallback images to use when remote images fail
-    const localFallbacks = {
-      logo: "/image/lap2.jpg",
-      stamp: "/image/lap2.jpg",
-      signature: "/image/lap2.jpg"
-    };
-    
-    // All sources failed, show placeholder
-    if (error || !filename) {
-      return (
-        <div className="text-center text-gray-400">
-          {type === 'logo' && <FaBuilding size={32} className="mx-auto mb-2" />}
-          {type === 'stamp' && <FaStamp size={32} className="mx-auto mb-2" />}
-          {type === 'signature' && <FaSignature size={32} className="mx-auto mb-2" />}
-          <p>No {altText.toLowerCase()} available</p>
-        </div>
-      );
+    switch(type) {
+      case 'logo':
+        filename = profileData.companylogo;
+        break;
+      case 'stamp':
+        filename = profileData.stampImg;
+        break;
+      case 'signature':
+        filename = profileData.signature;
+        break;
+      default:
+        return null;
     }
+
+    if (!filename) return null;
     
-    // Define all possible image source paths in priority order
-    const sources = [
-      `http://localhost:8282/images/${filename}`,
-      `http://localhost:8282/upload/${filename}`,
-      `http://localhost:8282/static/images/${filename}`,
-      `http://localhost:8282/static/resources/${filename}`,
-      localFallbacks[type]
-    ];
+    // Try first with the standard URL
+    imageUrl = `http://localhost:8282/images/profile/${filename}`;
     
-    return (
-      <img 
-        src={srcIndex < sources.length ? sources[srcIndex] : localFallbacks[type]} 
-        alt={altText} 
-        className="max-h-40 max-w-full object-contain"
-        onError={() => {
-          if (srcIndex < sources.length - 1) {
-            setSrcIndex(prevIndex => prevIndex + 1);
-          } else {
-            setError(true);
-            onLoaded();
-          }
-        }}
-        onLoad={onLoaded}
-      />
-    );
+    return imageUrl;
   };
+
+  useEffect(() => {
+    if (profileData) {
+      // Set image previews if available
+      if (profileData.companylogo) {
+        setCompanyLogoPreview(handleImageLoad('logo'));
+      }
+      if (profileData.stampImg) {
+        setStampImgPreview(handleImageLoad('stamp'));
+      }
+      if (profileData.signature) {
+        setSignaturePreview(handleImageLoad('signature'));
+      }
+    }
+  }, [profileData]);
+
+  // Add an effect to toggle debug mode
+  // useEffect(() => {
+  //   const debugParam = new URLSearchParams(window.location.search).get('debug-images');
+  //   if (debugParam === 'true') {
+  //     setDebugImages(true);
+  //     console.log("Image debugging enabled via URL parameter");
+  //   }
+  // }, []);
+
+  // Add console logs to debug image loading
+  // useEffect(() => {
+  //   if (profileData?.company?.companylogo) {
+  //     console.log("Company logo URL:", profileData.company.companylogo);
+  //     const logoUrl = profileData.company.companylogo.startsWith("http") 
+  //       ? profileData.company.companylogo
+  //       : `${process.env.REACT_APP_API_URL}${profileData.company.companylogo}`;
+  //     setCompanyLogoPreview(logoUrl);
+  //   }
+  //   
+  //   if (profileData?.company?.stampImg) {
+  //     console.log("Stamp image URL:", profileData.company.stampImg);
+  //     const stampUrl = profileData.company.stampImg.startsWith("http")
+  //       ? profileData.company.stampImg 
+  //       : `${process.env.REACT_APP_API_URL}${profileData.company.stampImg}`;
+  //     setStampImgPreview(stampUrl);
+  //   }
+  //   
+  //   if (profileData?.company?.signature) {
+  //     console.log("Signature URL:", profileData.company.signature);
+  //     const signatureUrl = profileData.company.signature.startsWith("http")
+  //       ? profileData.company.signature
+  //       : `${process.env.REACT_APP_API_URL}${profileData.company.signature}`;
+  //     setSignaturePreview(signatureUrl);
+  //   }
+  // }, [profileData]);
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-full">
+      <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
       </div>
     );
@@ -437,7 +833,7 @@ const ProfileForm = () => {
                   </>
                 ) : (
                   <>
-                    <FaSave /> Save
+                <FaSave /> Save
                   </>
                 )}
               </button>
@@ -595,123 +991,45 @@ const ProfileForm = () => {
       
       {/* Images Section */}
       <div className="bg-slate-700 p-6 rounded-lg">
-        <h3 className="text-xl font-bold text-blue-400 mb-4 flex items-center gap-2">
-          <FaIdCard /> Images & Signature
-        </h3>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-bold text-blue-400 flex items-center gap-2">
+            <FaIdCard /> Images & Signature
+          </h3>
+        </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Company Logo */}
-          <div>
-            <p className="text-gray-400 text-sm mb-2">Company Logo</p>
-            <div className="relative bg-slate-800 rounded-lg overflow-hidden flex flex-col items-center justify-center border-2 border-dashed border-slate-600 p-4 h-48">
-              {/* <ImageWithFallback
-                filename={profileData.companylogo}
-                altText="Company Logo"
-                type="logo"
-                onLoaded={() => console.log("Company logo loaded")}
-              /> */}
-
-              <img 
-                src={`http://localhost:8282/images/profile/${profileData.companylogo}`} 
-                alt="Company Logo" 
-                className="max-h-40 max-w-full object-contain"
-              />
-              
-              {editMode && (
-                <div className="absolute bottom-2 right-2">
-                  <input
-                    type="file"
-                    id="companyLogoUpload"
-                    value={tempData.companylogo}
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => handleImageUpload(e, 'logo')}
-                  />
-                  <label 
-                    htmlFor="companyLogoUpload" 
-                    className="cursor-pointer bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 transition-all duration-300"
-                  >
-                    <FaEdit />
-                  </label>
-                </div>
-              )}
-            </div>
-          </div>
+          <ImageUploadPreview
+            label="Company Logo"
+            preview={companyLogoFile ? companyLogoPreview : companyLogoPreview}
+            file={companyLogoFile}
+            loading={logoLoading}
+            onUpload={(e) => handleImageUpload(e, 'logo')}
+            editMode={editMode}
+            fallbackIcon={FaImage}
+          />
           
           {/* Stamp Image */}
-          <div>
-            <p className="text-gray-400 text-sm mb-2">Stamp Image</p>
-            <div className="relative bg-slate-800 rounded-lg overflow-hidden flex flex-col items-center justify-center border-2 border-dashed border-slate-600 p-4 h-48">
-              {/* <ImageWithFallback
-                filename={profileData.stampImg}
-                altText="Stamp"
-                type="stamp"
-                onLoaded={() => console.log("Stamp image loaded")}
-              /> */}
-
-              <img 
-                src={`http://localhost:8282/images/profile/${profileData.stampImg}`} 
-                alt="Stamp" 
-                className="max-h-40 max-w-full object-contain"
-              />
-              
-              {editMode && (
-                <div className="absolute bottom-2 right-2">
-                  <input
-                    type="file"
-                    id="stampImageUpload"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => handleImageUpload(e, 'stamp')}
-                  />
-                  <label 
-                    htmlFor="stampImageUpload" 
-                    className="cursor-pointer bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 transition-all duration-300"
-                  >
-                    <FaEdit />
-                  </label>
-                </div>
-              )}
-            </div>
-          </div>
+          <ImageUploadPreview
+            label="Stamp Image"
+            preview={stampImgFile ? stampImgPreview : stampImgPreview}
+            file={stampImgFile}
+            loading={stampLoading}
+            onUpload={(e) => handleImageUpload(e, 'stamp')}
+            editMode={editMode}
+            fallbackIcon={FaStamp}
+          />
           
           {/* Signature */}
-          <div>
-            <p className="text-gray-400 text-sm mb-2">Signature</p>
-            <div className="relative bg-slate-800 rounded-lg overflow-hidden flex flex-col items-center justify-center border-2 border-dashed border-slate-600 p-4 h-48">
-              {/* <ImageWithFallback
-                filename={profileData.signature}
-                altText="Signature"
-                type="signature"
-                onLoaded={() => console.log("Signature image loaded")}
-              /> */}
-
-              <img 
-                src={`http://localhost:8282/images/profile/${profileData.signature}`} 
-                value={tempData.signature}
-                alt="Signature" 
-                className="max-h-40 max-w-full object-contain"
-              />
-              
-              {editMode && (
-                <div className="absolute bottom-2 right-2">
-                  <input
-                    type="file"
-                    id="signatureUpload"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => handleImageUpload(e, 'signature')}
-                  />
-                  <label 
-                    htmlFor="signatureUpload" 
-                    className="cursor-pointer bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 transition-all duration-300"
-                  >
-                    <FaEdit />
-                  </label>
-                </div>
-              )}
-            </div>
-          </div>
+          <ImageUploadPreview
+            label="Signature"
+            preview={signatureFile ? signaturePreview : signaturePreview}
+            file={signatureFile}
+            loading={signatureLoading}
+            onUpload={(e) => handleImageUpload(e, 'signature')}
+            editMode={editMode}
+            fallbackIcon={FaSignature}
+          />
         </div>
       </div>
       

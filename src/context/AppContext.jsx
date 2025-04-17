@@ -282,8 +282,20 @@ export const AppProvider = ({ children }) => {
   const fetchAllEmp = async () => {
     try {
       setLoading(true);
-      // Fetch employees from the backend API
-      const response = await axios.get('http://localhost:8282/api/employee/2/employee/all');
+      
+      // Get the current user from localStorage
+      const currentUser = JSON.parse(localStorage.getItem('user'));
+      
+      if (!currentUser || !currentUser.id) {
+        throw new Error('User information not found');
+      }
+      
+      // Use the current user's SubAdmin ID instead of hardcoding it
+      const subAdminId = currentUser.id;
+      console.log('Fetching employees for SubAdmin ID:', subAdminId);
+      
+      // Fetch employees from the backend API with the dynamic SubAdmin ID
+      const response = await axios.get(`http://localhost:8282/api/employee/${subAdminId}/employee/all`);
       const employeesData = response.data;
       
       // Update state with fetched employees

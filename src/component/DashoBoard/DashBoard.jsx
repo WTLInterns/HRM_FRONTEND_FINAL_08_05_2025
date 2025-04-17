@@ -379,7 +379,7 @@ const Dashboard = () => {
             <div className="w-24 h-24 rounded-full bg-slate-100 border-4 border-blue-800 overflow-hidden mb-4 group-hover:border-blue-400 transition-all duration-300 shadow-lg group-hover:shadow-blue-900/40">
               {userData.companylogo && logoLoadAttempt < 1 ? (
                 <img 
-                  src={`${BACKEND_URL}/upload/${userData.companylogo}`} 
+                  src={`http://localhost:8282/images/profile/${userData.companylogo}`} 
                   alt="Company Logo" 
                   className="w-full h-full object-cover group-hover:scale-110 transition-all duration-300"
                   onError={(e) => {
@@ -405,7 +405,7 @@ const Dashboard = () => {
             </h2>
             {userData.name && (
               <p className="text-blue-400 group-hover:text-blue-300 transition-all duration-300 text-center">
-                {userData.name} {userData.lastname}
+                Hrm Dashboard
               </p>
             )}
           </Link>
