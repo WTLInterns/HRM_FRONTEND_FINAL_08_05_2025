@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import { FaCalendarAlt, FaRegEnvelope, FaPhone, FaUser, FaStamp, FaSignature, FaEdit, FaSave, FaTimes, FaCheck, FaIdCard, FaBriefcase, FaBuilding, FaUserTie, FaImage } from "react-icons/fa";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { useApp } from "../../context/AppContext";
 
 // ImageWithFallback component to handle image loading errors
 const ImageWithFallback = ({ src, alt, className, fallbackSrc, fallbackIcon: FallbackIcon, ...rest }) => {
@@ -122,15 +123,16 @@ const ImageUploadPreview = ({
   loading, 
   onUpload, 
   editMode, 
-  fallbackIcon: FallbackIcon 
+  fallbackIcon: FallbackIcon,
+  isDarkMode 
 }) => {
   return (
     <div>
-      <p className="text-gray-400 text-sm mb-2">{label} {label === "Company Logo" && <span className="text-red-400">*</span>}</p>
-      <div className="relative w-32 h-32 md:w-40 md:h-40 bg-slate-800 rounded-lg overflow-hidden border border-slate-600">
+      <p className={`text-sm mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>{label} {label === "Company Logo" && <span className="text-red-400">*</span>}</p>
+      <div className={`relative w-32 h-32 md:w-40 md:h-40 ${isDarkMode ? 'bg-slate-800 border-slate-600' : 'bg-gray-100 border-gray-300'} rounded-lg overflow-hidden border`}>
         {/* Show direct preview for new files */}
         {file ? (
-          <div className="w-full h-full flex justify-center items-center bg-gray-800">
+          <div className={`w-full h-full flex justify-center items-center ${isDarkMode ? 'bg-gray-800' : 'bg-gray-200'}`}>
             <img 
               src={preview} 
               alt={`${label}`} 
@@ -146,8 +148,8 @@ const ImageUploadPreview = ({
           />
         ) : (
           <div className="w-full h-full flex flex-col justify-center items-center">
-            {FallbackIcon && <FallbackIcon className="text-gray-400 text-4xl mb-2" />}
-            <span className="text-xs text-gray-400">No {label}</span>
+            {FallbackIcon && <FallbackIcon className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'} text-4xl mb-2`} />}
+            <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>No {label}</span>
           </div>
         )}
         
@@ -168,10 +170,9 @@ const ImageUploadPreview = ({
             />
             <label 
               htmlFor={`${label.replace(/\s+/g, '')}-upload`}
-              className="cursor-pointer bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 transition-all duration-300"
-              title={`Upload ${label}`}
+              className={`p-2 rounded-full ${isDarkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'} text-white cursor-pointer transition-colors duration-200 shadow-md`}
             >
-              <FaEdit />
+              <FaEdit size={14} />
             </label>
           </div>
         )}
@@ -181,7 +182,7 @@ const ImageUploadPreview = ({
 };
 
 const ProfileForm = () => {
-  // State for user data from localStorage
+  const { isDarkMode } = useApp();
   const [profileData, setProfileData] = useState({
     id: "",
     name: "",
@@ -811,9 +812,9 @@ const ProfileForm = () => {
   }
 
   return (
-    <div className="bg-slate-800 text-white rounded-lg shadow-xl p-6 max-w-5xl mx-auto animate-fadeIn">
+    <div className={`p-6 ${isDarkMode ? 'bg-slate-900 text-white' : 'bg-gray-50 text-gray-800'} min-h-screen`}>      
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-blue-400 flex items-center gap-2">
+        <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-blue-400' : 'text-blue-600'} flex items-center gap-2`}>
           <FaUser className="mr-2" /> Profile Information
         </h2>
         
@@ -821,10 +822,10 @@ const ProfileForm = () => {
         <div>
           {editMode ? (
             <div className="flex gap-2">
-              <button
-                onClick={handleSave}
+              <button 
+                onClick={handleSave} 
+                className={`flex items-center gap-2 px-4 py-2 rounded-md ${isDarkMode ? 'bg-green-600' : 'bg-green-500'} text-white font-medium hover:bg-green-700 transition duration-300 ease-in-out`}
                 disabled={loading}
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-all duration-300 disabled:opacity-50"
               >
                 {loading ? (
                   <>
@@ -833,22 +834,21 @@ const ProfileForm = () => {
                   </>
                 ) : (
                   <>
-                <FaSave /> Save
+                    <FaSave /> Save
                   </>
                 )}
               </button>
-              <button
-                onClick={handleCancel}
-                disabled={loading}
-                className="bg-slate-600 hover:bg-slate-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-all duration-300 disabled:opacity-50"
+              <button 
+                onClick={handleCancel} 
+                className={`flex items-center gap-2 px-4 py-2 rounded-md ${isDarkMode ? 'bg-red-600' : 'bg-red-500'} text-white font-medium hover:bg-red-700 transition duration-300 ease-in-out`}
               >
                 <FaTimes /> Cancel
               </button>
             </div>
           ) : (
-            <button
-              onClick={handleEdit}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-all duration-300"
+            <button 
+              onClick={handleEdit} 
+              className={`flex items-center gap-2 px-4 py-2 rounded-md ${isDarkMode ? 'bg-blue-600' : 'bg-blue-500'} text-white font-medium hover:bg-blue-700 transition duration-300 ease-in-out`}
             >
               <FaEdit /> Edit Profile
             </button>
@@ -857,83 +857,83 @@ const ProfileForm = () => {
       </div>
       
       {/* Profile Information */}
-      <div className="bg-slate-700 p-6 rounded-lg mb-6">
+      <div className={`${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} p-6 rounded-lg shadow-md border mb-6`}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Personal Information */}
-          <div>
-            <h3 className="text-xl font-bold text-blue-400 mb-4 flex items-center gap-2">
-              <FaIdCard /> Personal Information
+          <div className={`${isDarkMode ? 'bg-slate-700 border-slate-600' : 'bg-gray-50 border-gray-200'} p-5 rounded-lg shadow border`}>
+            <h3 className={`text-lg font-semibold mb-4 flex items-center ${isDarkMode ? 'text-blue-300' : 'text-blue-600'}`}>
+              <FaIdCard className="mr-2" /> Personal Information
             </h3>
             
             <div className="space-y-4">
               <div>
-                <p className="text-gray-400 text-sm mb-1">First Name</p>
-                <div className="flex items-center gap-2">
-                  <FaUser className="text-blue-400" />
+                <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>First Name</label>
+                <div className={`flex items-center ${isDarkMode ? 'bg-slate-700' : 'bg-gray-100'} px-3 py-2 rounded-md`}>
+                  <FaUser className={`mr-2 ${isDarkMode ? 'text-blue-300' : 'text-blue-500'}`} />
                   {editMode ? (
                     <input
                       type="text"
                       name="name"
                       value={tempData.name}
                       onChange={handleInputChange}
-                      className="bg-slate-800 px-3 py-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className={`w-full ${isDarkMode ? 'bg-slate-700 text-white' : 'bg-gray-100 text-gray-800'} focus:outline-none`}
                     />
                   ) : (
-                    <span className="text-white">{profileData.name}</span>
+                    <div className="font-medium">{profileData.name}</div>
                   )}
                 </div>
               </div>
               
               <div>
-                <p className="text-gray-400 text-sm mb-1">Last Name</p>
-                <div className="flex items-center gap-2">
-                  <FaUser className="text-blue-400" />
+                <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>Last Name</label>
+                <div className={`flex items-center ${isDarkMode ? 'bg-slate-700' : 'bg-gray-100'} px-3 py-2 rounded-md`}>
+                  <FaUser className={`mr-2 ${isDarkMode ? 'text-blue-300' : 'text-blue-500'}`} />
                   {editMode ? (
                     <input
                       type="text"
                       name="lastname"
                       value={tempData.lastname}
                       onChange={handleInputChange}
-                      className="bg-slate-800 px-3 py-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className={`w-full ${isDarkMode ? 'bg-slate-700 text-white' : 'bg-gray-100 text-gray-800'} focus:outline-none`}
                     />
                   ) : (
-                    <span className="text-white">{profileData.lastname}</span>
+                    <div className="font-medium">{profileData.lastname}</div>
                   )}
                 </div>
               </div>
               
               <div>
-                <p className="text-gray-400 text-sm mb-1">Email</p>
-                <div className="flex items-center gap-2">
-                  <FaRegEnvelope className="text-blue-400" />
+                <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>Email</label>
+                <div className={`flex items-center ${isDarkMode ? 'bg-slate-700' : 'bg-gray-100'} px-3 py-2 rounded-md`}>
+                  <FaRegEnvelope className={`mr-2 ${isDarkMode ? 'text-blue-300' : 'text-blue-500'}`} />
                   {editMode ? (
                     <input
                       type="email"
                       name="email"
                       value={tempData.email}
                       onChange={handleInputChange}
-                      className="bg-slate-800 px-3 py-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className={`w-full ${isDarkMode ? 'bg-slate-700 text-white' : 'bg-gray-100 text-gray-800'} focus:outline-none`}
                     />
                   ) : (
-                    <span className="text-white">{profileData.email}</span>
+                    <div className="font-medium">{profileData.email}</div>
                   )}
                 </div>
               </div>
               
               <div>
-                <p className="text-gray-400 text-sm mb-1">Phone Number</p>
-                <div className="flex items-center gap-2">
-                  <FaPhone className="text-blue-400" />
+                <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>Phone Number</label>
+                <div className={`flex items-center ${isDarkMode ? 'bg-slate-700' : 'bg-gray-100'} px-3 py-2 rounded-md`}>
+                  <FaPhone className={`mr-2 ${isDarkMode ? 'text-blue-300' : 'text-blue-500'}`} />
                   {editMode ? (
                     <input
                       type="text"
                       name="phoneno"
                       value={tempData.phoneno}
                       onChange={handleInputChange}
-                      className="bg-slate-800 px-3 py-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className={`w-full ${isDarkMode ? 'bg-slate-700 text-white' : 'bg-gray-100 text-gray-800'} focus:outline-none`}
                     />
                   ) : (
-                    <span className="text-white">{profileData.phoneno}</span>
+                    <div className="font-medium">{profileData.phoneno}</div>
                   )}
                 </div>
               </div>
@@ -941,46 +941,46 @@ const ProfileForm = () => {
           </div>
           
           {/* Company Information */}
-          <div>
-            <h3 className="text-xl font-bold text-blue-400 mb-4 flex items-center gap-2">
-              <FaBuilding /> Company Information
+          <div className={`${isDarkMode ? 'bg-slate-700 border-slate-600' : 'bg-gray-50 border-gray-200'} p-5 rounded-lg shadow border`}>
+            <h3 className={`text-lg font-semibold mb-4 flex items-center ${isDarkMode ? 'text-blue-300' : 'text-blue-600'}`}>
+              <FaBuilding className="mr-2" /> Company Information
             </h3>
             
             <div className="space-y-4">
               <div>
-                <p className="text-gray-400 text-sm mb-1">Company Name</p>
-                <div className="flex items-center gap-2">
-                  <FaBuilding className="text-blue-400" />
+                <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>Company Name</label>
+                <div className={`flex items-center ${isDarkMode ? 'bg-slate-700' : 'bg-gray-100'} px-3 py-2 rounded-md`}>
+                  <FaBuilding className={`mr-2 ${isDarkMode ? 'text-blue-300' : 'text-blue-500'}`} />
                   {editMode ? (
                     <input
                       type="text"
                       name="registercompanyname"
                       value={tempData.registercompanyname}
                       onChange={handleInputChange}
-                      className="bg-slate-800 px-3 py-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className={`w-full ${isDarkMode ? 'bg-slate-700 text-white' : 'bg-gray-100 text-gray-800'} focus:outline-none`}
                     />
                   ) : (
-                    <span className="text-white">{profileData.registercompanyname}</span>
+                    <div className="font-medium">{profileData.registercompanyname}</div>
                   )}
                 </div>
               </div>
               
               <div>
-                <p className="text-gray-400 text-sm mb-1">Status</p>
-                <div className="flex items-center gap-2">
-                  <FaUserTie className="text-blue-400" />
+                <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>Status</label>
+                <div className={`flex items-center ${isDarkMode ? 'bg-slate-700' : 'bg-gray-100'} px-3 py-2 rounded-md`}>
+                  <FaUserTie className={`mr-2 ${isDarkMode ? 'text-blue-300' : 'text-blue-500'}`} />
                   {editMode ? (
                     <select
                       name="status"
                       value={tempData.status}
                       onChange={handleInputChange}
-                      className="bg-slate-800 px-3 py-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className={`w-full ${isDarkMode ? 'bg-slate-700 text-white' : 'bg-gray-100 text-gray-800'} focus:outline-none`}
                     >
                       <option value="active">Active</option>
                       <option value="inactive">Inactive</option>
                     </select>
                   ) : (
-                    <span className="text-white capitalize">{profileData.status}</span>
+                    <div className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-800'} capitalize`}>{profileData.status}</div>
                   )}
                 </div>
               </div>
@@ -990,9 +990,9 @@ const ProfileForm = () => {
       </div>
       
       {/* Images Section */}
-      <div className="bg-slate-700 p-6 rounded-lg">
+      <div className={`${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} p-6 rounded-lg shadow-md border`}>
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-bold text-blue-400 flex items-center gap-2">
+          <h3 className={`text-xl font-bold ${isDarkMode ? 'text-blue-400' : 'text-blue-600'} flex items-center gap-2`}>
             <FaIdCard /> Images & Signature
           </h3>
         </div>
@@ -1007,6 +1007,7 @@ const ProfileForm = () => {
             onUpload={(e) => handleImageUpload(e, 'logo')}
             editMode={editMode}
             fallbackIcon={FaImage}
+            isDarkMode={isDarkMode}
           />
           
           {/* Stamp Image */}
@@ -1018,6 +1019,7 @@ const ProfileForm = () => {
             onUpload={(e) => handleImageUpload(e, 'stamp')}
             editMode={editMode}
             fallbackIcon={FaStamp}
+            isDarkMode={isDarkMode}
           />
           
           {/* Signature */}
@@ -1029,6 +1031,7 @@ const ProfileForm = () => {
             onUpload={(e) => handleImageUpload(e, 'signature')}
             editMode={editMode}
             fallbackIcon={FaSignature}
+            isDarkMode={isDarkMode}
           />
         </div>
       </div>
@@ -1037,25 +1040,24 @@ const ProfileForm = () => {
       <div className="md:hidden flex justify-center mt-6">
         {editMode ? (
           <div className="flex gap-2">
-            <button
-              onClick={handleSave}
+            <button 
+              onClick={handleSave} 
+              className={`flex items-center gap-2 px-4 py-2 rounded-md ${isDarkMode ? 'bg-green-600' : 'bg-green-500'} text-white font-medium hover:bg-green-700 transition duration-300 ease-in-out`}
               disabled={loading}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-all duration-300 disabled:opacity-50"
             >
               {loading ? "Saving..." : <><FaSave /> Save</>}
             </button>
-            <button
-              onClick={handleCancel}
-              disabled={loading}
-              className="bg-slate-600 hover:bg-slate-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-all duration-300 disabled:opacity-50"
+            <button 
+              onClick={handleCancel} 
+              className={`flex items-center gap-2 px-4 py-2 rounded-md ${isDarkMode ? 'bg-red-600' : 'bg-red-500'} text-white font-medium hover:bg-red-700 transition duration-300 ease-in-out`}
             >
               <FaTimes /> Cancel
             </button>
           </div>
         ) : (
-          <button
-            onClick={handleEdit}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-all duration-300"
+          <button 
+            onClick={handleEdit} 
+            className={`flex items-center gap-2 px-4 py-2 rounded-md ${isDarkMode ? 'bg-blue-600' : 'bg-blue-500'} text-white font-medium hover:bg-blue-700 transition duration-300 ease-in-out`}
           >
             <FaEdit /> Edit Profile
           </button>
@@ -1064,21 +1066,24 @@ const ProfileForm = () => {
       
       {/* Success Modal */}
       {showSuccessModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 animate-fadeIn">
-          <div className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
-          <div className="bg-slate-800 border border-blue-600 rounded-lg shadow-2xl p-6 z-10 w-full max-w-md mx-4 transform transition-all animate-scaleIn">
-            <div className="flex items-center gap-3 text-green-500 mb-4">
-              <div className="bg-green-500 rounded-full p-2 text-white">
-                <FaCheck size={24} />
-              </div>
-              <h3 className="text-xl font-bold text-white">Success</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fadeIn">
+          <div 
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm" 
+            onClick={() => setShowSuccessModal(false)}
+          ></div>
+          <div className={`${isDarkMode ? 'bg-slate-800 border-green-800' : 'bg-white border-green-200'} rounded-lg shadow-xl border w-full max-w-md p-6 z-10 animate-scaleIn`}>
+            <div className={`flex items-center mb-4 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
+              <FaCheck className="text-2xl mr-3 animate-pulse" />
+              <h3 className="text-xl font-semibold">Profile Updated Successfully</h3>
             </div>
-            <p className="text-gray-300 mb-6">Profile information updated successfully!</p>
+            <p className={`mb-6 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+              Your profile has been updated successfully. You may need to log out and log back in to see all changes.
+            </p>
             <button
               onClick={() => setShowSuccessModal(false)}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md transition-all duration-300"
+              className={`w-full py-2 ${isDarkMode ? 'bg-green-600' : 'bg-green-500'} text-white rounded-md hover:bg-green-700 transition-all duration-300`}
             >
-              Close
+              OK
             </button>
           </div>
         </div>

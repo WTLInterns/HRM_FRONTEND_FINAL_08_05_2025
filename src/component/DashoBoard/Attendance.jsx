@@ -4,10 +4,13 @@ import { FaCheckCircle, FaTimes, FaCalendarAlt } from "react-icons/fa";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import "./calendar-custom.css";
+import "./theme-calendar.css";
 import axios from "axios";
 import { toast } from "react-hot-toast";
+import { useApp } from "../../context/AppContext";
 
 export default function Attendance() {
+  const { isDarkMode } = useApp();
   // Component States
   const [employeeName, setEmployeeName] = useState("");
   const [selectedDates, setSelectedDates] = useState([]);
@@ -455,53 +458,23 @@ export default function Attendance() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-6 animate-fadeIn">
-      {error && (
-        <div className="bg-red-500 text-white p-3 mb-4 rounded animate-shake">
-          {error}
-        </div>
-      )}
+    <div className={`p-6 ${isDarkMode ? 'bg-slate-900 text-white' : 'bg-gray-50 text-gray-800'} min-h-screen animate-fadeIn`}>
+      <h1 className={`text-2xl font-bold mb-6 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>
+        <FaCalendarAlt className="inline-block mr-2" /> Mark Attendance
+      </h1>
 
-      {/* Success Modal */}
-      {showSuccessModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fadeIn">
-          <div
-            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-            onClick={() => setShowSuccessModal(false)}
-          ></div>
-          <div className="bg-slate-800 rounded-lg shadow-xl border border-green-800 w-full max-w-md p-6 z-10 animate-scaleIn">
-            <div className="flex items-center mb-4 text-green-500">
-              <FaCheckCircle className="text-2xl mr-3 animate-pulse" />
-              <h3 className="text-xl font-semibold">Attendance Marked Successfully</h3>
-            </div>
-            <div className="mb-6">
-              <p className="text-gray-200">
-                Attendance has been marked for {localStorage.getItem("submittedDatesCount") || 0} day(s)
-              </p>
-            </div>
-            <button
-              onClick={() => setShowSuccessModal(false)}
-              className="w-full py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-all duration-300"
-            >
-              OK
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Attendance Marking Form */}
-      <div className="w-full bg-slate-800 shadow-lg rounded-lg mb-8 border border-blue-900 animate-slideIn">
-        <div className="p-6">
-          <h2 className="text-2xl font-semibold mb-6 text-gray-100">Mark Attendance</h2>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Employee Name */}
+      {/* Attendance Form */}
+      <div className={`${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} p-5 rounded-lg shadow-md border mb-8`}>
+        <div className="flex flex-col md:flex-row gap-6">
+          <div className="w-full md:w-2/3">
+            <h2 className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-blue-300' : 'text-blue-600'}`}>Select Employee</h2>
             <div>
-              <label className="block text-sm font-medium text-gray-200 mb-2">
+              <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'} mb-2`}>
                 Employee Name
               </label>
               <input
                 type="text"
-                className="w-full p-2 border border-gray-700 rounded-lg bg-slate-700 text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className={`w-full p-2 border ${isDarkMode ? 'border-gray-700 bg-slate-700 text-gray-100' : 'border-gray-300 bg-white text-gray-900'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
                 value={employeeName}
                 onChange={e => setEmployeeName(e.target.value)}
                 required
@@ -509,19 +482,19 @@ export default function Attendance() {
             </div>
 
             {/* Calendar */}
-            <div className="relative">
+            <div className="relative mt-4">
               <Calendar
                 onClickDay={(value, event) => handleTileClick({ date: value, view: "month" }, event)}
                 value={null}
                 tileContent={tileContent}
-                className="bg-slate-800 text-gray-100 border-gray-700 rounded-lg w-full"
+                className={`${isDarkMode ? 'bg-slate-800 text-gray-100 border-gray-700' : 'bg-white text-gray-900 border-gray-300'} rounded-lg w-full calendar-theme-${isDarkMode ? 'dark' : 'light'}`}
                 showNeighboringMonth={false}
               />
 
               {/* Status Dropdown */}
               {showStatusDropdown && (
                 <div
-                  className="absolute z-50 bg-slate-700 rounded-lg shadow-xl border border-gray-600"
+                  className={`absolute z-50 ${isDarkMode ? 'bg-slate-700 border-gray-600' : 'bg-white border-gray-300'} rounded-lg shadow-xl border`}
                   style={{
                     top: `${dropdownPosition.y}px`,
                     left: `${dropdownPosition.x}px`,
@@ -529,16 +502,16 @@ export default function Attendance() {
                     width: "180px"
                   }}
                 >
-                  <div className="p-2 border-b border-gray-600 text-center font-medium text-gray-300">
+                  <div className={`p-2 ${isDarkMode ? 'border-gray-600 text-gray-300' : 'border-gray-300 text-gray-700'} border-b text-center font-medium`}>
                     {formatDate(selectedDate)}
                   </div>
                   {statusOptions.map(status => (
                     <button
                       key={status}
                       type="button"
-                      className={`block w-full text-left px-4 py-2 hover:bg-slate-600 text-gray-100 ${
+                      className={`block w-full text-left px-4 py-2 ${isDarkMode ? 'hover:bg-slate-600 text-gray-100' : 'hover:bg-gray-100 text-gray-800'} ${
                         attendanceRecords.find(r => r.date === selectedDate)?.status === status
-                          ? "bg-blue-600"
+                          ? isDarkMode ? "bg-blue-600" : "bg-blue-500"
                           : ""
                       }`}
                       onClick={() => handleStatusSelect(status)}
@@ -546,11 +519,11 @@ export default function Attendance() {
                       {status}
                     </button>
                   ))}
-                  <div className="p-2 border-t border-gray-600">
+                  <div className={`p-2 ${isDarkMode ? 'border-gray-600' : 'border-gray-300'} border-t`}>
                     <button
                       type="button"
                       onClick={handleCloseDropdown}
-                      className="w-full py-1 bg-gray-600 text-white rounded hover:bg-gray-500 transition flex items-center justify-center gap-1"
+                      className={`w-full py-1 ${isDarkMode ? 'bg-gray-600 hover:bg-gray-500' : 'bg-gray-300 hover:bg-gray-400'} ${isDarkMode ? 'text-white' : 'text-gray-800'} rounded transition flex items-center justify-center gap-1`}
                     >
                       <FaTimes className="text-xs" /> Cancel
                     </button>
@@ -558,66 +531,79 @@ export default function Attendance() {
                 </div>
               )}
             </div>
+          </div>
 
-            {/* Selected Dates Summary */}
-            {selectedDates.length > 0 && (
-              <div className="mt-4">
-                <h3 className="text-lg font-medium text-gray-200 mb-2">
-                  Selected Dates
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {selectedDates.map(date => {
-                    const record = attendanceRecords.find(r => r.date === date);
-                    return (
+          {/* Selected Dates Summary - Moved to right side */}
+          <div className="w-full md:w-1/3">
+            <h2 className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-blue-300' : 'text-blue-600'}`}>Selected Dates</h2>
+            {selectedDates.length > 0 ? (
+              <div className="space-y-4">
+                <div className={`${isDarkMode ? 'bg-slate-700' : 'bg-gray-50'} rounded-lg p-4`}>
+                  <div className="flex justify-between items-center mb-3">
+                    <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                      Total Selected: {selectedDates.length}
+                    </span>
+                    <button
+                      onClick={handleCancelAll}
+                      className={`text-sm ${isDarkMode ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-500'}`}
+                    >
+                      Clear All
+                    </button>
+                  </div>
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                    {attendanceRecords.map((record) => (
                       <div
-                        key={date}
-                        className={`px-3 py-1 rounded-full flex items-center gap-2 ${statusColors[record?.status]}`}
+                        key={record.date}
+                        className={`flex justify-between items-center p-2 rounded ${
+                          isDarkMode ? 'bg-slate-600 hover:bg-slate-500' : 'bg-white hover:bg-gray-50'
+                        } shadow-sm`}
                       >
-                        <span>{formatDate(date)}</span>
-                        <span className="font-medium">{record?.status}</span>
+                        <div>
+                          <div className={`text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                            {formatDate(record.date)}
+                          </div>
+                          <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                            {record.status}
+                          </div>
+                        </div>
                         <button
-                          type="button"
-                          onClick={() => handleRemoveDate(date)}
-                          className="text-gray-400 hover:text-red-400"
+                          onClick={() => handleRemoveDate(record.date)}
+                          className={`p-1 rounded-full ${
+                            isDarkMode
+                              ? 'hover:bg-slate-400 text-gray-300'
+                              : 'hover:bg-gray-200 text-gray-600'
+                          }`}
                         >
-                          <FaTimes />
+                          <FaTimes className="text-xs" />
                         </button>
                       </div>
-                    );
-                  })}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
-
-            {/* Submit and Cancel Buttons */}
-            {selectedDates.length > 0 && (
-              <div className="flex gap-4">
                 <button
-                  type="submit"
+                  onClick={handleSubmit}
                   disabled={submitting}
-                  className="flex-1 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center justify-center gap-2 text-lg"
+                  className={`w-full py-2 px-4 rounded-lg ${
+                    isDarkMode
+                      ? 'bg-blue-600 hover:bg-blue-500 text-white'
+                      : 'bg-blue-500 hover:bg-blue-400 text-white'
+                  } transition duration-200 flex items-center justify-center gap-2`}
                 >
                   {submitting ? (
-                    <>
-                      <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full mr-2"></div>
-                      Submitting...
-                    </>
+                    <>Processing...</>
                   ) : (
                     <>
                       <FaCheckCircle /> Submit Attendance
                     </>
                   )}
                 </button>
-                <button
-                  type="button"
-                  onClick={handleCancelAll}
-                  className="flex-1 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition flex items-center justify-center gap-2 text-lg"
-                >
-                  <FaTimes /> Cancel All
-                </button>
+              </div>
+            ) : (
+              <div className={`text-center p-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                No dates selected
               </div>
             )}
-          </form>
+          </div>
         </div>
       </div>
     </div>

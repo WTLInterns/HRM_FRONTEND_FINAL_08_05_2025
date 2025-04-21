@@ -8,6 +8,7 @@ import WtlSign from "../../assets/WTL Sign.jpg"         // The WTL sign
 import axios from "axios"
 import { toast } from "react-hot-toast"
 import { CloudCog } from "lucide-react"
+import { useApp } from "../../context/AppContext"
 
 // Helper: format date from "YYYY-MM-DD" to "DD-MM-YYYY"
 const formatDate = (dateStr) => {
@@ -100,6 +101,7 @@ const calculateSalaryComponents = (yearlyCTC) => {
 }
 
 export default function SalaryReport() {
+  const { isDarkMode } = useApp();
   const [employeeName, setEmployeeName] = useState("")
   // Company details will be retrieved from local storage
   const [startDate, setStartDate] = useState("")
@@ -750,58 +752,61 @@ export default function SalaryReport() {
   };
 
   return (
-    <div className="p-4 md:p-6 bg-slate-900 min-h-screen text-gray-100 animate-fadeIn">
-      <h1 className="text-2xl font-bold mb-6 text-blue-400">Salary Slip Generator</h1>
+    <div className={`px-6 py-8 ${isDarkMode ? 'bg-slate-900 text-white' : 'bg-gray-50 text-gray-800'}`}>
+      <h1 className={`text-2xl font-bold mb-6 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>Salary Slip Generator</h1>
       
       {/* Form */}
-      <div className="mb-8 bg-slate-800 p-5 rounded-lg shadow-lg border border-slate-700">
+      <div className={`${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} p-5 rounded-lg shadow-lg border`}>
         <div className="grid grid-cols-1 md:grid-cols-1 gap-4 mb-4">
           <div>
 
-            <label htmlFor="employeeName" className="text-sm font-semibold mb-1 text-gray-300">
+            <label htmlFor="employeeName" className={`block mb-2 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
               Employee Full Name
             </label>
             <input
               type="text"
               id="employeeName"
+              className={`w-full p-2.5 rounded-md ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} border focus:ring-blue-500 focus:border-blue-500`}
+              placeholder="Enter Full Name (e.g. Rohit More)"
               value={employeeName}
               onChange={(e) => setEmployeeName(e.target.value)}
-              className="w-full p-2 border border-slate-600 rounded-md bg-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Enter Full Name (e.g. Rohit More)"
+              required
             />
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="startDate" className="text-sm font-semibold mb-1 text-gray-300">
+            <label htmlFor="startDate" className={`block mb-2 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
               Start Date
             </label>
             <input
               type="date"
               id="startDate"
+              className={`w-full p-2.5 rounded-md ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} border focus:ring-blue-500 focus:border-blue-500`}
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="w-full p-2 border border-slate-600 rounded-md bg-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              required
             />
           </div>
           <div>
-            <label htmlFor="endDate" className="text-sm font-semibold mb-1 text-gray-300">
+            <label htmlFor="endDate" className={`block mb-2 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
               End Date
             </label>
             <input
               type="date"
               id="endDate"
+              className={`w-full p-2.5 rounded-md ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} border focus:ring-blue-500 focus:border-blue-500`}
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="w-full p-2 border border-slate-600 rounded-md bg-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              required
             />
           </div>
         </div>
-        <div className="mt-4 flex space-x-3">
+        <div className="flex flex-wrap gap-3 mt-4">
           <button
             onClick={handleSubmit}
             disabled={loading || !employeeName || !startDate || !endDate}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:bg-blue-800 disabled:text-gray-300 disabled:cursor-not-allowed"
+            className={`px-4 py-2 text-white rounded-md transition-colors ${isDarkMode ? 'bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:text-gray-300' : 'bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 disabled:text-gray-100'} disabled:cursor-not-allowed`}
           >
             {loading ? "Processing..." : "Generate Report"}
           </button>
@@ -809,7 +814,7 @@ export default function SalaryReport() {
           {salaryReport && (
             <button
               onClick={generateSalarySlipPDF}
-              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+              className={`px-4 py-2 text-white rounded-md transition-colors ${isDarkMode ? 'bg-green-600 hover:bg-green-700' : 'bg-green-500 hover:bg-green-600'}`}
             >
               Download PDF
             </button>
@@ -820,13 +825,13 @@ export default function SalaryReport() {
 
       {/* Salary Preview */}
       {salaryReport && (
-        <div className="bg-slate-800 p-5 rounded-lg shadow-lg border border-slate-700">
-          <h2 className="text-xl font-semibold mb-4 text-blue-400">Salary Report Preview</h2>
+        <div className={`p-5 rounded-lg shadow-lg border mt-8 ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+          <h2 className={`text-xl font-semibold mb-4 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>Salary Report Preview</h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <h3 className="text-lg font-medium mb-2 text-gray-300">Employee Information</h3>
-              <div className="bg-slate-700 p-4 rounded-md">
+              <h3 className={`text-lg font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Employee Information</h3>
+              <div className={`p-4 rounded-md ${isDarkMode ? 'bg-slate-700' : 'bg-gray-100'}`}>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <p className="text-sm text-gray-400">Name</p>
@@ -851,8 +856,8 @@ export default function SalaryReport() {
             </div>
             
             <div>
-              <h3 className="text-lg font-medium mb-2 text-gray-300">Bank Details</h3>
-              <div className="bg-slate-700 p-4 rounded-md">
+              <h3 className={`text-lg font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Bank Details</h3>
+              <div className={`p-4 rounded-md ${isDarkMode ? 'bg-slate-700' : 'bg-gray-100'}`}>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <p className="text-sm text-gray-400">Bank Name</p>
@@ -876,8 +881,8 @@ export default function SalaryReport() {
           </div>
           
           <div className="mt-6">
-            <h3 className="text-lg font-medium mb-2 text-gray-300">Attendance Summary</h3>
-            <div className="bg-slate-700 p-4 rounded-md">
+            <h3 className={`text-lg font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Attendance Summary</h3>
+            <div className={`p-4 rounded-md ${isDarkMode ? 'bg-slate-700' : 'bg-gray-100'}`}>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div>
                   <p className="text-sm text-gray-400">Working Days</p>
@@ -900,8 +905,8 @@ export default function SalaryReport() {
           </div>
           
           <div className="mt-6">
-            <h3 className="text-lg font-medium mb-2 text-gray-300">Salary Details</h3>
-            <div className="bg-slate-700 p-4 rounded-md">
+            <h3 className={`text-lg font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Salary Details</h3>
+            <div className={`p-4 rounded-md ${isDarkMode ? 'bg-slate-700' : 'bg-gray-100'}`}>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <div>
                   <p className="text-sm text-gray-400">Basic</p>
@@ -932,8 +937,8 @@ export default function SalaryReport() {
           </div>
           
           <div className="mt-6">
-            <h3 className="text-lg font-medium mb-2 text-gray-300">Deductions</h3>
-            <div className="bg-slate-700 p-4 rounded-md">
+            <h3 className={`text-lg font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Deductions</h3>
+            <div className={`p-4 rounded-md ${isDarkMode ? 'bg-slate-700' : 'bg-gray-100'}`}>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <div>
                   <p className="text-sm text-gray-400">Professional Tax</p>
@@ -956,8 +961,8 @@ export default function SalaryReport() {
           </div>
           
           <div className="mt-6">
-            <h3 className="text-lg font-medium mb-2 text-gray-300">Net Payable</h3>
-            <div className="bg-slate-700 p-4 rounded-md">
+            <h3 className={`text-lg font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Net Payable</h3>
+            <div className={`p-4 rounded-md ${isDarkMode ? 'bg-slate-700' : 'bg-gray-100'}`}>
               <div className="grid grid-cols-1 gap-4">
                 <div>
                   <p className="text-sm text-gray-400">Net Payable Salary</p>

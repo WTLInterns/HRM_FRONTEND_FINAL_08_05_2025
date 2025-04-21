@@ -453,4 +453,56 @@
 
 .calendar-small .react-calendar__tile--active {
   animation: pulse 1.5s infinite;
-} 
+}
+
+/* Add these styles to your calendar-custom.css file */
+
+/* Light mode calendar styles */
+.light-calendar .react-calendar__month-view__weekdays__weekday {
+  color: #1e293b !important; /* dark text for day names */
+}
+
+.light-calendar .react-calendar__tile {
+  color: #1e293b !important; /* dark text for date numbers */
+}
+
+.light-calendar .react-calendar__navigation button {
+  color: #1e293b !important; /* dark text for navigation buttons */
+}
+
+.light-calendar .react-calendar__navigation__label__labelText {
+  color: #1e293b !important; /* dark text for month/year display */
+}
+
+/* Dark mode calendar styles - ensure these work properly */
+.dark-calendar .react-calendar__month-view__weekdays__weekday {
+  color: #f1f5f9 !important; /* light text for day names */
+}
+
+.dark-calendar .react-calendar__tile {
+  color: #f1f5f9 !important; /* light text for date numbers */
+}
+
+.dark-calendar .react-calendar__navigation button {
+  color: #f1f5f9 !important; /* light text for navigation buttons */
+}
+
+.dark-calendar .react-calendar__navigation__label__labelText {
+  color: #f1f5f9 !important; /* light text for month/year display */
+}
+
+/* Ensure hover states are visible in both modes */
+.react-calendar__tile:hover {
+  background-color: rgba(59, 130, 246, 0.2) !important;
+}
+
+/* Make sure the active date is clearly visible */
+.react-calendar__tile--active {
+  background-color: #3b82f6 !important;
+  color: white !important;
+}
+
+/* Ensure the navigation buttons are visible */
+.react-calendar__navigation button:enabled:hover {
+  background-color: rgba(59, 130, 246, 0.2) !important;
+}

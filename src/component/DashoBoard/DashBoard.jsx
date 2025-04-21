@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { Link, Routes, Route } from "react-router-dom";
+import { Link, Routes, Route, useNavigate } from "react-router-dom";
 import Attendance from "./Attendance";
 import SalarySheet from "./SalarySheet";
 import SalarySlip from "./SalarySlip";
@@ -8,12 +8,13 @@ import ViewAttendance from "./ViewAttendance";
 import { IoIosLogOut, IoIosPersonAdd } from "react-icons/io";
 import { LuNotebookPen } from "react-icons/lu";
 import { MdOutlinePageview, MdKeyboardArrowDown, MdKeyboardArrowRight, MdDashboard } from "react-icons/md";
-import { FaReceipt, FaCalendarAlt, FaRegIdCard, FaExclamationTriangle, FaTimes, FaSignOutAlt, FaChartPie, FaArrowUp, FaArrowDown } from "react-icons/fa";
+import { FaReceipt, FaCalendarAlt, FaRegIdCard, FaExclamationTriangle, FaTimes, FaSignOutAlt, FaChartPie, FaArrowUp, FaArrowDown, FaMoon, FaSun, FaFileAlt } from "react-icons/fa";
 import { BiSolidSpreadsheet } from "react-icons/bi";
 import { HiMenu, HiX } from "react-icons/hi";
 import { useApp } from "../../context/AppContext";
 import Home from "./Home";
 import ProfileForm from "./ProfileForm";
+import Certificates from "./Certificates";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement } from 'chart.js';
 import { Pie, Bar } from 'react-chartjs-2';
 import "./animations.css";
@@ -22,9 +23,11 @@ import "./animations.css";
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement);
 
 const Dashboard = () => {
-  const { fetchAllEmp, emp, logoutUser } = useApp();
+  const navigate = useNavigate();
+  const { fetchAllEmp, emp, logoutUser, isDarkMode, toggleTheme } = useApp();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [attendanceDropdownOpen, setAttendanceDropdownOpen] = useState(false);
+
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isProfitable, setIsProfitable] = useState(false);
@@ -308,6 +311,8 @@ const Dashboard = () => {
     setAttendanceDropdownOpen(!attendanceDropdownOpen);
   };
 
+
+
   const handleLogoutClick = () => {
     setShowLogoutModal(true);
   };
@@ -337,6 +342,11 @@ const Dashboard = () => {
     },
     { to: "/dashboard/salarysheet", label: "Salary Sheet", icon: <BiSolidSpreadsheet /> },
     { to: "/dashboard/salaryslip", label: "Salary Slip", icon: <FaReceipt /> },
+    { 
+      to: "/dashboard/certificates", 
+      label: "Certificates", 
+      icon: <FaFileAlt /> 
+    }
   ];
 
   // Handle logo error without infinite loops
@@ -350,8 +360,13 @@ const Dashboard = () => {
     setLogoLoadAttempt(prev => prev + 1);
   };
 
+  // Additional useEffect to log theme changes for debugging
+  useEffect(() => {
+    console.log("Dashboard: Theme changed to", isDarkMode ? "dark" : "light");
+  }, [isDarkMode]);
+
   return (
-    <div className="flex h-screen overflow-hidden bg-gradient-to-br from-slate-900 to-blue-900 text-gray-100">
+    <div className={`flex h-screen overflow-hidden ${isDarkMode ? 'bg-gradient-to-br from-slate-900 to-blue-900 text-gray-100' : 'bg-gradient-to-br from-blue-50 to-white text-gray-800'}`}>
       
       {/* Mobile menu button - only visible on small screens */}
       <div className="lg:hidden fixed top-4 left-4 z-50">
@@ -365,18 +380,16 @@ const Dashboard = () => {
 
       {/* Mobile Header - only visible on small screens */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-center p-4 bg-slate-800 text-white shadow-md">
-        <h1 className="text-xl font-bold animate-pulse-slow">{userData.registercompanyname || "WTL HRM Dashboard"}</h1>
+        <h1 className="text-xl font-bold animate-pulse-slow">{userData.registercompanyname || "TECH mahindra"}</h1>
       </div>
 
       {/* Sidebar */}
       <aside 
-        className={`${
-          mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-        } lg:translate-x-0 transition-transform duration-300 ease-in-out fixed lg:relative left-0 h-full w-64 bg-slate-800 text-white shadow-xl z-40 overflow-y-auto flex flex-col`}
+        className={`w-64 h-full ${isDarkMode ? 'bg-slate-800' : 'bg-white shadow-lg'} fixed inset-y-0 left-0 z-50 lg:relative lg:translate-x-0 transform transition-transform duration-300 ease-in-out ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
       >
-        <div className="flex flex-col items-center px-4 py-5 bg-slate-900 border-b border-slate-700">
+        <div className={`flex flex-col items-center px-4 py-5 ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-blue-50 border-blue-200'} border-b relative`}>
           <Link to="/dashboard/profileform" className="group transition-all duration-300">
-            <div className="w-24 h-24 rounded-full bg-slate-100 border-4 border-blue-800 overflow-hidden mb-4 group-hover:border-blue-400 transition-all duration-300 shadow-lg group-hover:shadow-blue-900/40">
+            <div className={`w-24 h-24 rounded-full ${isDarkMode ? 'bg-slate-100 border-blue-800' : 'bg-white border-blue-500'} border-4 overflow-hidden mb-4 group-hover:border-blue-400 transition-all duration-300 shadow-lg group-hover:shadow-blue-900/40`}>
               {userData.companylogo && logoLoadAttempt < 1 ? (
                 <img 
                   src={`http://localhost:8282/images/profile/${userData.companylogo}`} 
@@ -385,7 +398,7 @@ const Dashboard = () => {
                   onError={(e) => {
                     handleLogoError();
                     e.target.src = defaultImage;
-                    e.target.onerror = null; // Prevent infinite loop
+                    e.target.onerror = null;
                   }}
                 />
               ) : (
@@ -400,15 +413,28 @@ const Dashboard = () => {
                 />
               )}
             </div>
-            <h2 className="text-xl font-bold text-white group-hover:text-blue-400 transition-all duration-300 text-center">
-              {userData.registercompanyname || "WTL HRM Dashboard"}
+            <h2 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-800'} group-hover:text-blue-400 transition-all duration-300 text-center`}>
+              {userData.registercompanyname || "TECH mahindra"}
             </h2>
             {userData.name && (
-              <p className="text-blue-400 group-hover:text-blue-300 transition-all duration-300 text-center">
+              <p className={`${isDarkMode ? 'text-blue-400' : 'text-blue-600'} group-hover:text-blue-300 transition-all duration-300 text-center`}>
                 Hrm Dashboard
               </p>
             )}
           </Link>
+          
+          {/* Theme Toggle Button */}
+          <button
+            onClick={toggleTheme}
+            className="absolute top-4 right-4 p-2 rounded-full hover:bg-slate-700/50 transition-all duration-300"
+            title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          >
+            {isDarkMode ? (
+              <FaSun className="text-yellow-300 text-xl" />
+            ) : (
+              <FaMoon className="text-gray-600 text-xl" />
+            )}
+          </button>
         </div>
 
         <nav className="px-4 py-3 flex-grow">
@@ -417,15 +443,19 @@ const Dashboard = () => {
               link.dropdown ? (
                 <div key={index} className="mb-1 animate-fadeIn" style={{ animationDelay: `${index * 0.1}s` }}>
                   <button
-                    onClick={toggleAttendanceDropdown}
+                    onClick={link.label === "Attendance" ? toggleAttendanceDropdown : toggleCertificatesDropdown}
                     className="flex items-center justify-between w-full gap-2 p-2 rounded hover:bg-slate-700 hover:text-blue-400 transition-all duration-300 menu-item ripple"
                   >
                     <div className="flex items-center gap-2">
                       {link.icon && <span className="text-blue-400 w-6">{link.icon}</span>} {link.label}
                     </div>
-                    {attendanceDropdownOpen ? <MdKeyboardArrowDown className="transition-transform duration-300 text-blue-400" /> : <MdKeyboardArrowRight className="transition-transform duration-300 text-blue-400" />}
+                    {(link.label === "Attendance" ? attendanceDropdownOpen : certificatesDropdownOpen) ? 
+                      <MdKeyboardArrowDown className="transition-transform duration-300 text-blue-400" /> : 
+                      <MdKeyboardArrowRight className="transition-transform duration-300 text-blue-400" />
+                    }
                   </button>
-                  {attendanceDropdownOpen && (
+                  {((link.label === "Attendance" && attendanceDropdownOpen) || 
+                    (link.label === "Certificates" && certificatesDropdownOpen)) && (
                     <div className="pl-8 mt-1 space-y-1 animate-slideIn">
                       {link.children.map((child, childIndex) => (
                         <Link
@@ -456,6 +486,9 @@ const Dashboard = () => {
         </nav>
 
         <div className="mt-auto px-4 pb-6">
+          {/* Theme Toggle Button */}
+
+          
           <button
             onClick={handleLogoutClick}
             className="flex items-center justify-center gap-2 p-3 w-full rounded bg-red-600 hover:bg-red-700 text-white transition-all duration-300 hover:translate-y-[-2px] hover:shadow-md btn-interactive"
@@ -485,6 +518,7 @@ const Dashboard = () => {
             <Route path="salaryslip" element={<SalarySlip />} />
             <Route path="viewAtt" element={<ViewAttendance />} />
             <Route path="profileform" element={<ProfileForm />} />
+            <Route path="certificates" element={<Certificates />} />
           </Routes>
         </div>
       </main>

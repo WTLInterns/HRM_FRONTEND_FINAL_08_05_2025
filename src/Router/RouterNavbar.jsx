@@ -31,7 +31,7 @@ const FallbackComponent = () => (
 
 const RouterNavbar = () => {
   console.log("RouterNavbar component rendering");
-  const { user, logoutUser, fetchUserProfile } = useApp();
+  const { user, logoutUser, fetchUserProfile, isDarkMode } = useApp();
   const location = useLocation();
 
   useEffect(() => {

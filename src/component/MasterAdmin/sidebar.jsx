@@ -23,7 +23,7 @@ const Sidebar = () => {
   const [userName, setUserName] = useState("Master Admin");
   const location = useLocation();
   const navigate = useNavigate();
-  const { logoutUser } = useApp();
+  const { logoutUser, isDarkMode } = useApp();
   
   // Load user data and profile image from localStorage
   useEffect(() => {
@@ -106,52 +106,50 @@ const Sidebar = () => {
   };
 
   return (
-    <div className="w-64 h-full bg-slate-900 text-white shadow-xl border-r border-slate-700 overflow-y-auto flex flex-col">
+    <div className={`w-64 h-full overflow-y-auto ${isDarkMode ? 'bg-slate-800 text-white' : 'bg-white text-gray-800'} shadow-lg`}>
       {/* Logout Confirmation Modal */}
       {showLogoutModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fadeIn">
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div 
-            className="absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity duration-300" 
+            className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm" 
             onClick={cancelLogout}
           ></div>
-          <div className="bg-slate-800 rounded-lg shadow-xl border border-orange-800 w-full max-w-md p-6 z-10 animate-scaleIn transform transition-all duration-300">
-            <div className="flex items-center mb-4 text-orange-500">
-              <FaExclamationTriangle className="text-2xl mr-3 animate-pulse" />
+          
+          <div className={`relative w-96 rounded-lg shadow-lg p-6 ${isDarkMode ? 'bg-slate-800 text-white' : 'bg-white text-gray-800'}`}>
+            <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-semibold">Logout Confirmation</h3>
               <button 
                 onClick={cancelLogout} 
-                className="ml-auto p-1 hover:bg-slate-700 rounded-full transition-colors duration-200"
+                className="text-gray-400 hover:text-gray-500"
               >
-                <FaTimes className="text-gray-400 hover:text-white" />
+                <FaTimes size={20} />
               </button>
             </div>
             
             <div className="mb-6">
               <p className="mb-2 text-gray-200">Are you sure you want to logout?</p>
-              <p className="text-gray-400 text-sm">Your session will be ended and you'll need to log in again to access the dashboard.</p>
             </div>
             
-            <div className="flex space-x-3 justify-end">
-              <button 
+            <div className="flex justify-end space-x-3">
+              <button
+                className="px-4 py-2 rounded bg-gray-600 text-white hover:bg-gray-700 transition-colors"
                 onClick={cancelLogout}
-                className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-md transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
               >
                 Cancel
               </button>
-              <button 
+              <button
+                className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 transition-colors"
                 onClick={confirmLogout}
-                className="px-4 py-2 bg-gradient-to-r from-red-700 to-red-600 hover:from-red-600 hover:to-red-500 text-white rounded-md transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2"
               >
-                <FaSignOutAlt className="transform group-hover:translate-x-[-2px] transition-transform duration-300" />
                 <span>Logout</span>
               </button>
             </div>
           </div>
         </div>
       )}
-
-      {/* Header */}
-      <div className="flex flex-col items-center py-6 border-b border-slate-700">
+      
+      {/* Sidebar Header */}
+      <div className={`p-4 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
         <div className="h-24 w-24 rounded-full border-4 border-white/20 overflow-hidden mb-4 shadow-lg bg-blue-900/50 flex items-center justify-center">
           {profileImg ? (
             <img

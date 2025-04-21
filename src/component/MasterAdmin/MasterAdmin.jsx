@@ -25,6 +25,7 @@ const appTheme = {
 
 const MasterAdmin = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const { isDarkMode } = useApp();
 
   useEffect(() => {
     console.log("MasterAdmin component mounted");
@@ -58,10 +59,10 @@ const MasterAdmin = () => {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gradient-to-br from-slate-900 to-blue-900 text-gray-100">
+    <div className={`flex h-screen overflow-hidden ${isDarkMode ? 'bg-gradient-to-br from-slate-900 to-blue-900 text-gray-100' : 'bg-gradient-to-br from-blue-50 to-white text-gray-800'}`}>
       {/* Sidebar */}
       <div 
-        className={`fixed md:relative z-30 transition-all duration-300 ease-in-out h-screen ${
+        className={`fixed md:relative z-30 transition-all duration-300 ease-in-out h-screen ${isDarkMode ? 'bg-slate-800' : 'bg-white shadow-lg'} ${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
         } md:translate-x-0`}
       >
@@ -77,7 +78,7 @@ const MasterAdmin = () => {
       )}
       
       {/* Main Content */}
-      <div className="flex-1 overflow-auto h-full">
+      <div className={`flex-1 overflow-auto h-full ${isDarkMode ? 'bg-slate-800/30' : 'bg-gray-50'}`}>
         {/* Mobile Toggle Button */}
         <div className="md:hidden p-4">
           <button

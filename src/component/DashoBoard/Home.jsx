@@ -6,7 +6,7 @@ import { FaUsers, FaUserCheck, FaUserMinus, FaBriefcase, FaArrowUp, FaArrowDown 
 import { Pie, Bar } from 'react-chartjs-2';
 
 const Home = () => {
-  const { emp } = useApp();
+  const { emp, isDarkMode } = useApp();
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -121,6 +121,11 @@ const Home = () => {
     ],
   };
 
+  // Update chart options based on theme
+  useEffect(() => {
+    console.log("Dashboard home: Theme changed to", isDarkMode ? "dark" : "light");
+  }, [isDarkMode]);
+
   // Chart options
   const chartOptions = {
     responsive: true,
@@ -133,7 +138,7 @@ const Home = () => {
       },
       tooltip: {
         enabled: true,
-        backgroundColor: 'rgba(15, 23, 42, 0.9)',
+        backgroundColor: isDarkMode ? 'rgba(15, 23, 42, 0.9)' : 'rgba(255, 255, 255, 0.9)',
         titleFont: {
           size: 16,
           weight: 'bold'
@@ -144,7 +149,7 @@ const Home = () => {
         padding: 15,
         cornerRadius: 8,
         caretSize: 0,
-        borderColor: '#475569',
+        borderColor: isDarkMode ? '#475569' : '#cbd5e1',
         borderWidth: 0,
         displayColors: false,
         callbacks: {
@@ -161,6 +166,7 @@ const Home = () => {
     }
   };
 
+  // Bar chart options
   const barChartOptions = {
     responsive: true,
     maintainAspectRatio: false,
@@ -168,17 +174,17 @@ const Home = () => {
       legend: {
         position: 'top',
         labels: {
-          color: '#ffffff',
+          color: isDarkMode ? '#ffffff' : '#1e293b',
           font: {
             size: 12
           }
         }
       },
       tooltip: {
-        backgroundColor: 'rgba(15, 23, 42, 0.9)',
-        titleColor: '#ffffff',
-        bodyColor: '#ffffff',
-        borderColor: '#475569',
+        backgroundColor: isDarkMode ? 'rgba(15, 23, 42, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+        titleColor: isDarkMode ? '#ffffff' : '#1e293b',
+        bodyColor: isDarkMode ? '#ffffff' : '#1e293b',
+        borderColor: isDarkMode ? '#475569' : '#cbd5e1',
         borderWidth: 1,
         padding: 10,
         callbacks: {
@@ -191,18 +197,18 @@ const Home = () => {
     scales: {
       x: {
         grid: {
-          color: 'rgba(255, 255, 255, 0.1)'
+          color: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
         },
         ticks: {
-          color: '#ffffff'
+          color: isDarkMode ? '#ffffff' : '#1e293b'
         }
       },
       y: {
         grid: {
-          color: 'rgba(255, 255, 255, 0.1)'
+          color: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
         },
         ticks: {
-          color: '#ffffff',
+          color: isDarkMode ? '#ffffff' : '#1e293b',
           callback: (value) => `₹${value.toLocaleString()}`
         }
       }
@@ -260,49 +266,69 @@ const Home = () => {
   }
 
   return (
-    <div className="animate-fadeIn">
-      {/* Stats Cards - responsive grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-6">
-        <div className="bg-slate-800 shadow-md p-6 rounded-lg text-center transition-all duration-300 hover:shadow-xl card-hover animate-fadeIn border border-blue-900 hover:border-blue-700" style={{ animationDelay: '0.1s' }}>
-          <div className="flex justify-center mb-3">
-            <FaUsers className="text-blue-400 text-4xl animate-float" />
+    <div className={`p-6 ${isDarkMode ? 'text-white' : 'text-gray-800'} animate-fadeIn`}>
+      {/* Stats Cards Section */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        {/* Total Employees */}
+        <div className={`${isDarkMode ? 'bg-slate-800' : 'bg-white'} rounded-lg shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl transform hover:scale-[1.01] cursor-pointer`}>
+          <div className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Total Employees</h3>
+                <h2 className={`text-4xl font-bold mt-1 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>{employees.length}</h2>
+              </div>
+              <div className={`p-3 rounded-full ${isDarkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
+                <FaUsers className={`text-2xl ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+              </div>
+            </div>
           </div>
-          <h2 className="text-lg md:text-xl font-bold text-gray-100">Total Employees</h2>
-          <p className="text-2xl md:text-3xl font-semibold text-blue-400 mt-2">{employees.length}</p>
         </div>
-        <div className="bg-slate-800 shadow-md p-6 rounded-lg text-center transition-all duration-300 hover:shadow-xl card-hover animate-fadeIn border border-blue-900 hover:border-blue-700" style={{ animationDelay: '0.2s' }}>
-          <div className="flex justify-center mb-3">
-            <FaUserCheck className="text-green-400 text-4xl animate-float" />
+        
+        {/* Active Employees */}
+        <div className={`${isDarkMode ? 'bg-slate-800' : 'bg-white'} rounded-lg shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl transform hover:scale-[1.01] cursor-pointer`}>
+          <div className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Active Employees</h3>
+                <h2 className={`text-4xl font-bold mt-1 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>{activeEmpCount}</h2>
+              </div>
+              <div className={`p-3 rounded-full ${isDarkMode ? 'bg-green-900/30' : 'bg-green-100'}`}>
+                <FaUserCheck className={`text-2xl ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
+              </div>
+            </div>
           </div>
-          <h2 className="text-lg md:text-xl font-bold text-gray-100">Active Employees</h2>
-          <p className="text-2xl md:text-3xl font-semibold text-green-400 mt-2">{activeEmpCount}</p>
         </div>
-        <div className="bg-slate-800 shadow-md p-6 rounded-lg text-center sm:col-span-2 lg:col-span-1 transition-all duration-300 hover:shadow-xl card-hover animate-fadeIn border border-blue-900 hover:border-blue-700" style={{ animationDelay: '0.3s' }}>
-          <div className="flex justify-center mb-3">
-            <FaUserMinus className="text-red-400 text-4xl animate-float" />
+
+        {/* Inactive Employees */}
+        <div className={`${isDarkMode ? 'bg-slate-800' : 'bg-white'} rounded-lg shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl transform hover:scale-[1.01] cursor-pointer`}>
+          <div className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Inactive Employees</h3>
+                <h2 className={`text-4xl font-bold mt-1 ${isDarkMode ? 'text-red-400' : 'text-red-600'}`}>{inactiveEmpCount}</h2>
+              </div>
+              <div className={`p-3 rounded-full ${isDarkMode ? 'bg-red-900/30' : 'bg-red-100'}`}>
+                <FaUserMinus className={`text-2xl ${isDarkMode ? 'text-red-400' : 'text-red-600'}`} />
+              </div>
+            </div>
           </div>
-          <h2 className="text-lg md:text-xl font-bold text-gray-100">Inactive Employees</h2>
-          <p className="text-2xl md:text-3xl font-semibold text-red-400 mt-2">{inactiveEmpCount}</p>
         </div>
       </div>
 
-      {/* Job Role Summary */}
-      <div className="bg-slate-800 shadow-md p-6 rounded-lg mb-6 animate-fadeIn border border-blue-900" style={{ animationDelay: '0.4s' }}>
-        <h2 className="text-xl font-bold text-gray-100 mb-4 flex items-center">
-          <FaBriefcase className="mr-2 text-blue-400" /> Employees by Job Role
-        </h2>
-        <div className="flex flex-wrap gap-4 mt-4">
-          {jobRoleTable.map((item, index) => (
-            <div
-              key={item.role}
-              className="flex flex-col bg-slate-700 p-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 hover:bg-slate-600 animate-fadeIn border border-blue-900"
-              style={{ animationDelay: `${0.5 + (index * 0.1)}s` }}
-            >
-              <div className="text-sm font-semibold truncate text-blue-300">{item.role}</div>
-              <div className="flex items-center text-sm mt-2 text-gray-200">
+      {/* Employees by Job Role */}
+      <div className={`mb-6 ${isDarkMode ? 'bg-slate-800' : 'bg-white'} rounded-lg shadow-lg p-6`}>
+        <div className="flex items-center mb-4">
+          <FaBriefcase className={`text-xl mr-2 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+          <h3 className="text-xl font-semibold">Employees by Job Role</h3>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          {Object.values(jobRoleSummary).map((item, index) => (
+            <div key={index} className={`${isDarkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-gray-50 hover:bg-gray-100'} p-3 rounded-lg transition-all duration-300 transform hover:scale-[1.02] cursor-pointer`}>
+              <div className={`text-sm font-semibold truncate ${isDarkMode ? 'text-blue-300' : 'text-blue-600'}`}>{item.role}</div>
+              <div className={`flex items-center text-sm mt-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
                 <span className="w-3 h-3 rounded-full bg-green-500 mr-1 animate-pulse-slow"></span>
                 <span className="font-medium">{item.active}</span>
-                <span className="mx-2 text-gray-400">|</span>
+                <span className={`mx-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>|</span>
                 <span className="w-3 h-3 rounded-full bg-red-500 mr-1 animate-pulse-slow"></span>
                 <span className="font-medium">{item.inactive}</span>
               </div>
@@ -314,26 +340,26 @@ const Home = () => {
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Pie Chart */}
-        <div className="bg-slate-800 p-6 rounded-lg shadow-lg">
-          <h3 className="text-xl font-semibold text-white mb-4">Salary Distribution</h3>
+        <div className={`${isDarkMode ? 'bg-slate-800' : 'bg-white'} p-6 rounded-lg shadow-lg`}>
+          <h3 className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'} mb-4`}>Salary Distribution</h3>
           <div className="h-80">
             <Pie data={pieChartData} options={chartOptions} />
           </div>
           <div className="mt-4 flex justify-center space-x-4">
             <div className="flex items-center">
               <div className="w-4 h-4 bg-blue-400 rounded-full mr-2"></div>
-              <span className="text-gray-300">Active Salary</span>
+              <span className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Active Salary</span>
             </div>
             <div className="flex items-center">
               <div className="w-4 h-4 bg-red-400 rounded-full mr-2"></div>
-              <span className="text-gray-300">Inactive Salary</span>
+              <span className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Inactive Salary</span>
             </div>
           </div>
         </div>
 
         {/* Bar Chart */}
-        <div className="bg-slate-800 p-6 rounded-lg shadow-lg">
-          <h3 className="text-xl font-semibold text-white mb-4">Yearly Performance</h3>
+        <div className={`${isDarkMode ? 'bg-slate-800' : 'bg-white'} p-6 rounded-lg shadow-lg`}>
+          <h3 className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'} mb-4`}>Yearly Performance</h3>
           <div className="h-80">
             <Bar data={barChartData} options={barChartOptions} />
           </div>
@@ -341,25 +367,43 @@ const Home = () => {
       </div>
 
       {/* Budget Overview */}
-      <div className="bg-slate-800 p-6 rounded-lg shadow-lg">
-        <h3 className="text-xl font-semibold text-white mb-4">Budget Overview</h3>
+      <div className={`mt-6 ${isDarkMode ? 'bg-slate-800' : 'bg-white'} p-6 rounded-lg shadow-lg`}>
+        <h3 className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'} mb-4`}>Budget Overview</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-slate-700 p-4 rounded-lg">
-            <h4 className="text-gray-400 text-sm">Total Budget</h4>
-            <p className="text-2xl font-bold text-white">₹10,00,000</p>
+          <div className={`${isDarkMode ? 'bg-slate-700' : 'bg-gray-50'} p-4 rounded-lg`}>
+            <h4 className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'} text-sm`}>Total Budget</h4>
+            <p className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>₹10,00,000</p>
           </div>
-          <div className="bg-slate-700 p-4 rounded-lg">
-            <h4 className="text-gray-400 text-sm">Total Salary</h4>
-            <p className="text-2xl font-bold text-white">₹{stats.totalSalary.toLocaleString()}</p>
+          <div className={`${isDarkMode ? 'bg-slate-700' : 'bg-gray-50'} p-4 rounded-lg`}>
+            <h4 className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'} text-sm`}>Allocated Salary</h4>
+            <p className={`text-2xl font-bold ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>₹{totalSalary.toLocaleString()}</p>
           </div>
-          <div className="bg-slate-700 p-4 rounded-lg">
-            <h4 className="text-gray-400 text-sm">Remaining Budget</h4>
-            <p className={`text-2xl font-bold ${isProfitable ? 'text-green-400' : 'text-red-400'}`}>
-              ₹{Math.abs(stats.profitLoss).toLocaleString()}
-            </p>
+          <div className={`${isDarkMode ? 'bg-slate-700' : 'bg-gray-50'} p-4 rounded-lg`}>
+            <h4 className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'} text-sm`}>Remaining Budget</h4>
+            <div className="flex items-center">
+              <p className={`text-2xl font-bold ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>₹{(1000000 - totalSalary).toLocaleString()}</p>
+              <span className={`ml-2 flex items-center text-sm ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
+                <FaArrowUp className="mr-1" />
+                {Math.round((1000000 - totalSalary) / 10000)}%
+              </span>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Show loading state */}
+      {loading && (
+        <div className={`flex justify-center items-center h-40 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-current"></div>
+        </div>
+      )}
+
+      {/* Show error state */}
+      {error && (
+        <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-red-900 text-white' : 'bg-red-100 text-red-600'} animate-fadeIn`}>
+          <p>{error}</p>
+        </div>
+      )}
     </div>
   );
 };

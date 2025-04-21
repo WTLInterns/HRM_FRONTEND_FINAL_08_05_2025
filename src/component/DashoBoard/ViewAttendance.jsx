@@ -6,8 +6,10 @@ import "./calendar-custom.css"; // Import custom calendar styles
 import "./animations.css";
 import { FaCalendarAlt, FaUserCheck, FaSearch, FaTimes } from 'react-icons/fa';
 import { toast } from "react-hot-toast";
+import { useApp } from "../../context/AppContext";
 
 export default function ViewAttendance() {
+  const { isDarkMode } = useApp();
   // Attempt to get the logged-in user from localStorage
   const [loggedUser, setLoggedUser] = useState(null);
 
@@ -177,13 +179,15 @@ export default function ViewAttendance() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-6 animate-fadeIn">
-      {error && (
-        <div className="bg-red-500 text-white p-3 mb-4 rounded animate-shake">{error}</div>
-      )}
+    <div className={`p-6 ${isDarkMode ? 'bg-slate-900 text-white' : 'bg-gray-50 text-gray-800'} min-h-screen animate-fadeIn`}>
+      <h1 className={`text-2xl font-bold mb-6 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'} flex items-center gap-2`}>
+        <FaCalendarAlt /> View Attendance
+      </h1>
 
-      {/* Search Section */}
-      <div className="bg-slate-800 p-6 rounded-lg shadow-lg mb-8 border border-blue-900 animate-slideIn">
+      <div className={`${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} p-6 rounded-lg shadow-lg border mb-8`}>
+        <h2 className={`text-xl font-semibold mb-4 ${isDarkMode ? 'text-blue-300' : 'text-blue-600'}`}>Search Attendance Records</h2>
+
+        {/* Search Section */}
         <div className="flex flex-wrap gap-4 items-center">
           <div className="flex-1">
             <div className="relative">
@@ -192,14 +196,18 @@ export default function ViewAttendance() {
                 value={empFullName}
                 onChange={handleFullNameInputChange}
                 placeholder="Enter Employee Full Name"
-                className="w-full pl-10 pr-4 py-2 bg-slate-700 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-100 placeholder-gray-400 transition-all duration-300"
+                className={`w-full pl-10 pr-4 py-2 ${
+                  isDarkMode 
+                  ? 'bg-slate-700 border-slate-700 text-gray-100 placeholder-gray-400' 
+                  : 'bg-gray-100 border-gray-300 text-blue-800 placeholder-gray-500'
+                } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300`}
               />
               <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             </div>
           </div>
           <button
             onClick={fetchAttendance}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-300 flex items-center gap-2 btn-interactive"
+            className={`px-6 py-2 ${isDarkMode ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white'} rounded-lg hover:bg-blue-700 transition-all duration-300 flex items-center gap-2 btn-interactive`}
             disabled={loading}
           >
             {loading ? (
@@ -216,7 +224,7 @@ export default function ViewAttendance() {
           {attendanceData.length > 0 && (
             <button
               onClick={clearAttendance}
-              className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-all duration-300 flex items-center gap-2 btn-interactive"
+              className={`px-6 py-2 ${isDarkMode ? 'bg-gray-600 text-white' : 'bg-gray-500 text-gray-800'} rounded-lg hover:bg-gray-700 transition-all duration-300 flex items-center gap-2 btn-interactive`}
             >
               <FaTimes /> Clear
             </button>
@@ -227,8 +235,8 @@ export default function ViewAttendance() {
       {loading ? (
         <div className="text-center py-8 text-gray-300">Loading...</div>
       ) : attendanceData.length > 0 ? (
-        <div className="bg-slate-800 p-6 rounded-lg shadow-lg border border-blue-900 animate-slideIn">
-          <h2 className="text-2xl font-semibold mb-4 text-gray-100 flex items-center gap-2">
+        <div className={`${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} p-6 rounded-lg shadow-lg border mb-8`}>
+          <h2 className={`text-2xl font-semibold mb-4 ${isDarkMode ? 'text-blue-300' : 'text-blue-600'} flex items-center gap-2`}>
             <FaCalendarAlt className="text-blue-400" />
             Attendance for {empName}
           </h2>
@@ -240,7 +248,11 @@ export default function ViewAttendance() {
               onActiveStartDateChange={handleMonthChange}
               onClickDay={handleDateClick}
               tileContent={tileContent}
-              className="bg-slate-800 text-gray-100 border-gray-700 rounded-lg"
+              className={`rounded-lg ${
+                isDarkMode 
+                ? 'bg-slate-800 text-gray-100 border-gray-700' 
+                : 'bg-white text-gray-800 border-gray-300'
+              }`}
               showNeighboringMonth={false}
             />
           </div>
@@ -250,20 +262,20 @@ export default function ViewAttendance() {
           
           {/* Selected Date Details */}
           {selectedDate && tooltipContent.status && (
-            <div className="mt-6 bg-slate-700 p-6 rounded-lg shadow-lg border border-blue-900 animate-slideIn transform transition-all duration-300 hover:scale-[1.02] hover:shadow-xl">
-              <h3 className="text-lg font-semibold mb-3 text-gray-100 flex items-center gap-2">
+            <div className={`mt-6 ${isDarkMode ? 'bg-slate-700' : 'bg-gray-100'} p-6 rounded-lg shadow-lg border ${isDarkMode ? 'border-blue-900' : 'border-blue-300'} animate-slideIn transform transition-all duration-300 hover:scale-[1.02] hover:shadow-xl`}>
+              <h3 className={`text-lg font-semibold mb-3 ${isDarkMode ? 'text-gray-100' : 'text-gray-800'} flex items-center gap-2`}>
                 <FaCalendarAlt className="text-blue-400 animate-pulse" />
                 Attendance Details for {formatDate(selectedDate)}
               </h3>
               <div className={`p-4 rounded-lg border ${statusColors[tooltipContent.status]} transform transition-all duration-300 hover:scale-[1.02]`}>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <p className="text-gray-400 text-sm">Status</p>
-                    <p className="font-semibold text-lg">{tooltipContent.status}</p>
+                    <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'} text-sm`}>Status</p>
+                    <p className={`font-semibold text-lg ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>{tooltipContent.status}</p>
                   </div>
                   <div className="space-y-2">
-                    <p className="text-gray-400 text-sm">Employee</p>
-                    <p className="font-semibold text-lg">{tooltipContent.employee?.firstName || "N/A"}</p>
+                    <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'} text-sm`}>Employee</p>
+                    <p className={`font-semibold text-lg ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>{tooltipContent.employee?.firstName || "N/A"}</p>
                   </div>
                 </div>
               </div>

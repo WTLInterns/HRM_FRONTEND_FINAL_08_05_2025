@@ -298,7 +298,7 @@ export const AppProvider = ({ children }) => {
       const response = await axios.get(`http://localhost:8282/api/employee/${subAdminId}/employee/all`);
       const employeesData = response.data;
       
-      // Update state with fetched employees
+      // Update state with fetched employees 
       setEmp(employeesData);
       calculateStats(employeesData);
       setLoading(false);
@@ -402,9 +402,49 @@ export const AppProvider = ({ children }) => {
     fetchAllEmp();
   }, []);
 
+  // Theme state management
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const savedTheme = localStorage.getItem("theme");
+    return savedTheme ? savedTheme === "dark" : true; // Default to dark mode if not set
+  });
+
+  // Toggle theme function
+  const toggleTheme = () => {
+    console.log("Toggling theme", isDarkMode, "to", !isDarkMode);
+    const newTheme = !isDarkMode;
+    setIsDarkMode(newTheme);
+    localStorage.setItem("theme", newTheme ? "dark" : "light");
+    
+    // Apply theme to document
+    if (newTheme) {
+      document.documentElement.classList.add("dark");
+      document.documentElement.style.colorScheme = "dark";
+    } else {
+      document.documentElement.classList.remove("dark");
+      document.documentElement.style.colorScheme = "light";
+    }
+
+    // Force re-render by triggering a state update
+    setLoading(prev => !prev);
+    setTimeout(() => setLoading(prev => !prev), 10);
+  };
+
+  // Apply theme on initial load
+  useEffect(() => {
+    console.log("Applying theme on load:", isDarkMode ? "dark" : "light");
+    if (isDarkMode) {
+      document.documentElement.classList.add("dark");
+      document.documentElement.style.colorScheme = "dark";
+    } else {
+      document.documentElement.classList.remove("dark");
+      document.documentElement.style.colorScheme = "light";
+    }
+  }, []);
+
   const value = {
     loading,
     user,
+    setUser,
     emp,
     stats,
     isProfitable,
@@ -414,14 +454,14 @@ export const AppProvider = ({ children }) => {
     logoutUser,
     fetchUserProfile,
     forgotPassword,
-    setUser,
     addEmp,
     deleteEmployee,
     updateEmployee,
     createAttendance,
     fetchAllEmp,
     yearlyData,
-    // Keep all the chart data from existing context
+    isDarkMode,
+    toggleTheme,
     pieChartData: {
       labels: ['Active Salary', 'Inactive Salary'],
       datasets: [

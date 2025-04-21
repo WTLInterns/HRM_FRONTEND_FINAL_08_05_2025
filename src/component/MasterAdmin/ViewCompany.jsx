@@ -90,8 +90,38 @@ const ViewCompany = () => {
     const companyToEdit = companies.find(company => company.id === id);
     
     if (companyToEdit) {
-      // Store the company to edit in localStorage
-      localStorage.setItem('companyToEdit', JSON.stringify(companyToEdit));
+      console.log('Original company data before normalization:', companyToEdit);
+      
+      // Normalize field names to ensure consistency with the form and API
+      const normalizedCompany = {
+        ...companyToEdit,
+        // Make sure the field names match what the edit form and API expect
+        stampImg: companyToEdit.stampImg || '', 
+        signature: companyToEdit.signature || '',
+        companylogo: companyToEdit.companylogo || companyToEdit.logo || '', // Handle both field names
+        
+        // Ensure all required fields exist
+        gstno: companyToEdit.gstno || '',
+        cinNo: companyToEdit.cinno || '',  // Normalize capitalization (cinNo vs cinno)
+        companyUrl: companyToEdit.companyurl || '', // Normalize capitalization
+        address: companyToEdit.address || '',
+        status: companyToEdit.status || 'Active',
+        
+        // Store original field names to verify everything is passed correctly
+        _original: {
+          stampImg: companyToEdit.stampImg,
+          signature: companyToEdit.signature,
+          companylogo: companyToEdit.companylogo,
+          logo: companyToEdit.logo
+        }
+      };
+      
+      // Log both the original and normalized data for debugging
+      console.log('Original company data:', companyToEdit);
+      console.log('Normalized company data for edit:', normalizedCompany);
+      
+      // Store the normalized company to edit in localStorage
+      localStorage.setItem('companyToEdit', JSON.stringify(normalizedCompany));
       
       // Navigate to the register company page with edit mode
       navigate('/masteradmin/register-company?mode=edit');
@@ -375,7 +405,7 @@ const ViewCompany = () => {
                                   alt="Logo"
                                   className="h-4 w-4 rounded-sm object-cover inline-block ml-1"
                                   onError={(e) => {
-                                    console.log(`Error loading logo for ${company.name}`);
+                                    console.error(`Error loading logo for ${company.name}:`, company.companylogo);
                                     e.target.style.display = 'none';
                                   }}
                                 />

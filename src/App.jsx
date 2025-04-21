@@ -1,7 +1,7 @@
-import React, { Component } from "react";
+import React, { Component, useEffect } from "react";
 
 import RouterNavbar from "./Router/RouterNavbar";
-import { AppProvider } from "./context/AppContext";
+import { AppProvider, useApp } from "./context/AppContext";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -40,13 +40,37 @@ class ErrorBoundary extends Component {
   }
 }
 
+// Theme wrapper component to apply theme consistently
+const ThemeWrapper = ({ children }) => {
+  const { isDarkMode } = useApp();
+  
+  useEffect(() => {
+    // Apply the appropriate theme class to the html element
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+      document.documentElement.style.colorScheme = 'dark';
+    } else {
+      document.documentElement.classList.remove('dark');
+      document.documentElement.style.colorScheme = 'light';
+    }
+  }, [isDarkMode]);
+
+  return (
+    <div className={isDarkMode ? 'dark-mode' : 'light-mode'}>
+      {children}
+    </div>
+  );
+};
+
 const App = () => {
   return (
-    <div>
+    <div className="min-h-screen transition-all duration-300">
       <ToastContainer />
       <ErrorBoundary>
         <AppProvider>
-          <RouterNavbar />
+          <ThemeWrapper>
+            <RouterNavbar />
+          </ThemeWrapper>
         </AppProvider>
       </ErrorBoundary>
     </div>

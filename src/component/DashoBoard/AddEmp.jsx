@@ -7,8 +7,10 @@ import { CiEdit } from "react-icons/ci";
 import { MdDeleteOutline } from "react-icons/md";
 import { FaChevronLeft, FaChevronRight, FaTimes } from "react-icons/fa";
 import axios from "axios";
+import { useApp } from "../../context/AppContext";
 
 export default function AddEmp() {
+  const { isDarkMode } = useApp();
   // States for Add/Update Employee fields
   const [firstName, setFname] = useState("");
   const [lastName, setLname] = useState("");
@@ -93,10 +95,10 @@ export default function AddEmp() {
   // Calculate totalPages based on employees data
   const totalPages = Math.ceil(filteredEmployees.length / employeesPerPage);
   
-  const currentEmployees = filteredEmployees.slice(
-    (currentPage - 1) * employeesPerPage,
-    currentPage * employeesPerPage
-  );
+  const indexOfLastEmp = currentPage * employeesPerPage;
+  const indexOfFirstEmp = indexOfLastEmp - employeesPerPage;
+
+  const currentEmployees = filteredEmployees.slice(indexOfFirstEmp, indexOfLastEmp);
 
   const handleModalToggle = () => {
     setModal(!modal);
@@ -331,19 +333,19 @@ export default function AddEmp() {
   };
 
   return (
-    <div>
+    <div className={`w-full ${isDarkMode ? 'bg-slate-900 text-white' : 'bg-gray-50 text-gray-800'} p-6 animate-fadeIn`}>
       <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold text-blue-400">Employee Management</h1>
+        <h1 className={`text-2xl font-bold ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>Employee Management</h1>
         <button
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors duration-200 flex items-center gap-2"
-          onClick={handleModalToggle}
+          onClick={() => setModal(!modal)}
+          className={`px-4 py-2 rounded-md ${isDarkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'} text-white flex items-center gap-2 transition-colors duration-200`}
         >
-          <span>Add Employee</span>
+          {modal ? 'Cancel' : 'Add Employee'}
         </button>
       </div>
 
       {/* Search */}
-      <div className="mb-6 p-4 bg-slate-800 rounded-lg shadow-md border border-slate-700">
+      <div className={`mb-6 p-4 ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} rounded-lg shadow-md border`}>
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex-1">
             <input
@@ -351,214 +353,168 @@ export default function AddEmp() {
               placeholder="Search by name or email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100 placeholder-gray-400"
+              className={`w-full p-2 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' : 'bg-gray-50 border-gray-300 text-gray-800 placeholder-gray-500'} border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors`}
             />
           </div>
-          {searchTerm && (
-            <button
-              onClick={() => setSearchTerm("")}
-              className="bg-slate-700 text-gray-300 hover:text-white p-2 rounded-md transition-colors"
+          <div>
+            <select 
+              value={status} 
+              onChange={(e) => setstatus(e.target.value)}
+              className={`p-2 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-gray-50 border-gray-300 text-gray-800'} border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors`}
             >
-              <FaTimes />
-            </button>
-          )}
+              <option value="all">All Status</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+          <div>
+            <select 
+              value={jobRole} 
+              onChange={(e) => setjobRole(e.target.value)}
+              className={`p-2 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-gray-50 border-gray-300 text-gray-800'} border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors`}
+            >
+              <option value="all">All Roles</option>
+              <option value="HR">HR</option>
+              <option value="MANAGER">MANAGER</option>
+              <option value="MERN STACK DEVELOPER">MERN STACK DEVELOPER</option>
+              <option value="SUPERVISOR">SUPERVISOR</option>
+              <option value="DIGITAL MARKETING INTERN">DIGITAL MARKETING INTERN</option>
+              <option value="JAVA FULL STACK">JAVA FULL STACK  DEVELOPER</option>
+              <option value="TELECALLER EXCUTIVE">TELECALLER EXCUTIVE</option>
+              <option value="BACK OFFICE">BACK OFFICE</option>
+            </select>
+          </div>
         </div>
       </div>
 
       {/* Employee Table - Desktop View */}
-      <div className="hidden md:block mb-6 overflow-x-auto bg-slate-800 rounded-lg shadow-md border border-slate-700">
-      {currentEmployees.length > 0 ? (
-          <table className="min-w-full divide-y divide-slate-700">
-              <thead>
-              <tr className="bg-slate-700">
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    Emp ID
-                  </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    Name
-                  </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    Email
-                  </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    Phone
-                  </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    Job Role
-                  </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    Status
-                  </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-            <tbody className="divide-y divide-slate-700">
-                {currentEmployees.map((employee) => (
-                <tr key={employee.empId} className="hover:bg-slate-700">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-300">{employee.empId}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-100">
-                            {employee.firstName} {employee.lastName}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-300">{employee.email}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-300">{employee.phone}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-300">{employee.jobRole}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      employee.status === "Active" ? "bg-green-800 text-green-100" : "bg-red-800 text-red-100"
-                    }`}>
-                        {employee.status}
-                      </span>
-                    </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex space-x-2">
-                        <button
-                          onClick={() => handleEditEmp(employee)}
-                          className="text-blue-400 hover:text-blue-300 transition-colors px-2 py-1 bg-blue-900/50 rounded-md"
-                          title="Edit"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDeleteEmp(employee.empId)}
-                          className="text-red-400 hover:text-red-300 transition-colors px-2 py-1 bg-red-900/50 rounded-md"
-                          title="Delete"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-        ) : (
-          <div className="text-center py-4 text-gray-400">
-            {searchTerm ? "No employees match your search criteria" : "No employees found"}
-          </div>
-        )}
-          </div>
+      <div className={`hidden md:block mb-6 overflow-x-auto ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} rounded-lg shadow-md border`}>
+      {loading ? (
+        <div className="flex justify-center items-center py-8">
+          <div className={`animate-spin h-10 w-10 border-4 ${isDarkMode ? 'border-blue-500' : 'border-blue-600'} rounded-full border-t-transparent`}></div>
+        </div>
+      ) : currentEmployees.length === 0 ? (
+        <div className={`p-4 ${isDarkMode ? 'bg-slate-800 text-gray-300' : 'bg-white text-gray-600'} rounded-lg shadow-md text-center`}>
+          No employees found.
+        </div>
+      ) : (
+        <table className="w-full">
+          <thead>
+            <tr className={`${isDarkMode ? 'bg-slate-700 text-gray-200' : 'bg-gray-100 text-gray-700'}`}>
+              <th className="px-4 py-3 text-left">EMP ID</th>
+              <th className="px-4 py-3 text-left">NAME</th>
+              <th className="px-4 py-3 text-left">EMAIL</th>
+              <th className="px-4 py-3 text-left">PHONE</th>
+              <th className="px-4 py-3 text-left">JOB ROLE</th>
+              <th className="px-4 py-3 text-left">STATUS</th>
+              <th className="px-4 py-3 text-center">ACTIONS</th>
+            </tr>
+          </thead>
+          <tbody>
+            {currentEmployees.map((employee) => (
+              <tr key={employee.empId} className={`border-t ${isDarkMode ? 'border-slate-700 hover:bg-slate-700' : 'border-gray-200 hover:bg-gray-50'} transition-colors`}>
+                <td className="px-4 py-3">{employee.empId}</td>
+                <td className="px-4 py-3">{employee.firstName} {employee.lastName}</td>
+                <td className="px-4 py-3">{employee.email}</td>
+                <td className="px-4 py-3">{employee.phone}</td>
+                <td className="px-4 py-3">{employee.jobRole}</td>
+                <td className="px-4 py-3">
+                  <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${employee.status === 'active' || employee.status === 'Active' ? (isDarkMode ? 'bg-green-800 text-green-200' : 'bg-green-100 text-green-800') : (isDarkMode ? 'bg-red-800 text-red-200' : 'bg-red-100 text-red-800')}`}>
+                    {employee.status}
+                  </span>
+                </td>
+                <td className="px-4 py-3 text-center space-x-2">
+                  <button
+                    onClick={() => handleEditEmp(employee)}
+                    className={`px-3 py-1 rounded-md ${isDarkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'} text-white font-medium text-xs transition-colors`}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDeleteEmp(employee.empId)}
+                    className={`px-3 py-1 rounded-md ${isDarkMode ? 'bg-red-600 hover:bg-red-700' : 'bg-red-500 hover:bg-red-600'} text-white font-medium text-xs transition-colors`}
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      </div>
 
       {/* Employee Cards - Mobile View */}
       <div className="md:hidden grid grid-cols-1 gap-4 mb-6">
-        {currentEmployees.length > 0 ? (
-          currentEmployees.map((employee) => (
-            <div key={employee.empId} className="bg-slate-800 rounded-lg p-4 shadow border border-slate-700">
-              <div className="flex justify-between items-start">
-                    <div>
-                  <h3 className="font-medium text-white">{employee.firstName} {employee.lastName}</h3>
-                  <p className="text-sm text-gray-300 mt-1">{employee.email}</p>
-                  <div className="flex mt-2 items-center">
-                    <span className="text-sm text-gray-400 mr-2">Role:</span>
-                    <span className="text-sm text-gray-300">{employee.jobRole}</span>
-                    </div>
-                  <div className="mt-1 flex items-center">
-                    <span className="text-sm text-gray-400 mr-2">Status:</span>
-                    <span className={`px-2 py-0.5 text-xs rounded-full ${
-                      employee.status === "Active" ? "bg-green-800 text-green-100" : "bg-red-800 text-red-100"
-                    }`}>
-                      {employee.status}
-                    </span>
-                  </div>
-                    </div>
-                <div className="flex flex-col space-y-2">
-                    <button
-                      onClick={() => handleEditEmp(employee)}
-                    className="p-2 bg-blue-900 text-blue-300 rounded-md"
-                    >
-                    <CiEdit size={18} />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteEmp(employee.empId)}
-                    className="p-2 bg-red-900 text-red-300 rounded-md"
-                    >
-                    <MdDeleteOutline size={18} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-          ))
-        ) : (
-          <div className="text-center py-4 text-gray-400">
-            {searchTerm ? "No employees match your search criteria" : "No employees found"}
+        {loading ? (
+          <div className="flex justify-center items-center py-8">
+            <div className={`animate-spin h-10 w-10 border-4 ${isDarkMode ? 'border-blue-500' : 'border-blue-600'} rounded-full border-t-transparent`}></div>
           </div>
+        ) : filteredEmployees.length === 0 ? (
+          <div className={`p-4 ${isDarkMode ? 'bg-slate-800 text-gray-300' : 'bg-white text-gray-600'} rounded-lg shadow-md text-center`}>
+            No employees found.
+          </div>
+        ) : (
+          filteredEmployees.slice(indexOfFirstEmp, indexOfLastEmp).map((employee) => (
+            <div key={employee.empId} className={`${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} rounded-lg shadow-md border p-4`}>
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className={`font-semibold text-lg ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>{employee.firstName} {employee.lastName}</h3>
+                  <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>{employee.jobRole}</p>
+                  <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{employee.email}</p>
+                  <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{employee.phone}</p>
+                </div>
+                <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${employee.status === 'active' || employee.status === 'Active' ? (isDarkMode ? 'bg-green-800 text-green-200' : 'bg-green-100 text-green-800') : (isDarkMode ? 'bg-red-800 text-red-200' : 'bg-red-100 text-red-800')}`}>
+                  {employee.status}
+                </span>
+              </div>
+              <div className="mt-3 pt-3 border-t flex justify-end space-x-2 text-sm">
+                <button
+                  onClick={() => handleEditEmp(employee)}
+                  className={`px-3 py-1 rounded-md ${isDarkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'} text-white transition-colors`}
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => handleDeleteEmp(employee.empId)}
+                  className={`px-3 py-1 rounded-md ${isDarkMode ? 'bg-red-600 hover:bg-red-700' : 'bg-red-500 hover:bg-red-600'} text-white transition-colors`}
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))
         )}
-        </div>
+      </div>
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex justify-between items-center py-3 px-4 bg-slate-800 rounded-lg shadow-md border border-slate-700">
-          <div className="flex-1 flex justify-between sm:hidden">
+        <div className="flex justify-center items-center space-x-2 my-4">
+          <button
+            onClick={() => setCurrentPage(currentPage - 1)}
+            disabled={currentPage === 1}
+            className={`p-2 rounded-md ${isDarkMode ? 'bg-slate-800 text-gray-300 border-slate-700' : 'bg-white text-gray-700 border-gray-300'} border ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'}`}
+          >
+            <FaChevronLeft size={14} />
+          </button>
+          
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
             <button
-              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-              disabled={currentPage === 1}
-              className="relative inline-flex items-center px-4 py-2 border border-slate-600 text-sm font-medium rounded-md bg-slate-700 text-gray-300 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              key={page}
+              onClick={() => setCurrentPage(page)}
+              className={`w-8 h-8 rounded-md ${page === currentPage ? (isDarkMode ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white') : (isDarkMode ? 'bg-slate-800 text-gray-300 border-slate-700 hover:bg-slate-700' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100')} border`}
             >
-              Previous
+              {page}
             </button>
-            <button
-              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-              disabled={currentPage === totalPages}
-              className="ml-3 relative inline-flex items-center px-4 py-2 border border-slate-600 text-sm font-medium rounded-md bg-slate-700 text-gray-300 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Next
-            </button>
-          </div>
-          <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm text-gray-400">
-                Showing <span className="font-medium">{Math.min(1 + (currentPage - 1) * employeesPerPage, filteredEmployees.length)}</span> to{' '}
-                <span className="font-medium">{Math.min(currentPage * employeesPerPage, filteredEmployees.length)}</span> of{' '}
-                <span className="font-medium">{filteredEmployees.length}</span> results
-              </p>
-            </div>
-            <div>
-              <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                <button
-                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                  disabled={currentPage === 1}
-                  className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-slate-600 bg-slate-700 text-gray-300 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <FaChevronLeft className="h-5 w-5" />
-                </button>
-                {[...Array(totalPages)].map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setCurrentPage(i + 1)}
-                    className={`relative inline-flex items-center px-4 py-2 border ${
-                      currentPage === i + 1
-                        ? 'bg-blue-700 text-white border-blue-600'
-                        : 'bg-slate-700 text-gray-300 border-slate-600 hover:bg-slate-600'
-                    }`}
-                  >
-                    {i + 1}
-                  </button>
-                ))}
-                <button
-                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                  disabled={currentPage === totalPages}
-                  className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-slate-600 bg-slate-700 text-gray-300 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <FaChevronRight className="h-5 w-5" />
-                </button>
-              </nav>
-            </div>
-          </div>
+          ))}
+          
+          <button
+            onClick={() => setCurrentPage(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className={`p-2 rounded-md ${isDarkMode ? 'bg-slate-800 text-gray-300 border-slate-700' : 'bg-white text-gray-700 border-gray-300'} border ${currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'}`}
+          >
+            <FaChevronRight size={14} />
+          </button>
         </div>
       )}
 
@@ -570,13 +526,13 @@ export default function AddEmp() {
               <div className="absolute inset-0 bg-black opacity-75"></div>
             </div>
             <span className="hidden sm:inline-block sm:align-middle sm:h-screen"></span>&#8203;
-            <div className="inline-block align-bottom bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full border border-slate-600">
-              <div className="bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            <div className={`inline-block align-bottom ${isDarkMode ? 'bg-slate-800 border-slate-600' : 'bg-white border-gray-300'} rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full border`}>
+              <div className={`${isDarkMode ? 'bg-slate-800' : 'bg-white'} px-4 pt-5 pb-4 sm:p-6 sm:pb-4`}>
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg leading-6 font-medium text-blue-400">Add New Employee</h3>
+                  <h3 className={`text-lg leading-6 font-medium ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>Add New Employee</h3>
                   <button
                     onClick={handleModalToggle}
-                    className="text-gray-400 hover:text-white"
+                    className={`${isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-700'}`}
                   >
                     <FaTimes />
                   </button>
@@ -584,7 +540,7 @@ export default function AddEmp() {
                 <form onSubmit={handleAddEmp} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label htmlFor="firstName" className="block text-sm font-medium text-gray-300">
+                      <label htmlFor="firstName" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                         First Name:
                       </label>
                       <input
@@ -592,12 +548,12 @@ export default function AddEmp() {
                         value={firstName}
                         onChange={(e) => setFname(e.target.value)}
                         placeholder="Enter your first name"
-                        className="block w-full px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
+                        className={`block w-full px-4 py-2 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <label htmlFor="lastName" className="block text-sm font-medium text-gray-300">
+                      <label htmlFor="lastName" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                         Last Name:
                       </label>
                       <input
@@ -605,12 +561,12 @@ export default function AddEmp() {
                         value={lastName}
                         onChange={(e) => setLname(e.target.value)}
                         placeholder="Enter your last name"
-                        className="block w-full px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
+                        className={`block w-full px-4 py-2 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <label htmlFor="email" className="block text-sm font-medium text-gray-300">
+                      <label htmlFor="email" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                         Email ID:
                       </label>
                       <input
@@ -619,12 +575,12 @@ export default function AddEmp() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="Enter your email address"
-                        className="block w-full px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
+                        className={`block w-full px-4 py-2 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <label htmlFor="contact" className="block text-sm font-medium text-gray-300">
+                      <label htmlFor="contact" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                         Contact No:
                       </label>
                       <input
@@ -632,12 +588,12 @@ export default function AddEmp() {
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
                         placeholder="Enter your 10-digit contact number"
-                        className="block w-full px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
+                        className={`block w-full px-4 py-2 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <label htmlFor="aadharNo" className="block text-sm font-medium text-gray-300">
+                      <label htmlFor="aadharNo" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                         Aadhar No:
                       </label>
                       <input
@@ -645,12 +601,12 @@ export default function AddEmp() {
                         value={aadharNo}
                         onChange={(e) => setaadharNo(e.target.value)}
                         placeholder="Enter your 12-digit Aadhar number"
-                        className="block w-full px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
+                        className={`block w-full px-4 py-2 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <label htmlFor="panCard" className="block text-sm font-medium text-gray-300">
+                      <label htmlFor="panCard" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                         Pancard No:
                       </label>
                       <input
@@ -658,19 +614,19 @@ export default function AddEmp() {
                         value={panCard}
                         onChange={(e) => setpanCard(e.target.value)}
                         placeholder="Enter your PAN card (e.g., ABCDE1234F)"
-                        className="block w-full px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
+                        className={`block w-full px-4 py-2 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <label htmlFor="education" className="block text-sm font-medium text-gray-300">
+                      <label htmlFor="education" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                         Education:
                       </label>
                       <select
                         id="education"
                         value={education}
                         onChange={(e) => seteducation(e.target.value)}
-                        className="block w-full px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className={`block w-full px-4 py-2 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
                       >
                         <option value="">Select education</option>
                         <option value="hsc">HSC</option>
@@ -680,14 +636,14 @@ export default function AddEmp() {
                     </div>
 
                     <div className="space-y-2">
-                      <label htmlFor="bloodGroup" className="block text-sm font-medium text-gray-300">
+                      <label htmlFor="bloodGroup" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                         Blood Group:
                       </label>
                       <select
                         id="bloodGroup"
                         value={bloodGroup}
                         onChange={(e) => setbloodGroup(e.target.value)}
-                        className="block w-full px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className={`block w-full px-4 py-2 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
                       >
                         <option value="">Select blood group</option>
                         <option value="a+">A+</option>
@@ -698,14 +654,14 @@ export default function AddEmp() {
                     </div>
 
                     <div className="space-y-2">
-                      <label htmlFor="jobRole" className="block text-sm font-medium text-gray-300">
+                      <label htmlFor="jobRole" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                         Job Role:
                       </label>
                       <select
                         id="jobRole"
                         value={jobRole}
                         onChange={(e) => setjobRole(e.target.value)}
-                        className="block w-full px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className={`block w-full px-4 py-2 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
                       >
                         <option value="">Select job role</option>
                         <option value="HR">HR</option>
@@ -714,20 +670,21 @@ export default function AddEmp() {
                         <option value="MERN STACK  DEVELOPER">MERN STACK DEVELOPER</option>
                         <option value="SUPERVISOR">SUPERVISOR</option>
                         <option value="DIGITAL MARKETING INTERN">DIGITAL MARKETING INTERN</option>
+                        <option value="JAVA FULL STACK">JAVA FULL STACK  DEVELOPER</option>
                         <option value="TELECALLER EXCUTIVE">TELECALLER EXECUTIVE</option>
                         <option value="BACK OFFICE">BACK OFFICE</option>
                       </select>
                     </div>
 
                     <div className="space-y-2">
-                      <label htmlFor="gender" className="block text-sm font-medium text-gray-300">
+                      <label htmlFor="gender" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                         Gender:
                       </label>
                       <select
                         id="gender"
                         value={gender}
                         onChange={(e) => setgender(e.target.value)}
-                        className="block w-full px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className={`block w-full px-4 py-2 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
                       >
                         <option value="">Select gender</option>
                         <option value="male">Male</option>
@@ -737,7 +694,7 @@ export default function AddEmp() {
                     </div>
 
                     <div className="space-y-2 md:col-span-2">
-                      <label htmlFor="address" className="block text-sm font-medium text-gray-300">
+                      <label htmlFor="address" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                         Address:
                       </label>
                       <textarea
@@ -745,12 +702,12 @@ export default function AddEmp() {
                         value={address}
                         onChange={(e) => setaddress(e.target.value)}
                         placeholder="Enter your full address"
-                        className="block w-full px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
+                        className={`block w-full px-4 py-2 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
                       ></textarea>
                     </div>
 
                     <div className="space-y-2">
-                      <label htmlFor="birthDate" className="block text-sm font-medium text-gray-300">
+                      <label htmlFor="birthDate" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                         Birth Date:
                       </label>
                       <input
@@ -758,13 +715,13 @@ export default function AddEmp() {
                         type="date"
                         value={birthDate}
                         onChange={(e) => setbirthDate(e.target.value)}
-                        className="block w-full px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className={`block w-full px-4 py-2 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
                         aria-label="Select your birth date"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <label htmlFor="joiningDate" className="block text-sm font-medium text-gray-300">
+                      <label htmlFor="joiningDate" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                         Joining Date:
                       </label>
                       <input
@@ -772,20 +729,20 @@ export default function AddEmp() {
                         type="date"
                         value={joiningDate}
                         onChange={(e) => setjoiningDate(e.target.value)}
-                        className="block w-full px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className={`block w-full px-4 py-2 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
                         aria-label="Select your joining date"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <label htmlFor="status" className="block text-sm font-medium text-gray-300">
+                      <label htmlFor="status" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                         Status:
                       </label>
                       <select
                         id="status"
                         value={status}
                         onChange={(e) => setstatus(e.target.value)}
-                        className="block w-full px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className={`block w-full px-4 py-2 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
                       >
                         <option value="">Select status</option>
                         <option value="Active">Active</option>
@@ -794,7 +751,7 @@ export default function AddEmp() {
                     </div>
 
                     <div className="space-y-2">
-                      <label htmlFor="bankName" className="block text-sm font-medium text-gray-300">
+                      <label htmlFor="bankName" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                         Bank Name:
                       </label>
                       <input
@@ -802,12 +759,12 @@ export default function AddEmp() {
                         value={bankName}
                         onChange={(e) => setbankName(e.target.value)}
                         placeholder="Enter bank name (alphabets and spaces only)"
-                        className="block w-full px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
+                        className={`block w-full px-4 py-2 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <label htmlFor="bankAccountNo" className="block text-sm font-medium text-gray-300">
+                      <label htmlFor="bankAccountNo" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                         Bank Account No:
                       </label>
                       <input
@@ -815,12 +772,12 @@ export default function AddEmp() {
                         value={bankAccountNo}
                         onChange={(e) => setbankAccountNo(e.target.value)}
                         placeholder="Enter your bank account number"
-                        className="block w-full px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
+                        className={`block w-full px-4 py-2 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <label htmlFor="bankIfscCode" className="block text-sm font-medium text-gray-300">
+                      <label htmlFor="bankIfscCode" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                         Bank IFSC Code:
                       </label>
                       <input
@@ -828,12 +785,12 @@ export default function AddEmp() {
                         value={bankIfscCode}
                         onChange={(e) => setbankIfscCode(e.target.value.toUpperCase())}
                         placeholder="Enter IFSC code (e.g., ABCD0EF1234)"
-                        className="block w-full px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
+                        className={`block w-full px-4 py-2 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <label htmlFor="branchName" className="block text-sm font-medium text-gray-300">
+                      <label htmlFor="branchName" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                         Branch Name:
                       </label>
                       <input
@@ -841,12 +798,12 @@ export default function AddEmp() {
                         value={branchName}
                         onChange={(e) => setbranchName(e.target.value)}
                         placeholder="Enter branch name"
-                        className="block w-full px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
+                        className={`block w-full px-4 py-2 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <label htmlFor="salary" className="block text-sm font-medium text-gray-300">
+                      <label htmlFor="salary" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                         Salary:
                       </label>
                       <input
@@ -854,7 +811,7 @@ export default function AddEmp() {
                         value={salary}
                         onChange={(e) => setsalary(e.target.value)}
                         placeholder="Enter salary (numeric value)"
-                        className="block w-full px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
+                        className={`block w-full px-4 py-2 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
                       />
                     </div>
                   </div>
@@ -868,7 +825,7 @@ export default function AddEmp() {
                     </button>
                     <button
                       type="submit"
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-all duration-300"
+                      className={`px-6 py-2 ${isDarkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'} text-white rounded-md shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200`}
                     >
                       Add Employee
                     </button>
@@ -881,297 +838,297 @@ export default function AddEmp() {
       )}
 
       {/* Update Employee Modal */}
-      {updateModal && selectedEmployee && (
+      {updateModal && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <div className="fixed inset-0 transition-opacity">
-              <div className="absolute inset-0 bg-gray-900 opacity-75"></div>
+              <div className="absolute inset-0 bg-black opacity-75"></div>
             </div>
             <span className="hidden sm:inline-block sm:align-middle sm:h-screen"></span>&#8203;
-            <div className="inline-block align-bottom bg-slate-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full border border-slate-600">
-              <div className="bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            <div className={`inline-block align-bottom ${isDarkMode ? 'bg-slate-800 border-slate-600' : 'bg-white border-gray-300'} rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full border`}>
+              <div className={`${isDarkMode ? 'bg-slate-800' : 'bg-white'} px-4 pt-5 pb-4 sm:p-6 sm:pb-4`}>
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg leading-6 font-medium text-blue-400">Update Employee Information</h3>
-            <button
-              onClick={handleUpdateModalToggle}
-                    className="text-gray-400 hover:text-white"
-            >
+                  <h3 className={`text-lg leading-6 font-medium ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>Update Employee Information</h3>
+                  <button
+                    onClick={() => setUpdateModal(false)}
+                    className={`${isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-700'}`}
+                  >
                     <FaTimes />
-            </button>
+                  </button>
                 </div>
                 <form onSubmit={handleUpdateEmp} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label htmlFor="firstNameUpd" className="block text-sm font-medium text-gray-300" >
-                  First Name:
-                </label>
-                <input
-                  id="firstNameUpd"
-                  value={firstName}
-                  onChange={(e) => setFname(e.target.value)}
-                  placeholder="First name"
-                  className="block w-full px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="lastNameUpd" className="block text-sm font-medium text-gray-300">
-                  Last Name:
-                </label>
-                <input
-                  id="lastNameUpd"
-                  value={lastName}
-                  onChange={(e) => setLname(e.target.value)}
-                  placeholder="Last name"
-                  className="block w-full px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="emailUpd" className="block text-sm font-medium text-gray-300">
-                  Email:
-                </label>
-                <input
-                  id="emailUpd"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Email"
-                  className="block w-full px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="contactUpd" className="block text-sm font-medium text-gray-300">
-                  Contact No:
-                </label>
-                <input
-                  id="contactUpd"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="Contact No"
-                  className="block w-full px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
-                />
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="aadharNoUpd" className="block text-sm font-medium text-gray-300">
-                  Aadhar No:
-                </label>
-                <input
-                  id="aadharNoUpd"
-                  value={aadharNo}
-                  onChange={(e) => setaadharNo(e.target.value)}
-                  placeholder="Aadhar No"
-                  className="block w-full px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
-                />
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="panCardUpd" className="block text-sm font-medium text-gray-300">
-                  Pancard No:
-                </label>
-                <input
-                  id="panCardUpd"
-                  value={panCard}
-                  onChange={(e) => setpanCard(e.target.value)}
-                  placeholder="Enter your PAN card (e.g., ABCDE1234F)"
-                  className="block w-full px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
-                />
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="educationUpd" className="block text-sm font-medium text-gray-300">
-                  Education:
-                </label>
-                <select
-                  id="educationUpd"
-                  value={education}
-                  onChange={(e) => seteducation(e.target.value)}
-                  className="block w-full px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select education</option>
-                  <option value="hsc">HSC</option>
-                  <option value="graduate">Graduate</option>
-                  <option value="post-graduate">Post Graduate</option>
-                </select>
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="bloodGroupUpd" className="block text-sm font-medium text-gray-300">
-                  Blood Group:
-                </label>
-                <select
-                  id="bloodGroupUpd"
-                  value={bloodGroup}
-                  onChange={(e) => setbloodGroup(e.target.value)}
-                  className="block w-full px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select blood group</option>
-                  <option value="a+">A+</option>
-                  <option value="b+">B+</option>
-                  <option value="o+">O+</option>
-                  <option value="ab+">AB+</option>
-                </select>
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="jobRoleUpd" className="block text-sm font-medium text-gray-300">
-                  Job Role:
-                </label>
-                <select
-                  id="jobRoleUpd"
-                  value={jobRole}
-                  onChange={(e) => setjobRole(e.target.value)}
-                  className="block w-full px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select JobRole</option>
-                  <option value="HR">HR</option>
-                  <option value="MANAGER">MANAGER</option>
-                  <option value="MERN STACK DEVELOPER">MERN STACK DEVELOPER</option>
-                  <option value="SUPERVISOR">SUPERVISOR</option>
-                  <option value="DIGITAL MARKETING INTERN">DIGITAL MARKETING INTERN</option>
-                  <option value="JAVA FULL STACK">JAVA FULL STACK  DEVELOPER</option>
-                  <option value="TELECALLER EXCUTIVE">TELECALLER EXCUTIVE</option>
-                  <option value="BACK OFFICE">BACK OFFICE</option>
-                </select>
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="genderUpd" className="block text-sm font-medium text-gray-300">
-                  Gender:
-                </label>
-                <select
-                  id="genderUpd"
-                  value={gender}
-                  onChange={(e) => setgender(e.target.value)}
-                  className="block w-full px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select gender</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-              <div className="space-y-2 md:col-span-2">
-                <label htmlFor="addressUpd" className="block text-sm font-medium text-gray-300">
-                  Address:
-                </label>
-                <textarea
-                  id="addressUpd"
-                  value={address}
-                  onChange={(e) => setaddress(e.target.value)}
-                  placeholder="Address Details"
-                  className="block w-full px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
-                ></textarea>
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="birthDateUpd" className="block text-sm font-medium text-gray-300">
-                  Birth Date:
-                </label>
-                <input
-                  id="birthDateUpd"
-                  type="date"
-                  value={birthDate}
-                  onChange={(e) => setbirthDate(e.target.value)}
-                  className="block w-full px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="joiningDateUpd" className="block text-sm font-medium text-gray-300">
-                  Joining Date:
-                </label>
-                <input
-                  id="joiningDateUpd"
-                  type="date"
-                  value={joiningDate}
-                  onChange={(e) => setjoiningDate(e.target.value)}
-                  className="block w-full px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="statusUpd" className="block text-sm font-medium text-gray-300">
-                  Status:
-                </label>
-                <select
-                  id="statusUpd"
-                  value={status}
-                  onChange={(e) => setstatus(e.target.value)}
-                  className="block w-full px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select status</option>
-                  <option value="Active">Active</option>
-                  <option value="Inactive">Inactive</option>
-                </select>
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="bankNameUpd" className="block text-sm font-medium text-gray-300">
-                  Bank Name:
-                </label>
-                <input
-                  id="bankNameUpd"
-                  value={bankName}
-                  onChange={(e) => setbankName(e.target.value)}
-                  placeholder="Bank Name"
-                  className="block w-full px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
-                />
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="bankAccountNoUpd" className="block text-sm font-medium text-gray-300">
-                  Bank Account No:
-                </label>
-                <input
-                  id="bankAccountNoUpd"
-                  value={bankAccountNo}
-                  onChange={(e) => setbankAccountNo(e.target.value)}
-                  placeholder="Account No"
-                  className="block w-full px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
-                />
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="bankIfscCodeUpd" className="block text-sm font-medium text-gray-300">
-                  Bank IFSC Code:
-                </label>
-                <input
-                  id="bankIfscCodeUpd"
-                  value={bankIfscCode}
-                  onChange={(e) => setbankIfscCode(e.target.value)}
-                  placeholder="Enter IFSC code (e.g., ABCD0EF1234"
-                  className="block w-full px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
-                />
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="branchNameUpd" className="block text-sm font-medium text-gray-300">
-                  Branch Name:
-                </label>
-                <input
-                  id="branchNameUpd"
-                  value={branchName}
-                  onChange={(e) => setbranchName(e.target.value)}
-                  placeholder="Branch Name"
-                  className="block w-full px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
-                />
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="salaryUpd" className="block text-sm font-medium text-gray-300">
-                  Salary:
-                </label>
-                <input
-                  id="salaryUpd"
-                  value={salary}
-                  onChange={(e) => setsalary(e.target.value)}
-                  placeholder="Salary"
-                  className="block w-full px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
-                />
+                    <div className="space-y-2">
+                      <label htmlFor="firstNameUpd" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`} >
+                        First Name:
+                      </label>
+                      <input
+                        id="firstNameUpd"
+                        value={firstName}
+                        onChange={(e) => setFname(e.target.value)}
+                        placeholder="First name"
+                        className={`block w-full px-4 py-2 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 border`}
+                        required
+                      />
                     </div>
-              </div>
-              <div className="md:col-span-2 flex justify-center space-x-4">
-                <button type="submit" className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors duration-300">
-                  Update
-                </button>
-                <button
-                  type="button"
-                  onClick={handleUpdateModalToggle}
-                  className="px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-md transition-colors duration-300"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
+                    <div className="space-y-2">
+                      <label htmlFor="lastNameUpd" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                        Last Name:
+                      </label>
+                      <input
+                        id="lastNameUpd"
+                        value={lastName}
+                        onChange={(e) => setLname(e.target.value)}
+                        placeholder="Last name"
+                        className={`block w-full px-4 py-2 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 border`}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label htmlFor="emailUpd" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                        Email:
+                      </label>
+                      <input
+                        id="emailUpd"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="Email"
+                        className={`block w-full px-4 py-2 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 border`}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label htmlFor="contactUpd" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                        Contact No:
+                      </label>
+                      <input
+                        id="contactUpd"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="Contact No"
+                        className={`block w-full px-4 py-2 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label htmlFor="aadharNoUpd" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                        Aadhar No:
+                      </label>
+                      <input
+                        id="aadharNoUpd"
+                        value={aadharNo}
+                        onChange={(e) => setaadharNo(e.target.value)}
+                        placeholder="Aadhar No"
+                        className={`block w-full px-4 py-2 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label htmlFor="panCardUpd" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                        Pancard No:
+                      </label>
+                      <input
+                        id="panCardUpd"
+                        value={panCard}
+                        onChange={(e) => setpanCard(e.target.value)}
+                        placeholder="Enter your PAN card (e.g., ABCDE1234F)"
+                        className={`block w-full px-4 py-2 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label htmlFor="educationUpd" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                        Education:
+                      </label>
+                      <select
+                        id="educationUpd"
+                        value={education}
+                        onChange={(e) => seteducation(e.target.value)}
+                        className={`block w-full px-4 py-2 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                      >
+                        <option value="">Select education</option>
+                        <option value="hsc">HSC</option>
+                        <option value="graduate">Graduate</option>
+                        <option value="post-graduate">Post Graduate</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <label htmlFor="bloodGroupUpd" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                        Blood Group:
+                      </label>
+                      <select
+                        id="bloodGroupUpd"
+                        value={bloodGroup}
+                        onChange={(e) => setbloodGroup(e.target.value)}
+                        className={`block w-full px-4 py-2 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                      >
+                        <option value="">Select blood group</option>
+                        <option value="a+">A+</option>
+                        <option value="b+">B+</option>
+                        <option value="o+">O+</option>
+                        <option value="ab+">AB+</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <label htmlFor="jobRoleUpd" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                        Job Role:
+                      </label>
+                      <select
+                        id="jobRoleUpd"
+                        value={jobRole}
+                        onChange={(e) => setjobRole(e.target.value)}
+                        className={`block w-full px-4 py-2 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                      >
+                        <option value="">Select JobRole</option>
+                        <option value="HR">HR</option>
+                        <option value="MANAGER">MANAGER</option>
+                        <option value="MERN STACK DEVELOPER">MERN STACK DEVELOPER</option>
+                        <option value="SUPERVISOR">SUPERVISOR</option>
+                        <option value="DIGITAL MARKETING INTERN">DIGITAL MARKETING INTERN</option>
+                        <option value="JAVA FULL STACK">JAVA FULL STACK  DEVELOPER</option>
+                        <option value="TELECALLER EXCUTIVE">TELECALLER EXCUTIVE</option>
+                        <option value="BACK OFFICE">BACK OFFICE</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <label htmlFor="genderUpd" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                        Gender:
+                      </label>
+                      <select
+                        id="genderUpd"
+                        value={gender}
+                        onChange={(e) => setgender(e.target.value)}
+                        className={`block w-full px-4 py-2 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                      >
+                        <option value="">Select gender</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                      <label htmlFor="addressUpd" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                        Address:
+                      </label>
+                      <textarea
+                        id="addressUpd"
+                        value={address}
+                        onChange={(e) => setaddress(e.target.value)}
+                        placeholder="Address Details"
+                        className={`block w-full px-4 py-2 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                      ></textarea>
+                    </div>
+                    <div className="space-y-2">
+                      <label htmlFor="birthDateUpd" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                        Birth Date:
+                      </label>
+                      <input
+                        id="birthDateUpd"
+                        type="date"
+                        value={birthDate}
+                        onChange={(e) => setbirthDate(e.target.value)}
+                        className={`block w-full px-4 py-2 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label htmlFor="joiningDateUpd" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                        Joining Date:
+                      </label>
+                      <input
+                        id="joiningDateUpd"
+                        type="date"
+                        value={joiningDate}
+                        onChange={(e) => setjoiningDate(e.target.value)}
+                        className={`block w-full px-4 py-2 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label htmlFor="statusUpd" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                        Status:
+                      </label>
+                      <select
+                        id="statusUpd"
+                        value={status}
+                        onChange={(e) => setstatus(e.target.value)}
+                        className={`block w-full px-4 py-2 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                      >
+                        <option value="">Select status</option>
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <label htmlFor="bankNameUpd" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                        Bank Name:
+                      </label>
+                      <input
+                        id="bankNameUpd"
+                        value={bankName}
+                        onChange={(e) => setbankName(e.target.value)}
+                        placeholder="Bank Name"
+                        className={`block w-full px-4 py-2 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label htmlFor="bankAccountNoUpd" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                        Bank Account No:
+                      </label>
+                      <input
+                        id="bankAccountNoUpd"
+                        value={bankAccountNo}
+                        onChange={(e) => setbankAccountNo(e.target.value)}
+                        placeholder="Account No"
+                        className={`block w-full px-4 py-2 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label htmlFor="bankIfscCodeUpd" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                        Bank IFSC Code:
+                      </label>
+                      <input
+                        id="bankIfscCodeUpd"
+                        value={bankIfscCode}
+                        onChange={(e) => setbankIfscCode(e.target.value)}
+                        placeholder="Enter IFSC code (e.g., ABCD0EF1234"
+                        className={`block w-full px-4 py-2 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label htmlFor="branchNameUpd" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                        Branch Name:
+                      </label>
+                      <input
+                        id="branchNameUpd"
+                        value={branchName}
+                        onChange={(e) => setbranchName(e.target.value)}
+                        placeholder="Branch Name"
+                        className={`block w-full px-4 py-2 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label htmlFor="salaryUpd" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                        Salary:
+                      </label>
+                      <input
+                        id="salaryUpd"
+                        value={salary}
+                        onChange={(e) => setsalary(e.target.value)}
+                        placeholder="Salary"
+                        className={`block w-full px-4 py-2 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                      />
+                    </div>
+                  </div>
+                  <div className="md:col-span-2 flex justify-center space-x-4">
+                    <button type="submit" className={`px-4 py-2 ${isDarkMode ? 'bg-green-600 hover:bg-green-700' : 'bg-green-500 hover:bg-green-600'} text-white rounded-md shadow-md focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors duration-200`}>
+                      Update
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleUpdateModalToggle}
+                      className={`px-4 py-2 ${isDarkMode ? 'bg-slate-600 hover:bg-slate-700' : 'bg-gray-300 hover:bg-gray-400'} ${isDarkMode ? 'text-white' : 'text-gray-800'} rounded-md shadow-md focus:outline-none focus:ring-2 focus:ring-slate-500 transition-colors duration-200`}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
           </div>
