@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaArrowLeft, FaPrint, FaDownload, FaEnvelope } from 'react-icons/fa';
+import { FaArrowLeft, FaPrint, FaDownload, FaEnvelope, FaSearch } from 'react-icons/fa';
 import axios from 'axios';
 import { useApp } from '../../../context/AppContext';
 import { toast } from 'react-toastify';
@@ -13,9 +13,14 @@ const ExperienceLetter = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState(false);
-  const [subadmins, setSubadmins] = useState([]);
-  const [selectedSubadmin, setSelectedSubadmin] = useState(null);
+  const [subadmin, setSubadmin] = useState(null);
+  const [employees, setEmployees] = useState([]);
+  const [filteredEmployees, setFilteredEmployees] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
   const letterRef = useRef(null);
+  const autocompleteRef = useRef(null);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -24,36 +29,101 @@ const ExperienceLetter = () => {
     startDate: '',
     endDate: '',
     responsibilities: '',
-    skill1: '',
-    skill1Description: '',
-    skill2: '',
-    skill2Description: '',
-    skill3: '',
-    skill3Description: '',
     achievements: '',
     signatoryName: '',
     signatoryTitle: ''
   });
 
-  // Fetch subadmins data
+  // Fetch subadmin data by email
   useEffect(() => {
-    const fetchSubadmins = async () => {
+    const fetchSubadminByEmail = async () => {
       try {
-        console.log("Fetching subadmins data...");
-        const response = await axios.get('http://localhost:8282/api/subadmin/all');
-        console.log("API Response:", response.data);
-        setSubadmins(response.data);
-        setLoading(false);
+        setLoading(true);
+        console.log("Fetching subadmin data...");
+        
+        // Get the logged-in user from localStorage
+        const user = JSON.parse(localStorage.getItem("user")) || {};
+        // Use the logged-in user's email or fallback to hardcoded one
+        const email = user.email || "arbaj.shaikh2034@gmail.com";
+        
+        console.log("Fetching subadmin data for email:", email);
+        const response = await axios.get(`http://localhost:8282/api/subadmin/subadmin-by-email/${email}`);
+        console.log("Subadmin API Response:", response.data);
+        setSubadmin(response.data);
+        fetchEmployees(response.data.id);
       } catch (error) {
-        console.error('Error fetching subadmins:', error);
+        console.error('Error fetching subadmin:', error);
         setApiError(true);
         toast.error('Failed to fetch company details. Please check API connection.');
         setLoading(false);
       }
     };
 
-    fetchSubadmins();
+    fetchSubadminByEmail();
   }, []);
+
+  // Fetch employees for this subadmin
+  const fetchEmployees = async (subadminId) => {
+    try {
+      console.log(`Fetching employees for subadmin ID: ${subadminId}`);
+      const response = await axios.get(`http://localhost:8282/api/employee/${subadminId}/employee/all`);
+      console.log("Employees API Response:", response.data);
+      setEmployees(response.data);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+      toast.error('Failed to fetch employees');
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // Close dropdown when clicking outside
+    function handleClickOutside(event) {
+      if (autocompleteRef.current && !autocompleteRef.current.contains(event.target)) {
+        setShowDropdown(false);
+      }
+    }
+    
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    setShowDropdown(true);
+    
+    if (value.length > 0) {
+      const filtered = employees.filter(emp => 
+        `${emp.firstName} ${emp.lastName}`.toLowerCase().includes(value.toLowerCase()) ||
+        emp.email.toLowerCase().includes(value.toLowerCase()) ||
+        emp.jobRole.toLowerCase().includes(value.toLowerCase())
+      );
+      setFilteredEmployees(filtered);
+    } else {
+      setFilteredEmployees([]);
+    }
+  };
+
+  const handleSelectEmployee = (emp) => {
+    setSelectedEmployee(emp);
+    setSearchTerm(`${emp.firstName} ${emp.lastName}`);
+    setShowDropdown(false);
+    
+    // Prefill form with employee data
+    setFormData({
+      ...formData,
+      employeeName: `${emp.firstName} ${emp.lastName}`,
+      employeeJobTitle: emp.jobRole,
+      startDate: emp.joiningDate,
+      // Don't set end date if employee is active
+      endDate: emp.status === 'Active' || emp.status === 'active' ? '' : new Date().toISOString().split('T')[0],
+      // Other fields remain as entered by the user
+    });
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -61,12 +131,6 @@ const ExperienceLetter = () => {
       ...formData,
       [name]: value,
     });
-  };
-
-  const handleSubadminChange = (e) => {
-    const selectedId = parseInt(e.target.value);
-    const selected = subadmins.find(admin => admin.id === selectedId);
-    setSelectedSubadmin(selected);
   };
 
   const handlePrint = () => {
@@ -104,7 +168,12 @@ const ExperienceLetter = () => {
   };
 
   const handleSendEmail = () => {
-    toast.info('Email functionality will be implemented here');
+    if (!selectedEmployee) {
+      toast.warning('Please select an employee first');
+      return;
+    }
+    
+    toast.info(`Email will be sent to ${selectedEmployee.email}`);
     // Implementation for sending email would go here
   };
 
@@ -171,19 +240,55 @@ const ExperienceLetter = () => {
             <div className={`p-6 rounded-lg shadow-lg ${isDarkMode ? 'bg-slate-700' : 'bg-white'}`}>
               <h2 className="text-xl font-bold mb-4 text-center">Experience Letter Details</h2>
               
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-1">Select Company</label>
-                <select 
-                  className={`w-full p-2 border rounded ${isDarkMode ? 'bg-slate-600 border-slate-500' : 'bg-white border-gray-300'}`}
-                  onChange={handleSubadminChange}
-                >
-                  <option value="">Select a company</option>
-                  {subadmins.map(admin => (
-                    <option key={admin.id} value={admin.id}>
-                      {admin.registercompanyname}
-                    </option>
-                  ))}
-                </select>
+              {subadmin && (
+                <div className="mb-4">
+                  <h3 className="text-md font-medium mb-2">Company Information</h3>
+                  <div className="p-3 rounded border bg-opacity-50 bg-blue-50 border-blue-200">
+                    <p className="font-semibold">{subadmin.registercompanyname}</p>
+                    <p className="text-sm">{subadmin.address}</p>
+                    <p className="text-sm">GST: {subadmin.gstno}</p>
+                  </div>
+                </div>
+              )}
+              
+              <div className="mb-4 relative" ref={autocompleteRef}>
+                <label className="block text-sm font-medium mb-1">Search Employee</label>
+                <div className="relative">
+                  <input 
+                    type="text" 
+                    value={searchTerm}
+                    onChange={handleSearchChange}
+                    className={`w-full p-2 pr-10 border rounded ${isDarkMode ? 'bg-slate-600 border-slate-500' : 'bg-white border-gray-300'}`}
+                    placeholder="Search by name, email or job role"
+                  />
+                  <FaSearch className="absolute right-3 top-3 text-gray-400" />
+                </div>
+                
+                {showDropdown && filteredEmployees.length > 0 && (
+                  <div className={`absolute z-10 w-full mt-1 max-h-60 overflow-auto rounded-md shadow-lg ${isDarkMode ? 'bg-slate-800 border-slate-600' : 'bg-white border-gray-300'} border`}>
+                    {filteredEmployees.map(emp => (
+                      <div 
+                        key={emp.empId} 
+                        className={`p-2 cursor-pointer hover:bg-blue-100 hover:text-blue-800 ${isDarkMode ? 'hover:bg-slate-600' : 'hover:bg-blue-50'}`}
+                        onClick={() => handleSelectEmployee(emp)}
+                      >
+                        <div className="font-medium">{emp.firstName} {emp.lastName}</div>
+                        <div className="text-xs flex justify-between">
+                          <span>{emp.jobRole}</span>
+                          <span className={`px-2 rounded-full text-xs ${emp.status === 'Active' || emp.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                            {emp.status}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {showDropdown && searchTerm && filteredEmployees.length === 0 && (
+                  <div className={`absolute z-10 w-full mt-1 p-2 rounded-md shadow-lg ${isDarkMode ? 'bg-slate-800 border-slate-600' : 'bg-white border-gray-300'} border`}>
+                    No employees found
+                  </div>
+                )}
               </div>
 
               <div className="mb-4">
@@ -240,70 +345,9 @@ const ExperienceLetter = () => {
                   value={formData.responsibilities}
                   onChange={handleInputChange}
                   className={`w-full p-2 border rounded ${isDarkMode ? 'bg-slate-600 border-slate-500' : 'bg-white border-gray-300'}`}
-                  placeholder="Briefly describe main responsibilities"
-                  rows="3"
+                  placeholder="Briefly describe employee's main responsibilities and tasks"
+                  rows="4"
                 ></textarea>
-              </div>
-
-              <div className="mb-4">
-                <h3 className="text-md font-medium mb-2">Skills & Achievements</h3>
-                
-                <div className="mb-3">
-                  <input 
-                    type="text" 
-                    name="skill1"
-                    value={formData.skill1}
-                    onChange={handleInputChange}
-                    className={`w-full p-2 border rounded mb-1 ${isDarkMode ? 'bg-slate-600 border-slate-500' : 'bg-white border-gray-300'}`}
-                    placeholder="Skill 1 Title"
-                  />
-                  <textarea 
-                    name="skill1Description"
-                    value={formData.skill1Description}
-                    onChange={handleInputChange}
-                    className={`w-full p-2 border rounded ${isDarkMode ? 'bg-slate-600 border-slate-500' : 'bg-white border-gray-300'}`}
-                    placeholder="Description of Skill 1"
-                    rows="2"
-                  ></textarea>
-                </div>
-                
-                <div className="mb-3">
-                  <input 
-                    type="text" 
-                    name="skill2"
-                    value={formData.skill2}
-                    onChange={handleInputChange}
-                    className={`w-full p-2 border rounded mb-1 ${isDarkMode ? 'bg-slate-600 border-slate-500' : 'bg-white border-gray-300'}`}
-                    placeholder="Skill 2 Title"
-                  />
-                  <textarea 
-                    name="skill2Description"
-                    value={formData.skill2Description}
-                    onChange={handleInputChange}
-                    className={`w-full p-2 border rounded ${isDarkMode ? 'bg-slate-600 border-slate-500' : 'bg-white border-gray-300'}`}
-                    placeholder="Description of Skill 2"
-                    rows="2"
-                  ></textarea>
-                </div>
-                
-                <div className="mb-3">
-                  <input 
-                    type="text" 
-                    name="skill3"
-                    value={formData.skill3}
-                    onChange={handleInputChange}
-                    className={`w-full p-2 border rounded mb-1 ${isDarkMode ? 'bg-slate-600 border-slate-500' : 'bg-white border-gray-300'}`}
-                    placeholder="Skill 3 Title"
-                  />
-                  <textarea 
-                    name="skill3Description"
-                    value={formData.skill3Description}
-                    onChange={handleInputChange}
-                    className={`w-full p-2 border rounded ${isDarkMode ? 'bg-slate-600 border-slate-500' : 'bg-white border-gray-300'}`}
-                    placeholder="Description of Skill 3"
-                    rows="2"
-                  ></textarea>
-                </div>
               </div>
 
               <div className="mb-4">
@@ -313,8 +357,8 @@ const ExperienceLetter = () => {
                   value={formData.achievements}
                   onChange={handleInputChange}
                   className={`w-full p-2 border rounded ${isDarkMode ? 'bg-slate-600 border-slate-500' : 'bg-white border-gray-300'}`}
-                  placeholder="Notable achievements or accomplishments"
-                  rows="3"
+                  placeholder="Notable achievements or accomplishments (optional)"
+                  rows="4"
                 ></textarea>
               </div>
 
@@ -324,7 +368,7 @@ const ExperienceLetter = () => {
                   <input 
                     type="text" 
                     name="signatoryName"
-                    value={formData.signatoryName}
+                    value={formData.signatoryName || (subadmin ? `${subadmin.name} ${subadmin.lastname}` : '')}
                     onChange={handleInputChange}
                     className={`w-full p-2 border rounded ${isDarkMode ? 'bg-slate-600 border-slate-500' : 'bg-white border-gray-300'}`}
                     placeholder="Your Name"
@@ -345,66 +389,77 @@ const ExperienceLetter = () => {
             </div>
           </div>
 
-          {/* Letter Preview Section */}
+          {/* Letter Preview Section - Enhanced with beautiful design */}
           <div className="lg:col-span-2">
-            <div ref={letterRef} className="bg-white text-black p-8 rounded-lg shadow-lg min-h-[29.7cm] max-w-[21cm] mx-auto relative">
-              {/* Debug Info */}
-              {process.env.NODE_ENV !== 'production' && (
-                <div className="absolute top-0 right-0 bg-yellow-100 p-2 text-xs text-black z-50">
-                  Selected Subadmin: {selectedSubadmin ? selectedSubadmin.registercompanyname : 'None'}
+            <div ref={letterRef} className="bg-white text-black p-8 rounded-lg shadow-xl min-h-[29.7cm] max-w-[21cm] mx-auto relative border border-gray-200">
+              {/* Decorative corner elements */}
+              <div className="absolute top-0 left-0 w-16 h-16 border-t-2 border-l-2 border-blue-600 rounded-tl-lg"></div>
+              <div className="absolute top-0 right-0 w-16 h-16 border-t-2 border-r-2 border-blue-600 rounded-tr-lg"></div>
+              <div className="absolute bottom-0 left-0 w-16 h-16 border-b-2 border-l-2 border-blue-600 rounded-bl-lg"></div>
+              <div className="absolute bottom-0 right-0 w-16 h-16 border-b-2 border-r-2 border-blue-600 rounded-br-lg"></div>
+              
+              {/* Subtle watermark */}
+              {subadmin && (
+                <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none">
+                  <h1 className="text-9xl font-bold text-center transform rotate-12 text-gray-500">{subadmin.registercompanyname}</h1>
                 </div>
               )}
               
-              {/* Company Letterhead */}
-              <div className="flex justify-between items-center mb-8 border-b pb-4">
-                {selectedSubadmin && selectedSubadmin.companylogo ? (
-                  <img 
-                    src={`http://localhost:8282/api/files/${selectedSubadmin.companylogo}`} 
-                    alt="Company Logo" 
-                    className="h-16 object-contain"
-                    onError={(e) => {
-                      console.error('Error loading logo:', e);
-                      e.target.src = 'https://via.placeholder.com/150x50?text=Company+Logo';
-                    }}
-                  />
-                ) : (
-                  <div className="h-16 w-32 bg-gray-200 flex items-center justify-center">
-                    <span className="text-gray-500">Company Logo</span>
+              {/* Company Letterhead - Updated with elegant design */}
+              <div className="mb-10">
+                <div className="flex justify-between items-start mb-4">
+                  {/* Company Logo */}
+                  <div className="flex-shrink-0 mr-4">
+                    {subadmin && subadmin.companylogo ? (
+                      <img 
+                        src={`http://localhost:8282/images/profile/${subadmin.companylogo}`} 
+                        alt="Company Logo" 
+                        className="h-20 object-contain" 
+                        onError={(e) => {
+                          console.error('Error loading logo:', e);
+                          e.target.src = 'https://via.placeholder.com/150x50?text=Company+Logo';
+                        }}
+                      />
+                    ) : null}
                   </div>
-                )}
-                <div className="text-right">
-                  <h2 className="font-bold text-xl">{selectedSubadmin?.registercompanyname || "Your Company Name"}</h2>
-                  <p className="text-sm">{selectedSubadmin?.address || "Company Address"}</p>
-                  <p className="text-sm">GST: {selectedSubadmin?.gstno || "GSTIN"}</p>
+                  
+                  {/* Company Details aligned to the right */}
+                  <div className="flex flex-col items-end text-right">
+                    <h2 className="font-bold text-xl text-blue-800">{subadmin?.registercompanyname || "Your Company Name"}</h2>
+                    <p className="text-sm text-gray-600">{subadmin?.address || "Company Address"}</p>
+                    <p className="text-sm text-gray-600">GST: {subadmin?.gstno || "GSTIN"}</p>
+                  </div>
                 </div>
+                
+                <hr className="border-t-2 border-blue-600 my-3" />
               </div>
 
-              {/* Date */}
-              <div className="mb-6">
-                <p>{new Date().toLocaleDateString('en-US', { 
+              {/* Date with elegant styling */}
+              <div className="mb-10">
+                <p className="text-gray-700 font-semibold">{new Date().toLocaleDateString('en-US', { 
                   year: 'numeric', 
                   month: 'long', 
                   day: 'numeric' 
                 })}</p>
               </div>
 
-              {/* Subject Line */}
-              <div className="mb-6">
-                <h1 className="text-center font-bold text-xl mb-2">EXPERIENCE LETTER</h1>
+              {/* Subject Line with enhanced design */}
+              <div className="mb-10 text-center">
+                <h1 className="text-2xl font-bold text-blue-800 mb-2">EXPERIENCE LETTER</h1>
                 <div className="border-b-2 border-yellow-500 w-1/3 mx-auto"></div>
               </div>
 
-              {/* Salutation */}
+              {/* Salutation with refined spacing */}
               <div className="mb-6">
-                <p>To Whom It May Concern,</p>
+                <p className="text-gray-800 font-semibold">To Whom It May Concern,</p>
               </div>
 
-              {/* Content */}
-              <div className="space-y-4 mb-8">
-                <p>
-                  I hereby certify that {formData.employeeName || "[Employee's Full Name]"}, 
+              {/* Content with elegant typography and spacing */}
+              <div className="space-y-5 mb-10 leading-relaxed text-gray-800">
+                <p className="text-justify">
+                  I hereby certify that <span className="font-semibold text-blue-800">{formData.employeeName || "[Employee's Full Name]"}</span>, 
                   {formData.employeeJobTitle ? ` ${formData.employeeJobTitle}, ` : " [Employee's Job Title], "}was employed 
-                  with {selectedSubadmin?.registercompanyname || "[Your Company Name]"} from 
+                  with <span className="font-semibold text-blue-800">{subadmin?.registercompanyname || "[Your Company Name]"}</span> from 
                   {formData.startDate ? ` ${new Date(formData.startDate).toLocaleDateString('en-US', {
                     year: 'numeric', 
                     month: 'long', 
@@ -414,80 +469,104 @@ const ExperienceLetter = () => {
                     year: 'numeric', 
                     month: 'long', 
                     day: 'numeric'
-                  })}` : " [End Date]"}. During this period, they carried out their duties diligently and effectively.
+                  })}` : " [End Date]"}.
                 </p>
 
-                <p>
-                  {formData.employeeName || "[Employee's Full Name]"} was responsible for {formData.responsibilities || "[Briefly describe employee's main responsibilities and tasks]"}. 
-                  They consistently met and exceeded performance standards and demonstrated exceptional skills, including:
+                <p className="text-justify">
+                  During this period, <span className="font-semibold text-blue-800">{formData.employeeName || "[Employee's Full Name]"}</span> was responsible for {formData.responsibilities || "[Briefly describe employee's main responsibilities and tasks]"}. 
+                  They consistently met and exceeded performance standards and demonstrated exceptional professionalism in all assigned tasks.
                 </p>
-
-                <ul className="list-disc pl-8 space-y-2">
-                  <li>
-                    <span className="font-semibold">{formData.skill1 || "[Skill 1]"}:</span> {formData.skill1Description || "[Provide a brief description of how the employee exhibited this skill]"}
-                  </li>
-                  <li>
-                    <span className="font-semibold">{formData.skill2 || "[Skill 2]"}:</span> {formData.skill2Description || "[Provide a brief description of how the employee exhibited this skill]"}
-                  </li>
-                  <li>
-                    <span className="font-semibold">{formData.skill3 || "[Skill 3]"}:</span> {formData.skill3Description || "[Provide a brief description of how the employee exhibited this skill]"}
-                  </li>
-                </ul>
 
                 {formData.achievements && (
-                  <p>
-                    {formData.employeeName || "[Employee's Full Name]"} also achieved {formData.achievements}.
+                  <p className="text-justify">
+                    <span className="font-semibold text-blue-800">{formData.employeeName || "[Employee's Full Name]"}</span> also {formData.achievements}.
                   </p>
                 )}
 
-                <p>
-                  I can confidently attest to {formData.employeeName || "[Employee's Full Name]"}'s professionalism, dedication, and 
+                <p className="text-justify">
+                  I can confidently attest to <span className="font-semibold text-blue-800">{formData.employeeName || "[Employee's Full Name]"}</span>'s professionalism, dedication, and 
                   contribution to our organization. They were a valuable asset to our team and 
                   consistently upheld our company's values.
                 </p>
 
-                <p>
-                  We wish {formData.employeeName || "[Employee's Full Name]"} continued success in their future endeavors.
+                <p className="text-justify">
+                  We wish <span className="font-semibold text-blue-800">{formData.employeeName || "[Employee's Full Name]"}</span> continued success in their future endeavors.
                 </p>
               </div>
 
-              {/* Signature */}
-              <div className="mt-12">
-                <p>Sincerely,</p>
+              {/* Signature section with refined styling */}
+              <div className="mt-16">
+                <p className="font-semibold text-gray-800">Sincerely,</p>
                 <div className="mt-8">
-                  {selectedSubadmin && selectedSubadmin.signature ? (
-                    <img 
-                      src={`http://localhost:8282/api/files/${selectedSubadmin.signature}`} 
-                      alt="Signature" 
-                      className="h-12 mb-1 object-contain"
-                      onError={(e) => {
-                        console.error('Error loading signature:', e);
-                        e.target.src = 'https://via.placeholder.com/150x50?text=Signature';
-                      }}
-                    />
+                  {subadmin && subadmin.signature ? (
+                    <div className="border-b border-gray-300 pb-1 w-48">
+                      <img 
+                        src={`http://localhost:8282/images/profile/${subadmin.signature}`} 
+                        alt="Signature" 
+                        className="h-16 mb-2 object-contain" 
+                        onError={(e) => {
+                          console.error('Error loading signature:', e);
+                          e.target.src = 'https://via.placeholder.com/150x50?text=Signature';
+                        }}
+                      />
+                    </div>
                   ) : (
                     <div className="h-12 w-32 bg-gray-200 flex items-center justify-center mb-1">
                       <span className="text-gray-500">Signature</span>
                     </div>
                   )}
-                  <p className="font-bold">{formData.signatoryName || selectedSubadmin?.name || "[Your Name]"}</p>
-                  <p>{formData.signatoryTitle || "[Your Title]"}</p>
-                  <p>{selectedSubadmin?.registercompanyname || "[Company Name]"}</p>
+                  <p className="font-bold text-blue-800 mt-2">{formData.signatoryName || (subadmin ? `${subadmin.name} ${subadmin.lastname}` : "[Your Name]")}</p>
+                  <p className="text-gray-700">{formData.signatoryTitle || "[Your Title]"}</p>
+                  <p className="text-gray-700">{subadmin?.registercompanyname || "[Company Name]"}</p>
                 </div>
               </div>
 
-              {/* Stamp if available */}
-              {selectedSubadmin && selectedSubadmin.stampImg && (
-                <div className="absolute bottom-12 right-12 opacity-70">
+              {/* Stamp if available - with text label above it */}
+              {subadmin && subadmin.stampImg && (
+                <div className="absolute bottom-24 right-8 flex flex-col items-center">
+                  {/* Text label above stamp */}
+                  <div className="text-center mb-1">
+                    <span className="font-bold text-red-600 text-xs uppercase">Stamp</span>
+                    <p className="font-bold text-red-600 text-sm">{subadmin.registercompanyname}</p>
+                  </div>
+                  
                   <img 
-                    src={`http://localhost:8282/api/files/${selectedSubadmin.stampImg}`} 
+                    src={`http://localhost:8282/images/profile/${subadmin.stampImg}`} 
                     alt="Company Stamp" 
-                    className="h-24 object-contain"
+                    className="h-28 w-auto object-cover transform scale-100 shadow-sm" 
+                    style={{
+                      imageRendering: 'crisp-edges',
+                      opacity: 0.9
+                    }}
                     onError={(e) => {
                       console.error('Error loading stamp:', e);
+                      // Instead of hiding, show a text-based stamp as fallback
                       e.target.style.display = 'none';
+                      e.target.parentNode.innerHTML = `
+                        <div class="border-2 border-red-500 rounded-full p-4 flex items-center justify-center h-28 w-28">
+                          <div class="text-center">
+                            <p class="font-bold text-red-600">COMPANY</p>
+                            <p class="font-bold text-red-600">STAMP</p>
+                          </div>
+                        </div>
+                      `;
                     }}
                   />
+                </div>
+              )}
+
+              {/* Text-based stamp alternative - Show this if you prefer text over image */}
+              {subadmin && !subadmin.stampImg && (
+                <div className="absolute bottom-24 right-8">
+                  <div className="text-center mb-1">
+                    <span className="font-bold text-red-600 text-xs uppercase">Stamp</span>
+                  </div>
+                  <div className="border-2 border-red-500 rounded-full p-4 flex items-center justify-center h-28 w-28 rotate-12">
+                    <div className="text-center">
+                      <p className="font-bold text-red-600 text-lg">{subadmin.registercompanyname}</p>
+                      <p className="font-bold text-red-600">VERIFIED</p>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
