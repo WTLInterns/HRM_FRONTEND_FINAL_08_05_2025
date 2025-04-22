@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { FaFileAlt, FaFileSignature, FaFileContract, FaFileInvoiceDollar, FaUserTie, FaArrowUp, FaUserMinus, FaCertificate, FaAward, FaChartLine, FaStar } from 'react-icons/fa';
@@ -7,6 +6,9 @@ import { useApp } from '../../context/AppContext';
 
 const Certificates = () => {
   const { isDarkMode } = useApp();
+
+  // Add console logging to help with debugging
+  console.log("Certificates Component Rendering");
 
   const certificateTypes = [
     {
@@ -43,7 +45,7 @@ const Certificates = () => {
       title: 'Experience Letter',
       icon: <FaUserTie className="text-3xl text-indigo-600" />, 
       description: 'Work experience certification',
-      path: '/dashboard/experience'
+      path: '/dashboard/experience'  // Make sure this path matches the route in DashboardRouter
     },
 
     {

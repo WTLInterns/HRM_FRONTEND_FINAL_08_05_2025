@@ -18,6 +18,7 @@ import Certificates from "./Certificates";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement } from 'chart.js';
 import { Pie, Bar } from 'react-chartjs-2';
 import "./animations.css";
+import DashoBoardRouter from "./DashboardRouter/DashoBoardRouter";
 
 // Register Chart.js components
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement);
@@ -311,8 +312,6 @@ const Dashboard = () => {
     setAttendanceDropdownOpen(!attendanceDropdownOpen);
   };
 
-
-
   const handleLogoutClick = () => {
     setShowLogoutModal(true);
   };
@@ -519,6 +518,7 @@ const Dashboard = () => {
             <Route path="viewAtt" element={<ViewAttendance />} />
             <Route path="profileform" element={<ProfileForm />} />
             <Route path="certificates" element={<Certificates />} />
+            <Route path="*" element={<DashoBoardRouter />} />
           </Routes>
         </div>
       </main>
