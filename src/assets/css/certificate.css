@@ -1,0 +1,38 @@
+/* Certificate Styles */
+.certificate {
+  background-color: #fff;
+  padding: 2rem;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  position: relative;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.certificate-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.certificate-title {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.certificate-body {
+  line-height: 1.6;
+}
+
+.certificate-footer {
+  margin-top: 2rem;
+  display: flex;
+  justify-content: space-between;
+}
+
+/* Print styles */
+@media print {
+  .certificate {
+    box-shadow: none;
+  }
+} 

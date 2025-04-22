@@ -8,7 +8,7 @@ import { motion } from 'framer-motion';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
-const ExperienceLetter = () => {
+const TerminationLetter = () => {
   const { isDarkMode } = useApp();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -30,10 +30,16 @@ const ExperienceLetter = () => {
   const [formData, setFormData] = useState({
     employeeName: '',
     employeeJobTitle: '',
-    startDate: '',
-    endDate: '',
-    responsibilities: '',
-    achievements: '',
+    employeeDepartment: '',
+    terminationDate: new Date().toISOString().split('T')[0],
+    terminationReason: '',
+    specificViolations: '',
+    warningDates: '',
+    finalPayDate: '',
+    companyProperty: '',
+    contactPerson: '',
+    contactEmail: '',
+    contactPhone: '',
     signatoryName: '',
     signatoryTitle: ''
   });
@@ -122,9 +128,7 @@ const ExperienceLetter = () => {
       ...formData,
       employeeName: `${emp.firstName} ${emp.lastName}`,
       employeeJobTitle: emp.jobRole,
-      startDate: emp.joiningDate,
-      // Don't set end date if employee is active
-      endDate: emp.status === 'Active' || emp.status === 'active' ? '' : new Date().toISOString().split('T')[0],
+      employeeDepartment: emp.department || 'N/A',
       // Other fields remain as entered by the user
     });
   };
@@ -205,14 +209,14 @@ const ExperienceLetter = () => {
           img.style.width = 'auto';
           img.style.maxWidth = '200px';
           img.style.objectFit = 'contain';
-        } else if (img.classList.contains('h-16') || img.classList.contains('h-12')) {
+        } else if (img.classList.contains('h-16')) {
           // Signature shouldn't be more than 60px high
           img.style.maxHeight = '60px';
           img.style.height = 'auto';
           img.style.width = 'auto';
           img.style.maxWidth = '180px';
           img.style.objectFit = 'contain';
-        } else if (img.src.includes('stampImg')) {
+        } else if (img.classList.contains('h-32') || img.src.includes('stampImg')) {
           // Stamp shouldn't be more than 100px in any dimension
           img.style.maxHeight = '100px';
           img.style.maxWidth = '100px';
@@ -244,12 +248,12 @@ const ExperienceLetter = () => {
               img.style.height = 'auto';
               img.style.width = 'auto';
               img.style.maxWidth = '200px';
-            } else if (img.classList.contains('h-16') || img.classList.contains('h-12')) {
+            } else if (img.classList.contains('h-16')) {
               img.style.maxHeight = '60px';
               img.style.height = 'auto';
               img.style.width = 'auto';
               img.style.maxWidth = '180px';
-            } else if (img.src.includes('stampImg')) {
+            } else if (img.classList.contains('h-32') || img.src.includes('stampImg')) {
               img.style.maxHeight = '100px';
               img.style.maxWidth = '100px';
               img.style.height = 'auto';
@@ -340,7 +344,7 @@ const ExperienceLetter = () => {
         }
       }
       
-      pdf.save(`${formData.employeeName || 'Employee'}_Experience_Letter.pdf`);
+      pdf.save(`${formData.employeeName || 'Employee'}_Termination_Letter.pdf`);
       toast.success("PDF successfully downloaded!");
     } catch (error) {
       console.error("Error generating PDF:", error);
@@ -419,14 +423,14 @@ const ExperienceLetter = () => {
           img.style.width = 'auto';
           img.style.maxWidth = '200px';
           img.style.objectFit = 'contain';
-        } else if (img.classList.contains('h-16') || img.classList.contains('h-12')) {
+        } else if (img.classList.contains('h-16')) {
           // Signature shouldn't be more than 60px high
           img.style.maxHeight = '60px';
           img.style.height = 'auto';
           img.style.width = 'auto';
           img.style.maxWidth = '180px';
           img.style.objectFit = 'contain';
-        } else if (img.src.includes('stampImg')) {
+        } else if (img.classList.contains('h-32') || img.src.includes('stampImg')) {
           // Stamp shouldn't be more than 100px in any dimension
           img.style.maxHeight = '100px';
           img.style.maxWidth = '100px';
@@ -458,12 +462,12 @@ const ExperienceLetter = () => {
               img.style.height = 'auto';
               img.style.width = 'auto';
               img.style.maxWidth = '200px';
-            } else if (img.classList.contains('h-16') || img.classList.contains('h-12')) {
+            } else if (img.classList.contains('h-16')) {
               img.style.maxHeight = '60px';
               img.style.height = 'auto';
               img.style.width = 'auto';
               img.style.maxWidth = '180px';
-            } else if (img.src.includes('stampImg')) {
+            } else if (img.classList.contains('h-32') || img.src.includes('stampImg')) {
               img.style.maxHeight = '100px';
               img.style.maxWidth = '100px';
               img.style.height = 'auto';
@@ -559,9 +563,9 @@ const ExperienceLetter = () => {
       // Create form data for API request
       const formDataForEmail = new FormData();
       formDataForEmail.append('email', selectedEmployee.email);
-      formDataForEmail.append('subject', `Experience Letter - ${subadmin.registercompanyname}`);
-      formDataForEmail.append('message', `Dear ${formData.employeeName},\n\nPlease find attached your Experience Letter from ${subadmin.registercompanyname}.\n\nBest regards,\n${formData.signatoryName}\n${formData.signatoryTitle}\n${subadmin.registercompanyname}`);
-      formDataForEmail.append('attachment', pdfBlob, `${formData.employeeName}_Experience_Letter.pdf`);
+      formDataForEmail.append('subject', `Termination Letter - ${subadmin.registercompanyname}`);
+      formDataForEmail.append('message', `Dear ${formData.employeeName},\n\nPlease find attached your Termination Letter from ${subadmin.registercompanyname}.\n\nBest regards,\n${formData.signatoryName}\n${formData.signatoryTitle}\n${subadmin.registercompanyname}`);
+      formDataForEmail.append('attachment', pdfBlob, `${formData.employeeName}_Termination_Letter.pdf`);
       
       // Send the email
       await axios.post(
@@ -647,7 +651,7 @@ const ExperienceLetter = () => {
           {/* Form Section */}
           <div className="lg:col-span-1">
             <div className={`p-6 rounded-lg shadow-lg ${isDarkMode ? 'bg-slate-700' : 'bg-white'}`}>
-              <h2 className="text-xl font-bold mb-4 text-center">Experience Letter Details</h2>
+              <h2 className="text-xl font-bold mb-4 text-center">Termination Letter Details</h2>
               
               {subadmin && (
                 <div className="mb-4">
@@ -712,63 +716,124 @@ const ExperienceLetter = () => {
                 />
               </div>
 
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Job Title</label>
+                  <input 
+                    type="text" 
+                    name="employeeJobTitle"
+                    value={formData.employeeJobTitle}
+                    onChange={handleInputChange}
+                    className={`w-full p-2 border rounded ${isDarkMode ? 'bg-slate-600 border-slate-500' : 'bg-white border-gray-300'}`}
+                    placeholder="Position/Title"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Department</label>
+                  <input 
+                    type="text" 
+                    name="employeeDepartment"
+                    value={formData.employeeDepartment}
+                    onChange={handleInputChange}
+                    className={`w-full p-2 border rounded ${isDarkMode ? 'bg-slate-600 border-slate-500' : 'bg-white border-gray-300'}`}
+                    placeholder="Department"
+                  />
+                </div>
+              </div>
+
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-1">Job Title</label>
+                <label className="block text-sm font-medium mb-1">Termination Date</label>
                 <input 
-                  type="text" 
-                  name="employeeJobTitle"
-                  value={formData.employeeJobTitle}
+                  type="date" 
+                  name="terminationDate"
+                  value={formData.terminationDate}
                   onChange={handleInputChange}
                   className={`w-full p-2 border rounded ${isDarkMode ? 'bg-slate-600 border-slate-500' : 'bg-white border-gray-300'}`}
-                  placeholder="Position/Title"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Start Date</label>
-                  <input 
-                    type="date" 
-                    name="startDate"
-                    value={formData.startDate}
-                    onChange={handleInputChange}
-                    className={`w-full p-2 border rounded ${isDarkMode ? 'bg-slate-600 border-slate-500' : 'bg-white border-gray-300'}`}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">End Date</label>
-                  <input 
-                    type="date" 
-                    name="endDate"
-                    value={formData.endDate}
-                    onChange={handleInputChange}
-                    className={`w-full p-2 border rounded ${isDarkMode ? 'bg-slate-600 border-slate-500' : 'bg-white border-gray-300'}`}
-                  />
-                </div>
-              </div>
-
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-1">Main Responsibilities</label>
+                <label className="block text-sm font-medium mb-1">Termination Reason</label>
                 <textarea 
-                  name="responsibilities"
-                  value={formData.responsibilities}
+                  name="terminationReason"
+                  value={formData.terminationReason}
                   onChange={handleInputChange}
                   className={`w-full p-2 border rounded ${isDarkMode ? 'bg-slate-600 border-slate-500' : 'bg-white border-gray-300'}`}
-                  placeholder="Briefly describe employee's main responsibilities and tasks"
-                  rows="4"
+                  placeholder="e.g., performance issues, policy violations"
+                  rows="3"
                 ></textarea>
               </div>
 
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-1">Notable Achievements</label>
+                <label className="block text-sm font-medium mb-1">Specific Violations/Issues</label>
                 <textarea 
-                  name="achievements"
-                  value={formData.achievements}
+                  name="specificViolations"
+                  value={formData.specificViolations}
                   onChange={handleInputChange}
                   className={`w-full p-2 border rounded ${isDarkMode ? 'bg-slate-600 border-slate-500' : 'bg-white border-gray-300'}`}
-                  placeholder="Notable achievements or accomplishments (optional)"
-                  rows="4"
+                  placeholder="Details of specific issues or violations"
+                  rows="3"
                 ></textarea>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1">Prior Warnings (Dates)</label>
+                <input 
+                  type="text" 
+                  name="warningDates"
+                  value={formData.warningDates}
+                  onChange={handleInputChange}
+                  className={`w-full p-2 border rounded ${isDarkMode ? 'bg-slate-600 border-slate-500' : 'bg-white border-gray-300'}`}
+                  placeholder="e.g., March 15, 2025; April 2, 2025"
+                />
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1">Final Pay Date</label>
+                <input 
+                  type="date" 
+                  name="finalPayDate"
+                  value={formData.finalPayDate}
+                  onChange={handleInputChange}
+                  className={`w-full p-2 border rounded ${isDarkMode ? 'bg-slate-600 border-slate-500' : 'bg-white border-gray-300'}`}
+                />
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1">Company Property to Return</label>
+                <textarea 
+                  name="companyProperty"
+                  value={formData.companyProperty}
+                  onChange={handleInputChange}
+                  className={`w-full p-2 border rounded ${isDarkMode ? 'bg-slate-600 border-slate-500' : 'bg-white border-gray-300'}`}
+                  placeholder="e.g., laptop, access card, company phone"
+                  rows="2"
+                ></textarea>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Contact Person</label>
+                  <input 
+                    type="text" 
+                    name="contactPerson"
+                    value={formData.contactPerson}
+                    onChange={handleInputChange}
+                    className={`w-full p-2 border rounded ${isDarkMode ? 'bg-slate-600 border-slate-500' : 'bg-white border-gray-300'}`}
+                    placeholder="Contact person for questions"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Contact Email/Phone</label>
+                  <input 
+                    type="text" 
+                    name="contactEmail"
+                    value={formData.contactEmail}
+                    onChange={handleInputChange}
+                    className={`w-full p-2 border rounded ${isDarkMode ? 'bg-slate-600 border-slate-500' : 'bg-white border-gray-300'}`}
+                    placeholder="Email or phone number"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -777,7 +842,7 @@ const ExperienceLetter = () => {
                   <input 
                     type="text" 
                     name="signatoryName"
-                    value={formData.signatoryName || (subadmin ? `${subadmin.name} ${subadmin.lastname}` : '')}
+                    value={formData.signatoryName || (subadmin ? `${subadmin.name} ${subadmin.lastname}` : "")}
                     onChange={handleInputChange}
                     className={`w-full p-2 border rounded ${isDarkMode ? 'bg-slate-600 border-slate-500' : 'bg-white border-gray-300'}`}
                     placeholder="Your Name"
@@ -798,14 +863,9 @@ const ExperienceLetter = () => {
             </div>
           </div>
 
-          {/* Letter Preview Section - Enhanced with beautiful design */}
+          {/* Letter Preview Section */}
           <div className="lg:col-span-2">
             <div ref={letterRef} className="bg-white text-black p-8 rounded-lg shadow-xl min-h-[29.7cm] max-w-[21cm] mx-auto relative border border-gray-200">
-              {/* Decorative corner elements */}
-              <div className="absolute top-0 left-0 w-16 h-16 border-t-2 border-l-2 border-blue-600 rounded-tl-lg"></div>
-              <div className="absolute top-0 right-0 w-16 h-16 border-t-2 border-r-2 border-blue-600 rounded-tr-lg"></div>
-              <div className="absolute bottom-0 left-0 w-16 h-16 border-b-2 border-l-2 border-blue-600 rounded-bl-lg"></div>
-              <div className="absolute bottom-0 right-0 w-16 h-16 border-b-2 border-r-2 border-blue-600 rounded-br-lg"></div>
               
               {/* Subtle watermark */}
               {subadmin && (
@@ -834,148 +894,133 @@ const ExperienceLetter = () => {
                   
                   {/* Company Details aligned to the right */}
                   <div className="flex flex-col items-end text-right">
-                    <h2 className="font-bold text-xl text-blue-800">{subadmin?.registercompanyname || "Your Company Name"}</h2>
+                    <h2 className="font-bold text-xl text-purple-800">{subadmin?.registercompanyname || "Your Company Name"}</h2>
                     <p className="text-sm text-gray-600">{subadmin?.address || "Company Address"}</p>
                     <p className="text-sm text-gray-600">GST: {subadmin?.gstno || "GSTIN"}</p>
                   </div>
                 </div>
                 
-                <hr className="border-t-2 border-blue-600 my-3" />
+                <hr className="border-t-2 border-purple-600 my-3" />
               </div>
-
+              
               {/* Date with elegant styling */}
-              <div className="mb-10">
+              <div className="mb-6 text-right">
                 <p className="text-gray-700 font-semibold">{new Date().toLocaleDateString('en-US', { 
                   year: 'numeric', 
                   month: 'long', 
                   day: 'numeric' 
                 })}</p>
               </div>
-
+              
+              {/* Employee and Company Information */}
+              <div className="flex justify-between mb-8">
+                <div className="w-1/2">
+                  <p className="mb-1 font-medium">{formData.employeeName || "[Employee Name]"}</p>
+                  <p className="mb-1 text-gray-600">{formData.employeeJobTitle || "[Employee Job Title]"}</p>
+                  <p className="mb-1 text-gray-600">{formData.employeeDepartment || "[Employee Department]"}</p>
+                </div>
+              </div>
+              
               {/* Subject Line with enhanced design */}
-              <div className="mb-10 text-center">
-                <h1 className="text-2xl font-bold text-blue-800 mb-2">EXPERIENCE LETTER</h1>
-                <div className="border-b-2 border-yellow-500 w-1/3 mx-auto"></div>
-              </div>
-
-              {/* Salutation with refined spacing */}
               <div className="mb-6">
-                <p className="text-gray-800 font-semibold">To Whom It May Concern,</p>
+                <h1 className="text-xl font-bold text-purple-800 mb-2">NOTICE OF TERMINATION OF EMPLOYMENT</h1>
+                <div className="border-b-2 border-purple-500 w-1/3 mb-4"></div>
+                <p className="font-semibold text-gray-700">Subject: Termination of Employment (with cause)</p>
               </div>
-
-              {/* Content with elegant typography and spacing */}
-              <div className="space-y-5 mb-10 leading-relaxed text-gray-800">
+              
+              {/* Salutation */}
+              <div className="mb-5">
+                <p className="text-gray-800">Dear <span className="font-semibold">{formData.employeeName || "[Employee Name]"}</span>,</p>
+              </div>
+              
+              {/* Main Content with improved typography */}
+              <div className="space-y-4 mb-6 text-gray-800 leading-relaxed">
                 <p className="text-justify">
-                  I hereby certify that <span className="font-semibold text-blue-800">{formData.employeeName || "[Employee's Full Name]"}</span>, 
-                  {formData.employeeJobTitle ? ` ${formData.employeeJobTitle}, ` : " [Employee's Job Title], "}was employed 
-                  with <span className="font-semibold text-blue-800">{subadmin?.registercompanyname || "[Your Company Name]"}</span> from 
-                  {formData.startDate ? ` ${new Date(formData.startDate).toLocaleDateString('en-US', {
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric'
-                  })}` : " [Start Date]"} to 
-                  {formData.endDate ? ` ${new Date(formData.endDate).toLocaleDateString('en-US', {
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric'
-                  })}` : " [End Date]"}.
+                  We regret to inform you that your employment with <span className="font-semibold text-purple-800">{subadmin?.registercompanyname || "[Company Name]"}</span> is terminated, effective 
+                  immediately, due to <span className="font-semibold">{formData.terminationReason || "[specific reason, e.g., repeated policy violations or performance issues]"}</span>.
                 </p>
-
+                
                 <p className="text-justify">
-                  During this period, <span className="font-semibold text-blue-800">{formData.employeeName || "[Employee's Full Name]"}</span> was responsible for {formData.responsibilities || "[Briefly describe employee's main responsibilities and tasks]"}. 
-                  They consistently met and exceeded performance standards and demonstrated exceptional professionalism in all assigned tasks.
+                  This decision is based on a thorough assessment of your {formData.specificViolations ? formData.specificViolations.split(',')[0] : "[conduct/behavior/performance]"} and made only 
+                  after careful consideration, for the following reasons:
                 </p>
-
-                {formData.achievements && (
-                  <p className="text-justify">
-                    <span className="font-semibold text-blue-800">{formData.employeeName || "[Employee's Full Name]"}</span> also {formData.achievements}.
-                  </p>
-                )}
-
+                
+                <ul className="list-disc pl-8 space-y-2">
+                  <li>
+                    {formData.specificViolations || "Detailed example of the issue, e.g., consistent failure to meet performance targets despite feedback and support provided on [specific dates]"}
+                  </li>
+                  <li>
+                    {formData.warningDates ? `Ignoring prior warnings or disciplinary actions, e.g., written warning issued on ${formData.warningDates}` : "Ignoring prior warnings or disciplinary actions, e.g., written warning issued on [specific dates]"}
+                  </li>
+                </ul>
+                
                 <p className="text-justify">
-                  I can confidently attest to <span className="font-semibold text-blue-800">{formData.employeeName || "[Employee's Full Name]"}</span>'s professionalism, dedication, and 
-                  contribution to our organization. They were a valuable asset to our team and 
-                  consistently upheld our company's values.
+                  Your final paycheck, including compensation for {formData.finalPayDate ? `any accrued benefits, if applicable, will be provided on ${new Date(formData.finalPayDate).toLocaleDateString()}` : "any accrued benefits, if applicable, will be provided on [date]"}. Please note that this decision is final and non-negotiable, legal action may be taken if necessary.
                 </p>
-
+                
                 <p className="text-justify">
-                  We wish <span className="font-semibold text-blue-800">{formData.employeeName || "[Employee's Full Name]"}</span> continued success in their future endeavors.
+                  Please return all company property, including {formData.companyProperty || "[list items], by [deadline]"}. If you have questions, please 
+                  contact <span className="font-semibold">{formData.contactPerson || "[Contact Name]"}</span> at <span className="text-blue-600">{formData.contactEmail || "email address/phone number"}</span>.
                 </p>
               </div>
-
-              {/* Signature section with refined styling */}
-              <div className="mt-16">
-                <p className="font-semibold text-gray-800">Sincerely,</p>
-                <div className="mt-8">
+              
+              {/* Closing with refined styling */}
+              <div className="mt-12">
+                <p className="font-semibold text-gray-800">Best regards,</p>
+                <div className="mt-2">
                   {subadmin && subadmin.signature ? (
-                    <div className="border-b border-gray-300 pb-1 w-48">
+                    <div>
                       <img 
                         src={`http://localhost:8282/images/profile/${subadmin.signature}`} 
                         alt="Signature" 
-                        className="h-16 mb-2 object-contain" 
+                        className="h-16 object-contain mb-2" 
                         onError={(e) => {
                           console.error('Error loading signature:', e);
                           e.target.src = 'https://via.placeholder.com/150x50?text=Signature';
                         }}
                       />
+                      <div className="border-b border-gray-300 w-48 mb-2"></div>
+                      <p className="text-gray-700 mt-1 font-semibold">{formData.signatoryName || (subadmin ? `${subadmin.name} ${subadmin.lastname}` : "")}</p>
+                      {formData.signatoryTitle && <p className="text-gray-600 text-sm">{formData.signatoryTitle}</p>}
                     </div>
                   ) : (
-                    <div className="h-12 w-32 bg-gray-200 flex items-center justify-center mb-1">
-                      <span className="text-gray-500">Signature</span>
+                    <div>
+                      <div className="h-16 mb-2"></div>
+                      <div className="border-b border-gray-300 w-48 mb-2"></div>
+                      <p className="text-gray-700 mt-1 font-semibold">{formData.signatoryName || (subadmin ? `${subadmin.name} ${subadmin.lastname}` : "")}</p>
+                      {formData.signatoryTitle && <p className="text-gray-600 text-sm">{formData.signatoryTitle}</p>}
                     </div>
                   )}
-                  <p className="font-bold text-blue-800 mt-2">{formData.signatoryName || (subadmin ? `${subadmin.name} ${subadmin.lastname}` : "[Your Name]")}</p>
-                  <p className="text-gray-700">{formData.signatoryTitle || "[Your Title]"}</p>
-                  <p className="text-gray-700">{subadmin?.registercompanyname || "[Company Name]"}</p>
                 </div>
               </div>
-
-              {/* Stamp if available - with text label above it */}
+              
+              {/* Stamp if available - with improved styling */}
               {subadmin && subadmin.stampImg && (
                 <div className="absolute bottom-24 right-8 flex flex-col items-center">
-                  {/* Text label above stamp */}
                   <div className="text-center mb-1">
-                    <span className="font-bold text-red-600 text-xs uppercase">Stamp</span>
-                    <p className="font-bold text-red-600 text-sm">{subadmin.registercompanyname}</p>
+                    <span className="font-bold text-purple-800 text-xs uppercase">Official Stamp</span>
                   </div>
-                  
                   <img 
                     src={`http://localhost:8282/images/profile/${subadmin.stampImg}`} 
                     alt="Company Stamp" 
-                    className="h-28 w-auto object-cover transform scale-100 shadow-sm" 
-                    style={{
-                      imageRendering: 'crisp-edges',
+                    className="h-32 w-32 object-contain transform scale-100 shadow-sm" 
+                    style={{ 
+                      imageRendering: 'high-quality',
                       opacity: 0.9
                     }}
                     onError={(e) => {
                       console.error('Error loading stamp:', e);
-                      // Instead of hiding, show a text-based stamp as fallback
                       e.target.style.display = 'none';
                       e.target.parentNode.innerHTML = `
-                        <div class="border-2 border-red-500 rounded-full p-4 flex items-center justify-center h-28 w-28">
+                        <div class="border-2 border-purple-500 rounded-full p-4 flex items-center justify-center h-32 w-32 rotate-6">
                           <div class="text-center">
-                            <p class="font-bold text-red-600">COMPANY</p>
-                            <p class="font-bold text-red-600">STAMP</p>
+                            <p class="font-bold text-purple-800">${subadmin.registercompanyname || "COMPANY"}</p>
+                            <p class="font-bold text-purple-800">OFFICIAL</p>
                           </div>
                         </div>
                       `;
                     }}
                   />
-                </div>
-              )}
-
-              {/* Text-based stamp alternative - Show this if you prefer text over image */}
-              {subadmin && !subadmin.stampImg && (
-                <div className="absolute bottom-24 right-8">
-                  <div className="text-center mb-1">
-                    <span className="font-bold text-red-600 text-xs uppercase">Stamp</span>
-                  </div>
-                  <div className="border-2 border-red-500 rounded-full p-4 flex items-center justify-center h-28 w-28 rotate-12">
-                    <div className="text-center">
-                      <p className="font-bold text-red-600 text-lg">{subadmin.registercompanyname}</p>
-                      <p className="font-bold text-red-600">VERIFIED</p>
-                    </div>
-                  </div>
                 </div>
               )}
             </div>
@@ -986,4 +1031,4 @@ const ExperienceLetter = () => {
   );
 };
 
-export default ExperienceLetter; 
+export default TerminationLetter; 
