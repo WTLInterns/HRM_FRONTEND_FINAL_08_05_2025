@@ -158,86 +158,123 @@ const PerformanceCertificate = () => {
   });
 
   const handleDownloadPDF = async () => {
-    if (!formData.employeeName) {
-      toast.error("Please fill in employee name");
-      return;
-    }
+    if (!certificateRef.current) return;
     
     setPdfGenerating(true);
     try {
+      // Apply scaling to certificate container to ensure it fits on one page
+      const certificateContainer = certificateRef.current;
+      const originalStyle = certificateContainer.style.cssText;
+      
+      // Temporarily adjust the container to optimize for PDF generation
+      certificateContainer.style.width = '210mm';
+      certificateContainer.style.height = 'auto';
+      certificateContainer.style.transform = 'scale(0.95)';
+      certificateContainer.style.transformOrigin = 'top center';
+      
       // Wait for images to load and set crossOrigin
-      const images = certificateRef.current.querySelectorAll('img');
-      images.forEach(img => {
-        if (img.src.startsWith('http')) {
+      const images = certificateContainer.querySelectorAll('img');
+      const imagePromises = Array.from(images).map(img => {
+        return new Promise((resolve) => {
+          if (img.complete && img.naturalWidth > 0) {
+            img.crossOrigin = 'Anonymous';
+            resolve();
+            return;
+          }
+          
           img.crossOrigin = 'Anonymous';
-        }
+          
+          img.onload = () => {
+            resolve();
+          };
+          
+          img.onerror = () => {
+            console.error("Failed to load image:", img.src);
+            resolve();
+          };
+          
+          // If image src is relative path to profile image, convert to absolute URL
+          if (img.src.includes('/images/profile/') && !img.src.startsWith('http')) {
+            const newSrc = `http://localhost:8282${img.src.startsWith('/') ? '' : '/'}${img.src}`;
+            img.src = newSrc;
+          }
+        });
       });
       
-      // Add delay to ensure images are loaded
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Wait for all images to be properly loaded
+      await Promise.all(imagePromises);
       
-      // Generate PDF
-      const certificateElement = certificateRef.current;
-      const canvas = await html2canvas(certificateElement, {
-        scale: 2,
+      // Add delay to ensure everything is rendered
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Generate PDF with optimized settings
+      const canvas = await html2canvas(certificateContainer, {
+        scale: 1.5, // Reduced scale for better fit
         useCORS: true,
         logging: false,
-        allowTaint: true
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        imageTimeout: 15000,
+        width: certificateContainer.offsetWidth,
+        height: certificateContainer.offsetHeight
       });
       
-      // Setup PDF options
+      // Restore original styles
+      certificateContainer.style.cssText = originalStyle;
+      
+      // Setup PDF options with precise A4 dimensions
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
-        format: 'a4'
+        format: 'a4',
+        compress: true
       });
       
-      // Calculate dimensions
-      const imgWidth = 190; // A4 width with margins
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      
-      // Check if content requires multiple pages
+      // Get PDF dimensions
+      const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
-      if (imgHeight <= pdfHeight) {
-        // Content fits on one page
+      // Calculate image dimensions to fit on one page
+      const imgWidth = pdfWidth - 20; // Add 10mm margin on each side
+      let imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      // If image height is too large, scale it down to fit on one page
+      if (imgHeight > pdfHeight - 20) {
+        const scaleFactor = (pdfHeight - 20) / imgHeight;
+        imgHeight = pdfHeight - 20;
+        // Adjust width proportionally
+        const adjustedWidth = imgWidth * scaleFactor;
+        
+        // Add image centered on page
+        const xOffset = (pdfWidth - adjustedWidth) / 2;
         pdf.addImage(
-          canvas.toDataURL('image/jpeg', 1.0),
+          canvas.toDataURL('image/jpeg', 0.95),
           'JPEG',
+          xOffset,
           10,
+          adjustedWidth,
+          imgHeight
+        );
+      } else {
+        // Add image centered on page
+        const xOffset = (pdfWidth - imgWidth) / 2;
+        pdf.addImage(
+          canvas.toDataURL('image/jpeg', 0.95),
+          'JPEG',
+          xOffset,
           10,
           imgWidth,
           imgHeight
         );
-      } else {
-        // Content needs multiple pages
-        let heightLeft = imgHeight;
-        let position = 0;
-        let page = 0;
-        
-        while (heightLeft > 0) {
-          if (page > 0) {
-            pdf.addPage();
-          }
-          
-          pdf.addImage(
-            canvas.toDataURL('image/jpeg', 1.0),
-            'JPEG',
-            10,
-            position,
-            imgWidth,
-            imgHeight
-          );
-          
-          heightLeft -= pdfHeight;
-          position -= pdfHeight;
-          page++;
-        }
       }
       
-      // Save PDF
-      pdf.save(`${formData.employeeName || 'Employee'}_Performance_Certificate.pdf`);
-      toast.success("PDF downloaded successfully!");
+      // Save the PDF
+      const fileName = selectedEmployee ? 
+        `${selectedEmployee.firstName}_${selectedEmployee.lastName}_Performance_Certificate.pdf` : 
+        `${formData.employeeName || 'Employee'}_Performance_Certificate.pdf`;
+      
+      pdf.save(fileName);
+      toast.success('PDF downloaded successfully!');
     } catch (error) {
       console.error("Error generating PDF:", error);
       toast.error("Failed to generate PDF. Please try again.");
@@ -247,110 +284,165 @@ const PerformanceCertificate = () => {
   };
 
   const handleSendEmail = async () => {
-    if (!formData.employeeName || !formData.employeeEmail) {
-      toast.error("Please fill in employee name and email");
+    if (!selectedEmployee) {
+      toast.error("Please select an employee first");
+      return;
+    }
+    
+    if (!subadmin) {
+      toast.error("Company information not loaded");
       return;
     }
     
     setSendingEmail(true);
     try {
+      // Apply scaling to certificate container to ensure it fits on one page
+      const certificateContainer = certificateRef.current;
+      const originalStyle = certificateContainer.style.cssText;
+      
+      // Temporarily adjust the container to optimize for PDF generation
+      certificateContainer.style.width = '210mm';
+      certificateContainer.style.height = 'auto';
+      certificateContainer.style.transform = 'scale(0.95)';
+      certificateContainer.style.transformOrigin = 'top center';
+      
       // Wait for images to load and set crossOrigin
-      const images = certificateRef.current.querySelectorAll('img');
-      images.forEach(img => {
-        if (img.src.startsWith('http')) {
+      const images = certificateContainer.querySelectorAll('img');
+      const imagePromises = Array.from(images).map(img => {
+        return new Promise((resolve) => {
+          if (img.complete && img.naturalWidth > 0) {
+            img.crossOrigin = 'Anonymous';
+            resolve();
+            return;
+          }
+          
           img.crossOrigin = 'Anonymous';
-        }
+          
+          img.onload = () => {
+            resolve();
+          };
+          
+          img.onerror = () => {
+            console.error("Failed to load image:", img.src);
+            resolve();
+          };
+          
+          // If image src is relative path to profile image, convert to absolute URL
+          if (img.src.includes('/images/profile/') && !img.src.startsWith('http')) {
+            const newSrc = `http://localhost:8282${img.src.startsWith('/') ? '' : '/'}${img.src}`;
+            console.log(`Converting relative URL to absolute: ${img.src} -> ${newSrc}`);
+            img.src = newSrc;
+          }
+        });
       });
       
-      // Add delay to ensure images are loaded
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Wait for all images to be properly loaded
+      await Promise.all(imagePromises);
       
-      // Generate PDF
-      const certificateElement = certificateRef.current;
-      const canvas = await html2canvas(certificateElement, {
-        scale: 2,
+      // Add delay to ensure everything is rendered
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Generate PDF with optimized settings
+      const canvas = await html2canvas(certificateContainer, {
+        scale: 1.5, // Reduced scale for better fit
         useCORS: true,
         logging: false,
-        allowTaint: true
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        imageTimeout: 15000,
+        width: certificateContainer.offsetWidth,
+        height: certificateContainer.offsetHeight
       });
       
-      // Setup PDF options
+      // Restore original styles
+      certificateContainer.style.cssText = originalStyle;
+      
+      // Setup PDF options with precise A4 dimensions
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
-        format: 'a4'
+        format: 'a4',
+        compress: true
       });
       
-      // Calculate dimensions
-      const imgWidth = 190; // A4 width with margins
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      // Get PDF dimensions
+      const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
-      if (imgHeight <= pdfHeight) {
-        // Content fits on one page
+      // Calculate image dimensions to fit on one page
+      const imgWidth = pdfWidth - 20; // Add 10mm margin on each side
+      let imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      // If image height is too large, scale it down to fit on one page
+      if (imgHeight > pdfHeight - 20) {
+        const scaleFactor = (pdfHeight - 20) / imgHeight;
+        imgHeight = pdfHeight - 20;
+        // Adjust width proportionally
+        const adjustedWidth = imgWidth * scaleFactor;
+        
+        // Add image centered on page
+        const xOffset = (pdfWidth - adjustedWidth) / 2;
         pdf.addImage(
-          canvas.toDataURL('image/jpeg', 1.0),
+          canvas.toDataURL('image/jpeg', 0.95),
           'JPEG',
+          xOffset,
           10,
+          adjustedWidth,
+          imgHeight
+        );
+      } else {
+        // Add image centered on page
+        const xOffset = (pdfWidth - imgWidth) / 2;
+        pdf.addImage(
+          canvas.toDataURL('image/jpeg', 0.95),
+          'JPEG',
+          xOffset,
           10,
           imgWidth,
           imgHeight
         );
-      } else {
-        // Content needs multiple pages
-        let heightLeft = imgHeight;
-        let position = 0;
-        let page = 0;
-        
-        while (heightLeft > 0) {
-          if (page > 0) {
-            pdf.addPage();
-          }
-          
-          pdf.addImage(
-            canvas.toDataURL('image/jpeg', 1.0),
-            'JPEG',
-            10,
-            position,
-            imgWidth,
-            imgHeight
-          );
-          
-          heightLeft -= pdfHeight;
-          position -= pdfHeight;
-          page++;
-        }
       }
       
       // Get the PDF as blob
       const pdfBlob = pdf.output('blob');
       
-      // Create form data
-      const formDataToSend = new FormData();
-      formDataToSend.append('to', formData.employeeEmail);
-      formDataToSend.append('subject', `Performance Certificate for ${formData.employeeName}`);
-      formDataToSend.append('text', `Dear ${formData.employeeName},\n\nPlease find attached your Performance Certificate.\n\nBest regards,\n${subadmin?.companyName || 'Company'}`);
-      formDataToSend.append('file', pdfBlob, `${formData.employeeName || 'Employee'}_Performance_Certificate.pdf`);
+      // Create File object from blob
+      const pdfFile = new File(
+        [pdfBlob], 
+        `${selectedEmployee.firstName}_${selectedEmployee.lastName}_Performance_Certificate.pdf`, 
+        { type: 'application/pdf' }
+      );
       
-      // Send email
+      // Create FormData for API request
+      const formData = new FormData();
+      formData.append('file', pdfFile);
+      
+      // Get employee full name
+      const employeeFullName = `${selectedEmployee.firstName} ${selectedEmployee.lastName}`;
+      
+      // Send the document using the backend API
       const response = await axios.post(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:8282'}/api/sendEmailWithAttachment`,
-        formDataToSend,
+        `http://localhost:8282/api/certificate/send/${subadmin.id}/${encodeURIComponent(employeeFullName)}/performance`,
+        formData,
         {
           headers: {
-            'Content-Type': 'multipart/form-data'
-          }
+            'Content-Type': 'multipart/form-data',
+          },
         }
       );
       
-      if (response.data.success) {
-        toast.success("Email sent successfully!");
+      console.log('API Response:', response.data);
+      
+      if (response.data.emailSent) {
+        toast.success(`Performance certificate sent to ${selectedEmployee.email} successfully!`);
+      } else if (response.data.filePath) {
+        toast.success('Performance certificate saved successfully, but email could not be sent.');
       } else {
-        throw new Error(response.data.message || "Failed to send email");
+        toast.error('Failed to process the performance certificate.');
       }
     } catch (error) {
-      console.error("Error sending email:", error);
-      toast.error(error.message || "Failed to send email. Please try again.");
+      console.error("Error sending performance certificate:", error);
+      toast.error("Failed to send performance certificate: " + (error.response?.data?.error || error.message));
     } finally {
       setSendingEmail(false);
     }

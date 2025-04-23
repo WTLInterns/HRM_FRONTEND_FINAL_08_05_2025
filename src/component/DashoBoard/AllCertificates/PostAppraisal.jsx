@@ -348,9 +348,14 @@ const PostAppraisal = () => {
   const handleSendEmail = async () => {
     if (!certificateRef.current) return;
     
-    // Validate that we have an employee email
-    if (!formData.employeeName || !selectedEmployee?.email) {
-      toast.error('Please select an employee with a valid email address first.');
+    // Validate that we have a selected employee
+    if (!selectedEmployee) {
+      toast.error('Please select an employee first.');
+      return;
+    }
+    
+    if (!subadmin) {
+      toast.error('Company information not loaded');
       return;
     }
     
@@ -362,89 +367,101 @@ const PostAppraisal = () => {
       images.forEach(img => {
         if (img.src.startsWith('http')) {
           img.crossOrigin = 'Anonymous';
-          // Convert relative URLs to absolute URLs if needed
-          if (img.src.includes('localhost:8282')) {
-            const imageUrl = new URL(img.src);
-            img.src = imageUrl.href;
-          }
+        }
+        // If image src is relative path to profile image, convert to absolute URL
+        if (img.src.includes('/images/profile/') && !img.src.startsWith('http')) {
+          const newSrc = `http://localhost:8282${img.src.startsWith('/') ? '' : '/'}${img.src}`;
+          console.log(`Converting relative URL to absolute: ${img.src} -> ${newSrc}`);
+          img.src = newSrc;
         }
       });
       
       // Add delay to ensure images are loaded
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Generate PDF
       const certificateElement = certificateRef.current;
       const canvas = await html2canvas(certificateElement, {
         scale: 2,
         useCORS: true,
-        logging: true,
+        logging: false,
         allowTaint: true,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        imageTimeout: 15000
       });
       
       // Setup PDF options
-      const pdfWidth = 210; // A4 width in mm
-      const pdfHeight = 297; // A4 height in mm
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
-        format: 'a4'
+        format: 'a4',
+        compress: true
       });
       
-      // Calculate dimensions for multi-page support
-      const imgWidth = pdfWidth - 20; // Adding margins
+      // Calculate dimensions
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = pdfWidth - 20; // A4 width with margins
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      const pageHeight = pdfHeight - 20; // Adding margins
-      const totalPages = Math.ceil(imgHeight / pageHeight);
       
-      // Add pages to the PDF
-      let position = 0;
-      
-      for (let i = 0; i < totalPages; i++) {
-        if (i > 0) {
-          pdf.addPage();
-        }
-        
-        const pageCanvas = document.createElement('canvas');
-        const pageCtx = pageCanvas.getContext('2d');
-        
-        const pageCanvasHeight = Math.min(canvas.height - position, (pageHeight * canvas.width) / imgWidth);
-        
-        pageCanvas.width = canvas.width;
-        pageCanvas.height = pageCanvasHeight;
-        
-        pageCtx.fillStyle = '#FFFFFF';
-        pageCtx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
-        
-        // Draw portion of the certificate
-        pageCtx.drawImage(
-          canvas, 
-          0, position, canvas.width, pageCanvasHeight,
-          0, 0, pageCanvas.width, pageCanvas.height
+      if (imgHeight <= pdfHeight - 20) {
+        // Content fits on one page
+        pdf.addImage(
+          canvas.toDataURL('image/jpeg', 0.95),
+          'JPEG',
+          10,
+          10,
+          imgWidth,
+          imgHeight
         );
+      } else {
+        // Content needs multiple pages
+        let heightLeft = imgHeight;
+        let position = 0;
+        let page = 0;
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
         
-        const imgData = pageCanvas.toDataURL('image/jpeg', 1.0);
-        pdf.addImage(imgData, 'JPEG', 10, 10, imgWidth, (pageCanvasHeight * imgWidth) / canvas.width);
-        
-        position += pageCanvasHeight;
+        while (heightLeft > 0) {
+          if (page > 0) {
+            pdf.addPage();
+          }
+          
+          pdf.addImage(
+            imgData,
+            'JPEG',
+            10,
+            position,
+            imgWidth,
+            imgHeight
+          );
+          
+          heightLeft -= (pdfHeight - 20);
+          position -= (pdfHeight - 20);
+          page++;
+        }
       }
       
-      // Convert PDF to blob
+      // Get the PDF as blob
       const pdfBlob = pdf.output('blob');
-      const fileName = `${formData.employeeName.replace(/\s+/g, '_') || 'Employee'}_Post_Appraisal.pdf`;
       
-      // Create FormData for API request with proper field names
-      const formDataToSend = new FormData();
-      formDataToSend.append('file', pdfBlob, fileName);
-      formDataToSend.append('to', selectedEmployee?.email || '');
-      formDataToSend.append('subject', 'Post Appraisal Letter');
-      formDataToSend.append('text', `Dear ${formData.employeeName},\n\nPlease find attached your Post Appraisal Letter.\n\nRegards,\n${formData.signatoryName || (subadmin ? `${subadmin.name} ${subadmin.lastname}` : "HR Manager")}`);
+      // Create File object from blob
+      const pdfFile = new File(
+        [pdfBlob], 
+        `${selectedEmployee.firstName}_${selectedEmployee.lastName}_Post_Appraisal.pdf`, 
+        { type: 'application/pdf' }
+      );
       
-      // Send email with the PDF
+      // Create FormData for API request
+      const formData = new FormData();
+      formData.append('file', pdfFile);
+      
+      // Get employee full name
+      const employeeFullName = `${selectedEmployee.firstName} ${selectedEmployee.lastName}`;
+      
+      // Send the document using the backend API
       const response = await axios.post(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:8282'}/api/sendEmailWithAttachment`,
-        formDataToSend,
+        `http://localhost:8282/api/certificate/send/${subadmin.id}/${encodeURIComponent(employeeFullName)}/postAppraisal`,
+        formData,
         {
           headers: {
             'Content-Type': 'multipart/form-data',
@@ -452,14 +469,18 @@ const PostAppraisal = () => {
         }
       );
       
-      if (response.data && response.data.success) {
-        toast.success('Email sent successfully!');
+      console.log('API Response:', response.data);
+      
+      if (response.data.emailSent) {
+        toast.success(`Post appraisal certificate sent to ${selectedEmployee.email} successfully!`);
+      } else if (response.data.filePath) {
+        toast.success('Post appraisal certificate saved successfully, but email could not be sent.');
       } else {
-        throw new Error(response.data?.message || 'Failed to send email');
+        toast.error('Failed to process the post appraisal certificate.');
       }
     } catch (error) {
-      console.error('Error sending email:', error);
-      toast.error(`Failed to send email: ${error.message || 'Please try again.'}`);
+      console.error('Error sending post appraisal certificate:', error);
+      toast.error("Failed to send post appraisal certificate: " + (error.response?.data?.error || error.message));
     } finally {
       setSendingEmail(false);
     }

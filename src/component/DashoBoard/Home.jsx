@@ -45,6 +45,22 @@ const Home = () => {
   const activeEmpCount = activeEmp.length;
   const inactiveEmpCount = inactiveEmp.length;
   
+  // Listen for employee updates
+  useEffect(() => {
+    const handleEmployeesUpdated = () => {
+      console.log('Employees updated event received, refreshing data...');
+      if (subadminId) {
+        fetchEmployees(subadminId);
+      }
+    };
+    
+    window.addEventListener('employeesUpdated', handleEmployeesUpdated);
+    
+    return () => {
+      window.removeEventListener('employeesUpdated', handleEmployeesUpdated);
+    };
+  }, [subadminId]);
+  
   // For salary calculations using actual data
   const activeSalary = activeEmp.reduce((sum, emp) => sum + (parseFloat(emp.salary) || 0), 0);
   const inactiveSalary = inactiveEmp.reduce((sum, emp) => sum + (parseFloat(emp.salary) || 0), 0);
@@ -90,6 +106,34 @@ const Home = () => {
       },
     ],
   };
+  
+  // Prepare pie chart data for employee status
+  const employeeStatusData = {
+    labels: ['Active Employees', 'Inactive Employees'],
+    datasets: [
+      {
+        data: [stats.activeEmployees, stats.inactiveEmployees],
+        backgroundColor: [
+          'rgba(34, 197, 94, 0.85)',   // Green for active
+          'rgba(239, 68, 68, 0.85)',   // Red for inactive
+        ],
+        borderColor: [
+          'rgba(34, 197, 94, 1)',
+          'rgba(239, 68, 68, 1)',
+        ],
+        borderWidth: 0,
+        hoverBackgroundColor: [
+          'rgba(34, 197, 94, 1)',
+          'rgba(239, 68, 68, 1)',
+        ],
+        hoverBorderColor: '#ffffff',
+        hoverBorderWidth: 2,
+        borderRadius: 6,
+        spacing: 8,
+        offset: 6,
+      },
+    ],
+  };
 
   // Mock yearly data for the bar chart - keeping this as is
   const yearlyData = [
@@ -120,6 +164,8 @@ const Home = () => {
       }
     ],
   };
+  
+
 
   // Update chart options based on theme
   useEffect(() => {
@@ -315,44 +361,24 @@ const Home = () => {
         </div>
       </div>
 
-      {/* Employees by Job Role */}
-      <div className={`mb-6 ${isDarkMode ? 'bg-slate-800' : 'bg-white'} rounded-lg shadow-lg p-6`}>
-        <div className="flex items-center mb-4">
-          <FaBriefcase className={`text-xl mr-2 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
-          <h3 className="text-xl font-semibold">Employees by Job Role</h3>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-          {Object.values(jobRoleSummary).map((item, index) => (
-            <div key={index} className={`${isDarkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-gray-50 hover:bg-gray-100'} p-3 rounded-lg transition-all duration-300 transform hover:scale-[1.02] cursor-pointer`}>
-              <div className={`text-sm font-semibold truncate ${isDarkMode ? 'text-blue-300' : 'text-blue-600'}`}>{item.role}</div>
-              <div className={`flex items-center text-sm mt-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
-                <span className="w-3 h-3 rounded-full bg-green-500 mr-1 animate-pulse-slow"></span>
-                <span className="font-medium">{item.active}</span>
-                <span className={`mx-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>|</span>
-                <span className="w-3 h-3 rounded-full bg-red-500 mr-1 animate-pulse-slow"></span>
-                <span className="font-medium">{item.inactive}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Pie Chart */}
+        {/* Employee Status Pie Chart */}
         <div className={`${isDarkMode ? 'bg-slate-800' : 'bg-white'} p-6 rounded-lg shadow-lg`}>
-          <h3 className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'} mb-4`}>Salary Distribution</h3>
+          <h3 className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'} mb-4`}>Employee Status</h3>
           <div className="h-80">
-            <Pie data={pieChartData} options={chartOptions} />
+            <Pie data={employeeStatusData} options={chartOptions} />
           </div>
           <div className="mt-4 flex justify-center space-x-4">
             <div className="flex items-center">
-              <div className="w-4 h-4 bg-blue-400 rounded-full mr-2"></div>
-              <span className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Active Salary</span>
+              <div className="w-4 h-4 bg-green-500 rounded-full mr-2"></div>
+              <span className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Active Employees</span>
             </div>
             <div className="flex items-center">
-              <div className="w-4 h-4 bg-red-400 rounded-full mr-2"></div>
-              <span className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Inactive Salary</span>
+              <div className="w-4 h-4 bg-red-500 rounded-full mr-2"></div>
+              <span className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Inactive Employees</span>
             </div>
           </div>
         </div>

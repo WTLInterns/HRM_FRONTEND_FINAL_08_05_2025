@@ -356,8 +356,13 @@ const JoiningLetter = () => {
   };
 
   const handleSendEmail = async () => {
-    if (!formData.employeeEmail) {
-      toast.error('Please provide employee email');
+    if (!selectedEmployee) {
+      toast.error('Please select an employee first');
+      return;
+    }
+    
+    if (!subadmin) {
+      toast.error('Company information not loaded');
       return;
     }
     
@@ -511,32 +516,44 @@ const JoiningLetter = () => {
       
       // Get the PDF as blob
       const pdfBlob = pdf.output('blob');
-      const pdfFile = new File([pdfBlob], `${formData.employeeName || 'Employee'}_Joining_Letter.pdf`, { type: 'application/pdf' });
       
-      // Create FormData for email
-      const formDataToSend = new FormData();
-      formDataToSend.append('email', formData.employeeEmail);
-      formDataToSend.append('subject', 'Joining Letter');
-      formDataToSend.append('message', `Dear ${formData.employeeName},\n\nPlease find attached your joining letter.\n\nRegards,\n${subadmin?.companyName || 'Company'}`);
-      formDataToSend.append('attachment', pdfFile);
+      // Create File object from blob
+      const pdfFile = new File(
+        [pdfBlob], 
+        `${selectedEmployee.firstName}_${selectedEmployee.lastName}_Joining_Letter.pdf`, 
+        { type: 'application/pdf' }
+      );
       
-      // Send email with the PDF attachment
+      // Create FormData for API request
+      const formData = new FormData();
+      formData.append('file', pdfFile);
+      
+      // Get employee full name
+      const employeeFullName = `${selectedEmployee.firstName} ${selectedEmployee.lastName}`;
+      
+      // Send the document using the backend API
       const response = await axios.post(
-        `${process.env.REACT_APP_API_URL}/api/send-email`,
-        formDataToSend,
+        `http://localhost:8282/api/certificate/send/${subadmin.id}/${encodeURIComponent(employeeFullName)}/joining`,
+        formData,
         {
           headers: {
             'Content-Type': 'multipart/form-data',
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          }
+          },
         }
       );
       
-      console.log('Email send response:', response.data);
-      toast.success('Email sent successfully!');
+      console.log('API Response:', response.data);
+      
+      if (response.data.emailSent) {
+        toast.success(`Joining letter sent to ${selectedEmployee.email} successfully!`);
+      } else if (response.data.filePath) {
+        toast.success('Joining letter saved successfully, but email could not be sent.');
+      } else {
+        toast.error('Failed to process the joining letter.');
+      }
     } catch (error) {
-      console.error('Error sending email:', error);
-      toast.error(`Failed to send email: ${error.message || 'Unknown error'}`);
+      console.error('Error sending joining letter:', error);
+      toast.error("Failed to send joining letter: " + (error.response?.data?.error || error.message));
     } finally {
       setEmailSending(false);
     }

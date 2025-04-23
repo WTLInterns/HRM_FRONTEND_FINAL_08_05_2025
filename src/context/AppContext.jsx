@@ -283,10 +283,19 @@ export const AppProvider = ({ children }) => {
     try {
       setLoading(true);
       
+      // Check if we're on the login page
+      const isLoginPage = window.location.pathname.includes('/login');
+      
       // Get the current user from localStorage
       const currentUser = JSON.parse(localStorage.getItem('user'));
       
       if (!currentUser || !currentUser.id) {
+        // If we're on the login page, silently return without showing error
+        if (isLoginPage) {
+          console.log('No user logged in yet, skipping employee fetch');
+          setLoading(false);
+          return [];
+        }
         throw new Error('User information not found');
       }
       
@@ -306,10 +315,19 @@ export const AppProvider = ({ children }) => {
     } catch (error) {
       console.error('Error fetching employees:', error);
       setLoading(false);
+      
+      // Check if we're on the login page
+      const isLoginPage = window.location.pathname.includes('/login');
+      
       // If API fails, use static data as fallback
       setEmp(STATIC_EMPLOYEES);
       calculateStats(STATIC_EMPLOYEES);
-      toast.error('Failed to fetch employees: ' + (error.response?.data || error.message));
+      
+      // Only show error toast if not on login page
+      if (!isLoginPage) {
+        toast.error('Failed to fetch employees: ' + (error.response?.data?.message || error.message));
+      }
+      
       return STATIC_EMPLOYEES;
     }
   };

@@ -362,15 +362,20 @@ const RelievingLetter = () => {
   const handleSendEmail = async () => {
     if (!letterRef.current) return;
     
-    // Check if we have a valid email address
-    if (!selectedEmployee?.email) {
-      toast.error('No valid email address found. Please select an employee with an email address.');
+    // Check if we have a valid employee selected
+    if (!selectedEmployee) {
+      toast.error('Please select an employee first');
+      return;
+    }
+    
+    if (!subadmin) {
+      toast.error('Company information not loaded');
       return;
     }
     
     setSendingEmail(true);
     try {
-      console.log("Sending email to:", selectedEmployee.email);
+      console.log("Preparing relieving letter for:", selectedEmployee.email);
       // Check for images with missing dimensions first
       const images = letterRef.current.querySelectorAll('img');
       console.log(`Found ${images.length} images in the letter for email`);
@@ -508,62 +513,99 @@ const RelievingLetter = () => {
       // Create PDF with A4 size
       const pdf = new jsPDF({
         orientation: 'portrait',
-        unit: 'px',
-        format: [canvas.width, canvas.height],
-        compress: true,
-        precision: 16
+        unit: 'mm',
+        format: 'a4',
+        compress: true
       });
       
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
-      const imgData = canvas.toDataURL('image/jpeg', 1.0);
+      // Calculate dimensions to maintain aspect ratio
+      const imgWidth = pdfWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
-      // Add the image to fit exactly in the page
-      pdf.addImage(
-        imgData,
-        'JPEG',
-        0,
-        0,
-        pdfWidth,
-        pdfHeight,
-        undefined,
-        'FAST'
+      // Handle multi-page if content is long
+      if (imgHeight <= pdfHeight) {
+        pdf.addImage(
+          canvas.toDataURL('image/jpeg', 0.95),
+          'JPEG',
+          0,
+          0,
+          imgWidth,
+          imgHeight,
+          undefined,
+          'FAST'
+        );
+      } else {
+        // Content needs multiple pages
+        let heightLeft = imgHeight;
+        let position = 0;
+        let page = 0;
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        
+        while (heightLeft > 0) {
+          if (page > 0) {
+            pdf.addPage();
+          }
+          
+          pdf.addImage(
+            imgData,
+            'JPEG',
+            0,
+            position,
+            imgWidth,
+            imgHeight,
+            undefined,
+            'FAST'
+          );
+          
+          heightLeft -= pdfHeight;
+          position -= pdfHeight;
+          page++;
+        }
+      }
+      
+      // Get the PDF as blob
+      const pdfBlob = pdf.output('blob');
+      
+      // Create File object from blob
+      const pdfFile = new File(
+        [pdfBlob], 
+        `${selectedEmployee.firstName}_${selectedEmployee.lastName}_Relieving_Letter.pdf`, 
+        { type: 'application/pdf' }
       );
       
-      // Get the Base64 data for the PDF
-      const pdfData = pdf.output('datauristring');
+      // Create FormData for API request
+      const formData = new FormData();
+      formData.append('file', pdfFile);
       
-      // Create a Blob from the Base64 data
-      const byteCharacters = atob(pdfData.split(',')[1]);
-      const byteNumbers = new Array(byteCharacters.length);
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
-      }
-      const byteArray = new Uint8Array(byteNumbers);
-      const blob = new Blob([byteArray], { type: 'application/pdf' });
+      // Get employee full name
+      const employeeFullName = `${selectedEmployee.firstName} ${selectedEmployee.lastName}`;
       
-      // Create a File object from the Blob
-      const pdfFile = new File([blob], `${formData.employeeName || 'Employee'}_Relieving_Letter.pdf`, { type: 'application/pdf' });
+      // Send the document using the backend API
+      const response = await axios.post(
+        `http://localhost:8282/api/certificate/send/${subadmin.id}/${encodeURIComponent(employeeFullName)}/relieving`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
       
-      // Create FormData and append the PDF file
-      const formDataForEmail = new FormData();
-      formDataForEmail.append('pdf', pdfFile);
-      formDataForEmail.append('email', selectedEmployee?.email);
-      formDataForEmail.append('subject', 'Relieving Letter');
-      formDataForEmail.append('text', `Dear ${formData.employeeName},\n\nPlease find attached your relieving letter.\n\nThank you for your services.\n\nBest regards,\n${formData.signatoryName || (subadmin ? `${subadmin.name || ''} ${subadmin.lastname || ''}` : "HR Manager")}\n${subadmin.companyName || 'Company'}`);
+      console.log('API Response:', response.data);
       
-      // Send the email with the PDF attachment
-      const response = await axios.post('http://localhost:8282/api/v1/mail/sendwithattachment', formDataForEmail);
-      
-      if (response.status === 200) {
-        toast.success('Email sent successfully!');
+      if (response.data.emailSent) {
+        toast.success(`Relieving letter sent to ${selectedEmployee.email} successfully!`);
+      } else if (response.data.filePath) {
+        toast.success('Relieving letter saved successfully, but email could not be sent.');
       } else {
-        throw new Error('Failed to send email');
+        toast.error('Failed to process the relieving letter.');
       }
     } catch (error) {
-      console.error("Error sending email:", error);
-      toast.error(`Failed to send email: ${error.message || 'Unknown error'}`);
+      console.error("Error sending relieving letter:", error);
+      toast.error("Failed to send relieving letter: " + (error.response?.data?.error || error.message));
     } finally {
       setSendingEmail(false);
     }

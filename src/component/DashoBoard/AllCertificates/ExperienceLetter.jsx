@@ -356,10 +356,13 @@ const ExperienceLetter = () => {
       return;
     }
     
+    if (!subadmin) {
+      toast.error("Company information not loaded");
+      return;
+    }
+    
     setSendingEmail(true);
     try {
-      const token = localStorage.getItem("token");
-      
       // First check and fix any image with missing dimensions
       const images = letterRef.current.querySelectorAll('img');
       
@@ -554,31 +557,46 @@ const ExperienceLetter = () => {
         }
       }
       
+      // Get the PDF as blob
       const pdfBlob = pdf.output('blob');
       
-      // Create form data for API request
-      const formDataForEmail = new FormData();
-      formDataForEmail.append('email', selectedEmployee.email);
-      formDataForEmail.append('subject', `Experience Letter - ${subadmin.registercompanyname}`);
-      formDataForEmail.append('message', `Dear ${formData.employeeName},\n\nPlease find attached your Experience Letter from ${subadmin.registercompanyname}.\n\nBest regards,\n${formData.signatoryName}\n${formData.signatoryTitle}\n${subadmin.registercompanyname}`);
-      formDataForEmail.append('attachment', pdfBlob, `${formData.employeeName}_Experience_Letter.pdf`);
+      // Create File object from blob
+      const pdfFile = new File(
+        [pdfBlob], 
+        `${selectedEmployee.firstName}_${selectedEmployee.lastName}_Experience_Letter.pdf`, 
+        { type: 'application/pdf' }
+      );
       
-      // Send the email
-      await axios.post(
-        `${process.env.REACT_APP_API_URL}/api/send-email`,
-        formDataForEmail,
+      // Create FormData for API request
+      const formData = new FormData();
+      formData.append('file', pdfFile);
+      
+      // Get employee full name
+      const employeeFullName = `${selectedEmployee.firstName} ${selectedEmployee.lastName}`;
+      
+      // Send the document using the backend API
+      const response = await axios.post(
+        `http://localhost:8282/api/certificate/send/${subadmin.id}/${encodeURIComponent(employeeFullName)}/experience`,
+        formData,
         {
           headers: {
-            Authorization: `Bearer ${token}`,
             'Content-Type': 'multipart/form-data',
           },
         }
       );
       
-      toast.success(`Email sent to ${selectedEmployee.email} successfully!`);
+      console.log('API Response:', response.data);
+      
+      if (response.data.emailSent) {
+        toast.success(`Experience letter sent to ${selectedEmployee.email} successfully!`);
+      } else if (response.data.filePath) {
+        toast.success('Experience letter saved successfully, but email could not be sent.');
+      } else {
+        toast.error('Failed to process the experience letter.');
+      }
     } catch (error) {
-      console.error("Error sending email:", error);
-      toast.error("Failed to send email: " + error.message);
+      console.error("Error sending experience letter:", error);
+      toast.error("Failed to send experience letter: " + (error.response?.data?.error || error.message));
     } finally {
       setSendingEmail(false);
     }

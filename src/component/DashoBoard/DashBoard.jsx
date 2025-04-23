@@ -122,7 +122,7 @@ const Dashboard = () => {
     };
   }, [emp, companyBudget]);
 
-  // Prepare pie chart data
+  // Prepare pie chart data for salary distribution
   const pieChartData = {
     labels: ['Active Salary', 'Inactive Salary'],
     datasets: [
@@ -140,6 +140,34 @@ const Dashboard = () => {
         hoverBackgroundColor: [
           'rgba(56, 189, 248, 1)',
           'rgba(251, 113, 133, 1)',
+        ],
+        hoverBorderColor: '#ffffff',
+        hoverBorderWidth: 2,
+        borderRadius: 6,
+        spacing: 8,
+        offset: 6,
+      },
+    ],
+  };
+  
+  // Prepare pie chart data for employee status
+  const employeeStatusData = {
+    labels: ['Active Employees', 'Inactive Employees'],
+    datasets: [
+      {
+        data: [stats.activeEmployees, stats.inactiveEmployees],
+        backgroundColor: [
+          'rgba(34, 197, 94, 0.85)',   // Green for active
+          'rgba(239, 68, 68, 0.85)',   // Red for inactive
+        ],
+        borderColor: [
+          'rgba(34, 197, 94, 1)',
+          'rgba(239, 68, 68, 1)',
+        ],
+        borderWidth: 0,
+        hoverBackgroundColor: [
+          'rgba(34, 197, 94, 1)',
+          'rgba(239, 68, 68, 1)',
         ],
         hoverBorderColor: '#ffffff',
         hoverBorderWidth: 2,
@@ -288,7 +316,7 @@ const Dashboard = () => {
 
   // Group employees by job role and count active/inactive for each role
   const jobRoleSummary = emp.reduce((acc, employee) => {
-    const role = employee.jobRole;
+    const role = employee.jobRole || 'Unassigned';
     if (!acc[role]) {
       acc[role] = { active: 0, inactive: 0 };
     }
@@ -299,6 +327,31 @@ const Dashboard = () => {
     }
     return acc;
   }, {});
+  
+  // Prepare job role chart data
+  const jobRoleLabels = Object.keys(jobRoleSummary);
+  const activeJobRoleCounts = jobRoleLabels.map(role => jobRoleSummary[role].active);
+  const inactiveJobRoleCounts = jobRoleLabels.map(role => jobRoleSummary[role].inactive);
+  
+  const jobRoleChartData = {
+    labels: jobRoleLabels,
+    datasets: [
+      {
+        label: 'Active Employees',
+        data: activeJobRoleCounts,
+        backgroundColor: 'rgba(34, 197, 94, 0.85)',
+        borderColor: 'rgba(34, 197, 94, 1)',
+        borderWidth: 1,
+      },
+      {
+        label: 'Inactive Employees',
+        data: inactiveJobRoleCounts,
+        backgroundColor: 'rgba(239, 68, 68, 0.85)',
+        borderColor: 'rgba(239, 68, 68, 1)',
+        borderWidth: 1,
+      }
+    ],
+  };
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
