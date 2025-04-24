@@ -3,7 +3,10 @@ import { useApp } from "../../context/AppContext";
 import axios from "axios";
 import "./animations.css";
 import { FaUsers, FaUserCheck, FaUserMinus, FaBriefcase, FaArrowUp, FaArrowDown } from "react-icons/fa";
-import { Pie, Bar } from 'react-chartjs-2';
+import { Pie } from 'react-chartjs-2';
+import { Chart as ChartJS, ArcElement, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
+
+ChartJS.register(ArcElement, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 const Home = () => {
   const { emp, isDarkMode } = useApp();
@@ -107,23 +110,27 @@ const Home = () => {
     ],
   };
   
+  // Calculate percentages for active and inactive employees
+  const activePercentage = stats.totalEmployees > 0 ? Math.round((stats.activeEmployees / stats.totalEmployees) * 100) : 0;
+  const inactivePercentage = stats.totalEmployees > 0 ? Math.round((stats.inactiveEmployees / stats.totalEmployees) * 100) : 0;
+  
   // Prepare pie chart data for employee status
   const employeeStatusData = {
-    labels: ['Active Employees', 'Inactive Employees'],
+    labels: [`Active Employees (${activePercentage}%)`, `Inactive Employees (${inactivePercentage}%)`],
     datasets: [
       {
         data: [stats.activeEmployees, stats.inactiveEmployees],
         backgroundColor: [
-          'rgba(34, 197, 94, 0.85)',   // Green for active
+          'rgba(59, 130, 246, 0.85)',   // Blue for active
           'rgba(239, 68, 68, 0.85)',   // Red for inactive
         ],
         borderColor: [
-          'rgba(34, 197, 94, 1)',
+          'rgba(59, 130, 246, 1)',
           'rgba(239, 68, 68, 1)',
         ],
         borderWidth: 0,
         hoverBackgroundColor: [
-          'rgba(34, 197, 94, 1)',
+          'rgba(59, 130, 246, 1)',
           'rgba(239, 68, 68, 1)',
         ],
         hoverBorderColor: '#ffffff',
@@ -135,35 +142,7 @@ const Home = () => {
     ],
   };
 
-  // Mock yearly data for the bar chart - keeping this as is
-  const yearlyData = [
-    { year: 2020, profit: 150000, loss: 50000 },
-    { year: 2021, profit: 200000, loss: 30000 },
-    { year: 2022, profit: 250000, loss: 100000 },
-    { year: 2023, profit: 300000, loss: 150000 },
-    { year: 2024, profit: 350000, loss: 200000 }
-  ];
 
-  // Prepare bar chart data
-  const barChartData = {
-    labels: yearlyData.map(item => item.year),
-    datasets: [
-      {
-        label: 'Profit',
-        data: yearlyData.map(item => item.profit),
-        backgroundColor: 'rgba(56, 189, 248, 0.85)',
-        borderColor: 'rgba(56, 189, 248, 1)',
-        borderWidth: 1,
-      },
-      {
-        label: 'Loss',
-        data: yearlyData.map(item => item.loss),
-        backgroundColor: 'rgba(251, 113, 133, 0.85)',
-        borderColor: 'rgba(251, 113, 133, 1)',
-        borderWidth: 1,
-      }
-    ],
-  };
   
 
 
@@ -202,9 +181,7 @@ const Home = () => {
           label: (context) => {
             const label = context.label || '';
             const value = context.raw || 0;
-            const total = context.dataset.data.reduce((acc, curr) => acc + curr, 0);
-            const percentage = Math.round((value / total) * 100);
-            return `${label}: ₹${value.toLocaleString()} (${percentage}%)`;
+            return `${label}: ${value}`;
           },
           labelTextColor: () => '#ffffff'
         }
@@ -212,54 +189,7 @@ const Home = () => {
     }
   };
 
-  // Bar chart options
-  const barChartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: 'top',
-        labels: {
-          color: isDarkMode ? '#ffffff' : '#1e293b',
-          font: {
-            size: 12
-          }
-        }
-      },
-      tooltip: {
-        backgroundColor: isDarkMode ? 'rgba(15, 23, 42, 0.9)' : 'rgba(255, 255, 255, 0.9)',
-        titleColor: isDarkMode ? '#ffffff' : '#1e293b',
-        bodyColor: isDarkMode ? '#ffffff' : '#1e293b',
-        borderColor: isDarkMode ? '#475569' : '#cbd5e1',
-        borderWidth: 1,
-        padding: 10,
-        callbacks: {
-          label: (context) => {
-            return `${context.dataset.label}: ₹${context.raw.toLocaleString()}`;
-          }
-        }
-      }
-    },
-    scales: {
-      x: {
-        grid: {
-          color: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
-        },
-        ticks: {
-          color: isDarkMode ? '#ffffff' : '#1e293b'
-        }
-      },
-      y: {
-        grid: {
-          color: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
-        },
-        ticks: {
-          color: isDarkMode ? '#ffffff' : '#1e293b',
-          callback: (value) => `₹${value.toLocaleString()}`
-        }
-      }
-    }
-  };
+
 
   // Group employees by job role and count active/inactive for each role using actual data
   const jobRoleSummary = employees.reduce((acc, employee) => {
@@ -363,59 +293,78 @@ const Home = () => {
 
 
 
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Employee Status Pie Chart */}
-        <div className={`${isDarkMode ? 'bg-slate-800' : 'bg-white'} p-6 rounded-lg shadow-lg`}>
-          <h3 className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'} mb-4`}>Employee Status</h3>
-          <div className="h-80">
-            <Pie data={employeeStatusData} options={chartOptions} />
-          </div>
-          <div className="mt-4 flex justify-center space-x-4">
-            <div className="flex items-center">
-              <div className="w-4 h-4 bg-green-500 rounded-full mr-2"></div>
-              <span className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Active Employees</span>
+      {/* Employee Status and Role Distribution Section */}
+      <div className={`${isDarkMode ? 'bg-slate-800' : 'bg-white'} p-6 rounded-lg shadow-lg mt-6`}>
+        <h3 className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'} mb-6`}>Employee Overview</h3>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Employee Status Pie Chart */}
+          <div>
+            <h4 className={`text-lg font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'} mb-3`}>Status Distribution</h4>
+            <div className="h-72">
+              <Pie data={employeeStatusData} options={chartOptions} />
             </div>
-            <div className="flex items-center">
-              <div className="w-4 h-4 bg-red-500 rounded-full mr-2"></div>
-              <span className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Inactive Employees</span>
+            <div className="mt-4 flex justify-center space-x-8">
+              <div className="flex items-center">
+                <div className="w-4 h-4 bg-blue-500 rounded-full mr-2"></div>
+                <span className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Active ({stats.activeEmployees}) 
+                  <span className="ml-1 font-medium">{activePercentage}%</span>
+                </span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 bg-red-500 rounded-full mr-2"></div>
+                <span className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Inactive ({stats.inactiveEmployees})
+                  <span className="ml-1 font-medium">{inactivePercentage}%</span>
+                </span>
+              </div>
             </div>
           </div>
-        </div>
-
-        {/* Bar Chart */}
-        <div className={`${isDarkMode ? 'bg-slate-800' : 'bg-white'} p-6 rounded-lg shadow-lg`}>
-          <h3 className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'} mb-4`}>Yearly Performance</h3>
-          <div className="h-80">
-            <Bar data={barChartData} options={barChartOptions} />
+          
+          {/* Employee Role Distribution */}
+          <div>
+            <h4 className={`text-lg font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'} mb-3`}>Role Distribution</h4>
+            <div className={`${isDarkMode ? 'bg-slate-700' : 'bg-gray-50'} rounded-lg p-4 h-72 overflow-auto`}>
+              <table className="w-full">
+                <thead>
+                  <tr className={`border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`}>
+                    <th className={`text-left py-2 px-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Role</th>
+                    <th className={`text-center py-2 px-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Total</th>
+                    <th className={`text-center py-2 px-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Active</th>
+                    <th className={`text-center py-2 px-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Inactive</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(jobRoleSummary)
+                    .sort((a, b) => (b[1].active + b[1].inactive) - (a[1].active + a[1].inactive))
+                    .map(([role, counts], index) => (
+                      <tr key={index} className={`border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`}>
+                        <td className={`py-2 px-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>{role || 'Undefined'}</td>
+                        <td className={`text-center py-2 px-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>{counts.active + counts.inactive}</td>
+                        <td className="py-2 px-2 text-center">
+                          <span className="flex items-center justify-center">
+                            <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+                            <span className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>{counts.active}</span>
+                          </span>
+                        </td>
+                        <td className="py-2 px-2 text-center">
+                          <span className="flex items-center justify-center">
+                            <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
+                            <span className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>{counts.inactive}</span>
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  }
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Budget Overview */}
-      <div className={`mt-6 ${isDarkMode ? 'bg-slate-800' : 'bg-white'} p-6 rounded-lg shadow-lg`}>
-        <h3 className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'} mb-4`}>Budget Overview</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className={`${isDarkMode ? 'bg-slate-700' : 'bg-gray-50'} p-4 rounded-lg`}>
-            <h4 className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'} text-sm`}>Total Budget</h4>
-            <p className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>₹10,00,000</p>
-          </div>
-          <div className={`${isDarkMode ? 'bg-slate-700' : 'bg-gray-50'} p-4 rounded-lg`}>
-            <h4 className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'} text-sm`}>Allocated Salary</h4>
-            <p className={`text-2xl font-bold ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>₹{totalSalary.toLocaleString()}</p>
-          </div>
-          <div className={`${isDarkMode ? 'bg-slate-700' : 'bg-gray-50'} p-4 rounded-lg`}>
-            <h4 className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'} text-sm`}>Remaining Budget</h4>
-            <div className="flex items-center">
-              <p className={`text-2xl font-bold ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>₹{(1000000 - totalSalary).toLocaleString()}</p>
-              <span className={`ml-2 flex items-center text-sm ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
-                <FaArrowUp className="mr-1" />
-                {Math.round((1000000 - totalSalary) / 10000)}%
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
+
 
       {/* Show loading state */}
       {loading && (

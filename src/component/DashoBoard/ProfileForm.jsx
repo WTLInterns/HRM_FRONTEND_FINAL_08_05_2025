@@ -129,7 +129,7 @@ const ImageUploadPreview = ({
   return (
     <div>
       <p className={`text-sm mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>{label} {label === "Company Logo" && <span className="text-red-400">*</span>}</p>
-      <div className={`relative w-32 h-32 md:w-40 md:h-40 ${isDarkMode ? 'bg-slate-800 border-slate-600' : 'bg-gray-100 border-gray-300'} rounded-lg overflow-hidden border`}>
+      <div className={`relative w-32 h-32 md:w-40 md:h-40 ${isDarkMode ? 'bg-slate-800 border-slate-600' : 'bg-gray-100 border-gray-300'} rounded-lg overflow-hidden ${editMode ? (isDarkMode ? 'border-2 border-blue-500' : 'border-2 border-blue-400') : 'border'}`}>
         {/* Show direct preview for new files */}
         {file ? (
           <div className={`w-full h-full flex justify-center items-center ${isDarkMode ? 'bg-gray-800' : 'bg-gray-200'}`}>
@@ -857,10 +857,10 @@ const ProfileForm = () => {
       </div>
       
       {/* Profile Information */}
-      <div className={`${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} p-6 rounded-lg shadow-md border mb-6`}>
+      <div className={`${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} p-6 rounded-lg shadow-md border-2 ${editMode ? (isDarkMode ? 'border-blue-600' : 'border-blue-400') : ''} mb-6`}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Personal Information */}
-          <div className={`${isDarkMode ? 'bg-slate-700 border-slate-600' : 'bg-gray-50 border-gray-200'} p-5 rounded-lg shadow border`}>
+          <div className={`${isDarkMode ? 'bg-slate-700 border-slate-600' : 'bg-gray-50 border-gray-200'} p-5 rounded-lg shadow border-2 ${editMode ? (isDarkMode ? 'border-blue-500' : 'border-blue-300') : ''}`}>
             <h3 className={`text-lg font-semibold mb-4 flex items-center ${isDarkMode ? 'text-blue-300' : 'text-blue-600'}`}>
               <FaIdCard className="mr-2" /> Personal Information
             </h3>
@@ -868,7 +868,7 @@ const ProfileForm = () => {
             <div className="space-y-4">
               <div>
                 <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>First Name</label>
-                <div className={`flex items-center ${isDarkMode ? 'bg-slate-700' : 'bg-gray-100'} px-3 py-2 rounded-md`}>
+                <div className={`flex items-center ${isDarkMode ? 'bg-slate-700' : 'bg-gray-100'} px-3 py-2 rounded-md ${editMode ? (isDarkMode ? 'border border-blue-400' : 'border border-blue-300') : ''}`}>
                   <FaUser className={`mr-2 ${isDarkMode ? 'text-blue-300' : 'text-blue-500'}`} />
                   {editMode ? (
                     <input
@@ -886,7 +886,7 @@ const ProfileForm = () => {
               
               <div>
                 <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>Last Name</label>
-                <div className={`flex items-center ${isDarkMode ? 'bg-slate-700' : 'bg-gray-100'} px-3 py-2 rounded-md`}>
+                <div className={`flex items-center ${isDarkMode ? 'bg-slate-700' : 'bg-gray-100'} px-3 py-2 rounded-md ${editMode ? (isDarkMode ? 'border border-blue-400' : 'border border-blue-300') : ''}`}>
                   <FaUser className={`mr-2 ${isDarkMode ? 'text-blue-300' : 'text-blue-500'}`} />
                   {editMode ? (
                     <input
@@ -904,7 +904,7 @@ const ProfileForm = () => {
               
               <div>
                 <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>Email</label>
-                <div className={`flex items-center ${isDarkMode ? 'bg-slate-700' : 'bg-gray-100'} px-3 py-2 rounded-md`}>
+                <div className={`flex items-center ${isDarkMode ? 'bg-slate-700' : 'bg-gray-100'} px-3 py-2 rounded-md ${editMode ? (isDarkMode ? 'border border-blue-400' : 'border border-blue-300') : ''}`}>
                   <FaRegEnvelope className={`mr-2 ${isDarkMode ? 'text-blue-300' : 'text-blue-500'}`} />
                   {editMode ? (
                     <input
@@ -922,7 +922,7 @@ const ProfileForm = () => {
               
               <div>
                 <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>Phone Number</label>
-                <div className={`flex items-center ${isDarkMode ? 'bg-slate-700' : 'bg-gray-100'} px-3 py-2 rounded-md`}>
+                <div className={`flex items-center ${isDarkMode ? 'bg-slate-700' : 'bg-gray-100'} px-3 py-2 rounded-md ${editMode ? (isDarkMode ? 'border border-blue-400' : 'border border-blue-300') : ''}`}>
                   <FaPhone className={`mr-2 ${isDarkMode ? 'text-blue-300' : 'text-blue-500'}`} />
                   {editMode ? (
                     <input
@@ -941,7 +941,7 @@ const ProfileForm = () => {
           </div>
           
           {/* Company Information */}
-          <div className={`${isDarkMode ? 'bg-slate-700 border-slate-600' : 'bg-gray-50 border-gray-200'} p-5 rounded-lg shadow border`}>
+          <div className={`${isDarkMode ? 'bg-slate-700 border-slate-600' : 'bg-gray-50 border-gray-200'} p-5 rounded-lg shadow border-2 ${editMode ? (isDarkMode ? 'border-blue-500' : 'border-blue-300') : ''}`}>
             <h3 className={`text-lg font-semibold mb-4 flex items-center ${isDarkMode ? 'text-blue-300' : 'text-blue-600'}`}>
               <FaBuilding className="mr-2" /> Company Information
             </h3>
@@ -949,7 +949,7 @@ const ProfileForm = () => {
             <div className="space-y-4">
               <div>
                 <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>Company Name</label>
-                <div className={`flex items-center ${isDarkMode ? 'bg-slate-700' : 'bg-gray-100'} px-3 py-2 rounded-md`}>
+                <div className={`flex items-center ${isDarkMode ? 'bg-slate-700' : 'bg-gray-100'} px-3 py-2 rounded-md ${editMode ? (isDarkMode ? 'border border-blue-400' : 'border border-blue-300') : ''}`}>
                   <FaBuilding className={`mr-2 ${isDarkMode ? 'text-blue-300' : 'text-blue-500'}`} />
                   {editMode ? (
                     <input
@@ -966,21 +966,73 @@ const ProfileForm = () => {
               </div>
               
               <div>
-                <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>Status</label>
-                <div className={`flex items-center ${isDarkMode ? 'bg-slate-700' : 'bg-gray-100'} px-3 py-2 rounded-md`}>
-                  <FaUserTie className={`mr-2 ${isDarkMode ? 'text-blue-300' : 'text-blue-500'}`} />
+                <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>GST Number</label>
+                <div className={`flex items-center ${isDarkMode ? 'bg-slate-700' : 'bg-gray-100'} px-3 py-2 rounded-md ${editMode ? (isDarkMode ? 'border border-blue-400' : 'border border-blue-300') : ''}`}>
+                  <FaIdCard className={`mr-2 ${isDarkMode ? 'text-blue-300' : 'text-blue-500'}`} />
                   {editMode ? (
-                    <select
-                      name="status"
-                      value={tempData.status}
+                    <input
+                      type="text"
+                      name="gstno"
+                      value={tempData.gstno}
                       onChange={handleInputChange}
                       className={`w-full ${isDarkMode ? 'bg-slate-700 text-white' : 'bg-gray-100 text-gray-800'} focus:outline-none`}
-                    >
-                      <option value="active">Active</option>
-                      <option value="inactive">Inactive</option>
-                    </select>
+                    />
                   ) : (
-                    <div className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-800'} capitalize`}>{profileData.status}</div>
+                    <div className="font-medium">{profileData.gstno || 'Not provided'}</div>
+                  )}
+                </div>
+              </div>
+              
+              <div>
+                <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>CIN Number</label>
+                <div className={`flex items-center ${isDarkMode ? 'bg-slate-700' : 'bg-gray-100'} px-3 py-2 rounded-md ${editMode ? (isDarkMode ? 'border border-blue-400' : 'border border-blue-300') : ''}`}>
+                  <FaIdCard className={`mr-2 ${isDarkMode ? 'text-blue-300' : 'text-blue-500'}`} />
+                  {editMode ? (
+                    <input
+                      type="text"
+                      name="cinno"
+                      value={tempData.cinno}
+                      onChange={handleInputChange}
+                      className={`w-full ${isDarkMode ? 'bg-slate-700 text-white' : 'bg-gray-100 text-gray-800'} focus:outline-none`}
+                    />
+                  ) : (
+                    <div className="font-medium">{profileData.cinno || 'Not provided'}</div>
+                  )}
+                </div>
+              </div>
+              
+              <div>
+                <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>Company Website</label>
+                <div className={`flex items-center ${isDarkMode ? 'bg-slate-700' : 'bg-gray-100'} px-3 py-2 rounded-md ${editMode ? (isDarkMode ? 'border border-blue-400' : 'border border-blue-300') : ''}`}>
+                  <FaBuilding className={`mr-2 ${isDarkMode ? 'text-blue-300' : 'text-blue-500'}`} />
+                  {editMode ? (
+                    <input
+                      type="text"
+                      name="companyurl"
+                      value={tempData.companyurl}
+                      onChange={handleInputChange}
+                      className={`w-full ${isDarkMode ? 'bg-slate-700 text-white' : 'bg-gray-100 text-gray-800'} focus:outline-none`}
+                    />
+                  ) : (
+                    <div className="font-medium">{profileData.companyurl || 'Not provided'}</div>
+                  )}
+                </div>
+              </div>
+              
+              <div>
+                <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>Address</label>
+                <div className={`flex items-center ${isDarkMode ? 'bg-slate-700' : 'bg-gray-100'} px-3 py-2 rounded-md ${editMode ? (isDarkMode ? 'border border-blue-400' : 'border border-blue-300') : ''}`}>
+                  <FaBuilding className={`mr-2 ${isDarkMode ? 'text-blue-300' : 'text-blue-500'}`} />
+                  {editMode ? (
+                    <input
+                      type="text"
+                      name="address"
+                      value={tempData.address}
+                      onChange={handleInputChange}
+                      className={`w-full ${isDarkMode ? 'bg-slate-700 text-white' : 'bg-gray-100 text-gray-800'} focus:outline-none`}
+                    />
+                  ) : (
+                    <div className="font-medium">{profileData.address || 'Not provided'}</div>
                   )}
                 </div>
               </div>
@@ -990,7 +1042,7 @@ const ProfileForm = () => {
       </div>
       
       {/* Images Section */}
-      <div className={`${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} p-6 rounded-lg shadow-md border`}>
+      <div className={`${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} p-6 rounded-lg shadow-md border-2 ${editMode ? (isDarkMode ? 'border-blue-600' : 'border-blue-400') : ''}`}>
         <div className="flex justify-between items-center mb-4">
           <h3 className={`text-xl font-bold ${isDarkMode ? 'text-blue-400' : 'text-blue-600'} flex items-center gap-2`}>
             <FaIdCard /> Images & Signature

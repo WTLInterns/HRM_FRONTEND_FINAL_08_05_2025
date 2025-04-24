@@ -113,6 +113,10 @@ export default function SalaryReport() {
   const [s, setS] = useState(null)
   const [showReport, setShowReport] = useState(false)
   const [generating, setGenerating] = useState(false)
+  const [incentiveAmount, setIncentiveAmount] = useState(0) // New state for incentive amount
+  const [totalDeductions, setTotalDeductions] = useState(0) // New state for total deductions
+  const [professionalTax, setProfessionalTax] = useState(200) // Fixed Rs. 200 for professional tax
+  const [pfAmount, setPfAmount] = useState(0) // New state for PF amount
   
   // Get company details from localStorage
   const getCompanyDetails = () => {
@@ -185,14 +189,71 @@ export default function SalaryReport() {
         `http://localhost:8282/api/employee/employee/${encodeURIComponent(user.registercompanyname)}/${encodeURIComponent(employeeName)}/attendance/report?startDate=${startDate}&endDate=${endDate}`
       )
       
+      // Fetch the complete employee details to ensure we have department and bank details
+      let employeeDetails = {}
+      try {
+        // Get employee by name - this should return the full employee entity
+        // const empResponse = await axios.get(
+        //   `http://localhost:8282/api/employee/${user.id}/employee/by-name/${encodeURIComponent(employeeName)}`
+        // )
+        if (empResponse.status === 200) {
+          employeeDetails = empResponse.data
+          console.log("Complete employee details:", employeeDetails)
+          console.log("Department from employee details:", employeeDetails.department)
+          console.log("Bank IFSC Code from employee details:", employeeDetails.bankIfscCode)
+        }
+      } catch (empErr) {
+        console.warn("Could not fetch complete employee details:", empErr)
+      }
+      
       if (response.status !== 200) {
         throw new Error("Failed to fetch salary report")
       }
       
       const data = response.data
       console.log("API Response:", data)
-      setSalaryReport(data)
-      setS(data) // Set s to the same data for consistency
+      
+      // Calculate deductions
+      const workingDays = data.workingDays || 30
+      const perDaySalary = data.grossSalary / workingDays
+      const totalLeaves = workingDays - (data.payableDays ?? 0)
+      const deductionVal = Math.round(perDaySalary * totalLeaves)
+      const tdsVal = data.tds ? Math.round(data.tds) : 0
+      
+      // Calculate PF (3% of gross salary)
+      const calculatedPfAmount = Math.round(data.grossSalary * 0.03)
+      setPfAmount(calculatedPfAmount)
+      
+      const calculatedTotalDeductions = deductionVal + professionalTax + tdsVal + calculatedPfAmount
+      
+      // Ensure employee data is properly included
+      console.log("Employee data for department and IFSC:", {
+        department: data.department || employeeDetails.department,
+        bankIfscCode: data.bankIfscCode || employeeDetails.bankIfscCode
+      })
+      
+      // Add incentive amount and ensure all required fields are included in the salary report data
+      const updatedData = {
+        ...data,
+        incentiveAmount: parseFloat(incentiveAmount) || 0,
+        professionalTax: professionalTax,
+        pfAmount: calculatedPfAmount,
+        totalDeductions: calculatedTotalDeductions,
+        // Explicitly include these fields to ensure they're available
+        // Use direct access to the employee object properties
+        department: data.department || "",
+        bankIfscCode: data.ifscCode || ""
+      }
+      
+      // Log the final data to verify
+      console.log("Final data for PDF generation:", {
+        department: data.department,
+        bankIfscCode: data.ifscCode
+      })
+      
+      setTotalDeductions(calculatedTotalDeductions)
+      setSalaryReport(updatedData)
+      setS(updatedData) // Set s to the same data for consistency
       setShowReport(true)
       setYearlyCTC(data.grossSalary * 12) // Set yearly CTC based on gross salary
     } catch (err) {
@@ -411,6 +472,7 @@ export default function SalaryReport() {
           "left"
         )
         createCell(margin + col1 + col2, yPos, col3, 10, "Department:", 10, "left", true)
+        // Department field - direct access
         createCell(
           margin + col1 + col2 + col3,
           yPos,
@@ -508,12 +570,13 @@ export default function SalaryReport() {
           "left",
           true
         )
+        // IFSC Code field - direct access
         createCell(
           margin + colWidth * 3,
           yPos,
           colWidth,
           rowHeight,
-          s?.bankIfscCode || "N/A",
+          salaryReport?.bankIfscCode || "N/A",
           10,
           "left"
         )
@@ -593,10 +656,12 @@ export default function SalaryReport() {
         const perDaySalary = monthlyCTC / workingDays
         const totalLeaves = workingDays - (salaryReport?.payableDays ?? 0)
         const deductionVal = Math.round(perDaySalary * totalLeaves)
-        const professionalTaxVal = salaryReport?.professionalTax ? Math.round(salaryReport.professionalTax) : 0
+        const professionalTaxVal = professionalTax // Use the state variable
         const tdsVal = salaryReport?.tds ? Math.round(salaryReport.tds) : 0
-        const totalDeductions = deductionVal + professionalTaxVal + tdsVal
-        const computedNetPayable = grossSalary - totalDeductions
+        const pfAmountVal = Math.round(grossSalary * 0.03) // Calculate PF (3% of gross salary)
+        const calculatedTotalDeductions = deductionVal + professionalTaxVal + tdsVal + pfAmountVal
+        const incentiveAmountVal = parseFloat(salaryReport?.incentiveAmount) || 0
+        const computedNetPayable = grossSalary - calculatedTotalDeductions + incentiveAmountVal
         const netPayInteger = Math.max(0, computedNetPayable)
 
         // Cost To Company & Deductions
@@ -620,25 +685,25 @@ export default function SalaryReport() {
         createCell(margin + salaryCol1 + salaryCol2 + salaryCol3, yPos, salaryCol4, 10, `Rs. ${tdsVal}`, 10, "right")
         yPos += 10
 
-        // DA & blank
-        createCell(margin, yPos, salaryCol1, 10, "DA Allowance (53% of Basic)", 10, "left", true)
+        // DA & PF
+        createCell(margin, yPos, salaryCol1, 10, "DA Allowance", 10, "left", true)
         createCell(margin + salaryCol1, yPos, salaryCol2, 10, `Rs. ${da}`, 10, "left")
-        createCell(margin + salaryCol1 + salaryCol2, yPos, salaryCol3, 10, "", 10, "left", true)
-        createCell(margin + salaryCol1 + salaryCol2 + salaryCol3, yPos, salaryCol4, 10, "", 10, "right")
+        createCell(margin + salaryCol1 + salaryCol2, yPos, salaryCol3, 10, "PF", 10, "left", true)
+        createCell(margin + salaryCol1 + salaryCol2 + salaryCol3, yPos, salaryCol4, 10, `Rs. ${pfAmountVal}`, 10, "right")
         yPos += 10
 
         // Special & Total Deductions
         createCell(margin, yPos, salaryCol1, 10, "Special Allowance", 10, "left", true)
         createCell(margin + salaryCol1, yPos, salaryCol2, 10, `Rs. ${special}`, 10, "left")
         createCell(margin + salaryCol1 + salaryCol2, yPos, salaryCol3, 10, "Total Deductions", 10, "left", true)
-        createCell(margin + salaryCol1 + salaryCol2 + salaryCol3, yPos, salaryCol4, 10, `Rs. ${totalDeductions}`, 10, "right")
+        createCell(margin + salaryCol1 + salaryCol2 + salaryCol3, yPos, salaryCol4, 10, `Rs. ${calculatedTotalDeductions}`, 10, "right")
         yPos += 10
 
         // Total Allowance & Additional Perks
         createCell(margin, yPos, salaryCol1, 10, "Total Allowance", 10, "right", true)
         createCell(margin + salaryCol1, yPos, salaryCol2, 10, `Rs. ${totalAllowance}`, 10, "left")
-        createCell(margin + salaryCol1 + salaryCol2, yPos, salaryCol3, 10, "Additional Perks", 10, "left", true)
-        createCell(margin + salaryCol1 + salaryCol2 + salaryCol3, yPos, salaryCol4, 10, salaryReport?.additionalPerks || "N/A", 10, "right")
+        createCell(margin + salaryCol1 + salaryCol2, yPos, salaryCol3, 10, "Incentive Amount", 10, "left", true)
+        createCell(margin + salaryCol1 + salaryCol2 + salaryCol3, yPos, salaryCol4, 10, `Rs. ${incentiveAmountVal}`, 10, "right")
         yPos += 10
 
         // Gross Salary & Bonus
@@ -802,6 +867,26 @@ export default function SalaryReport() {
             />
           </div>
         </div>
+        
+        {/* Incentive Amount Field */}
+        <div className="grid grid-cols-1 md:grid-cols-1 gap-4 mt-4">
+          <div>
+            <label htmlFor="incentiveAmount" className={`block mb-2 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+              Incentive Amount
+            </label>
+            <input
+              type="number"
+              id="incentiveAmount"
+              className={`w-full p-2.5 rounded-md ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} border focus:ring-blue-500 focus:border-blue-500`}
+              placeholder="Enter Incentive Amount"
+              value={incentiveAmount}
+              onChange={(e) => setIncentiveAmount(e.target.value)}
+              min="0"
+              step="0.01"
+            />
+          </div>
+        </div>
+        
         <div className="flex flex-wrap gap-3 mt-4">
           <button
             onClick={handleSubmit}
@@ -932,6 +1017,10 @@ export default function SalaryReport() {
                   <p className="text-sm text-gray-400">Gross Salary</p>
                   <p className="font-medium">₹{salaryReport?.grossSalary || 0}</p>
                 </div>
+                <div>
+                  <p className="text-sm text-gray-400">Incentive Amount</p>
+                  <p className="font-medium">₹{salaryReport?.incentiveAmount || 0}</p>
+                </div>
               </div>
             </div>
           </div>
@@ -942,11 +1031,15 @@ export default function SalaryReport() {
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <div>
                   <p className="text-sm text-gray-400">Professional Tax</p>
-                  <p className="font-medium">₹{salaryReport?.professionalTax || 0}</p>
+                  <p className="font-medium">₹{professionalTax}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-400">TDS</p>
                   <p className="font-medium">₹{salaryReport?.tds || 0}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">PF</p>
+                  <p className="font-medium">₹{pfAmount}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-400">Advance</p>
@@ -954,7 +1047,7 @@ export default function SalaryReport() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-400">Total Deductions</p>
-                  <p className="font-medium">₹{salaryReport?.totalDeductions || 0}</p>
+                  <p className="font-medium">₹{totalDeductions}</p>
                 </div>
               </div>
             </div>
@@ -966,11 +1059,11 @@ export default function SalaryReport() {
               <div className="grid grid-cols-1 gap-4">
                 <div>
                   <p className="text-sm text-gray-400">Net Payable Salary</p>
-                  <p className="font-medium text-xl text-green-400">₹{salaryReport?.netPayable || 0}</p>
+                  <p className="font-medium text-xl text-green-400">₹{(salaryReport?.netPayable || 0) + (salaryReport?.incentiveAmount || 0)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-400">Amount in Words</p>
-                  <p className="font-medium italic">{salaryReport?.amountInWords || ""}</p>
+                  <p className="font-medium italic">{numberToWords((salaryReport?.netPayable || 0) + (salaryReport?.incentiveAmount || 0))} Rupees Only</p>
                 </div>
               </div>
             </div>

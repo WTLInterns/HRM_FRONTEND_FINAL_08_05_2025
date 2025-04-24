@@ -46,7 +46,6 @@ const PerformanceCertificate = () => {
     rating: '4.8',
     evaluationDate: new Date().toISOString().split('T')[0],
     signatoryName: '',
-    signatoryTitle: '',
     employeeId: '',
     employeeEmail: '',
   });
@@ -284,165 +283,32 @@ const PerformanceCertificate = () => {
   };
 
   const handleSendEmail = async () => {
-    if (!selectedEmployee) {
-      toast.error("Please select an employee first");
+    if (!certificateRef.current || !selectedEmployee || !subadmin) {
+      toast.error('Missing required data.');
       return;
     }
-    
-    if (!subadmin) {
-      toast.error("Company information not loaded");
-      return;
-    }
-    
     setSendingEmail(true);
     try {
-      // Apply scaling to certificate container to ensure it fits on one page
-      const certificateContainer = certificateRef.current;
-      const originalStyle = certificateContainer.style.cssText;
-      
-      // Temporarily adjust the container to optimize for PDF generation
-      certificateContainer.style.width = '210mm';
-      certificateContainer.style.height = 'auto';
-      certificateContainer.style.transform = 'scale(0.95)';
-      certificateContainer.style.transformOrigin = 'top center';
-      
-      // Wait for images to load and set crossOrigin
-      const images = certificateContainer.querySelectorAll('img');
-      const imagePromises = Array.from(images).map(img => {
-        return new Promise((resolve) => {
-          if (img.complete && img.naturalWidth > 0) {
-            img.crossOrigin = 'Anonymous';
-            resolve();
-            return;
-          }
-          
-          img.crossOrigin = 'Anonymous';
-          
-          img.onload = () => {
-            resolve();
-          };
-          
-          img.onerror = () => {
-            console.error("Failed to load image:", img.src);
-            resolve();
-          };
-          
-          // If image src is relative path to profile image, convert to absolute URL
-          if (img.src.includes('/images/profile/') && !img.src.startsWith('http')) {
-            const newSrc = `http://localhost:8282${img.src.startsWith('/') ? '' : '/'}${img.src}`;
-            console.log(`Converting relative URL to absolute: ${img.src} -> ${newSrc}`);
-            img.src = newSrc;
-          }
-        });
-      });
-      
-      // Wait for all images to be properly loaded
-      await Promise.all(imagePromises);
-      
-      // Add delay to ensure everything is rendered
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Generate PDF with optimized settings
-      const canvas = await html2canvas(certificateContainer, {
-        scale: 1.5, // Reduced scale for better fit
-        useCORS: true,
-        logging: false,
-        allowTaint: true,
-        backgroundColor: '#ffffff',
-        imageTimeout: 15000,
-        width: certificateContainer.offsetWidth,
-        height: certificateContainer.offsetHeight
-      });
-      
-      // Restore original styles
-      certificateContainer.style.cssText = originalStyle;
-      
-      // Setup PDF options with precise A4 dimensions
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-        compress: true
-      });
-      
-      // Get PDF dimensions
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      
-      // Calculate image dimensions to fit on one page
-      const imgWidth = pdfWidth - 20; // Add 10mm margin on each side
-      let imgHeight = (canvas.height * imgWidth) / canvas.width;
-      
-      // If image height is too large, scale it down to fit on one page
-      if (imgHeight > pdfHeight - 20) {
-        const scaleFactor = (pdfHeight - 20) / imgHeight;
-        imgHeight = pdfHeight - 20;
-        // Adjust width proportionally
-        const adjustedWidth = imgWidth * scaleFactor;
-        
-        // Add image centered on page
-        const xOffset = (pdfWidth - adjustedWidth) / 2;
-        pdf.addImage(
-          canvas.toDataURL('image/jpeg', 0.95),
-          'JPEG',
-          xOffset,
-          10,
-          adjustedWidth,
-          imgHeight
-        );
-      } else {
-        // Add image centered on page
-        const xOffset = (pdfWidth - imgWidth) / 2;
-        pdf.addImage(
-          canvas.toDataURL('image/jpeg', 0.95),
-          'JPEG',
-          xOffset,
-          10,
-          imgWidth,
-          imgHeight
-        );
-      }
-      
-      // Get the PDF as blob
+      // Generate PDF as Blob
+      const canvas = await html2canvas(certificateRef.current, { scale: 2, useCORS: true, backgroundColor: '#fff' });
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [794, 1123] });
+      pdf.addImage(canvas.toDataURL('image/jpeg', 1.0), 'JPEG', 0, 0, 794, 1123);
       const pdfBlob = pdf.output('blob');
-      
-      // Create File object from blob
-      const pdfFile = new File(
-        [pdfBlob], 
-        `${selectedEmployee.firstName}_${selectedEmployee.lastName}_Performance_Certificate.pdf`, 
-        { type: 'application/pdf' }
-      );
-      
-      // Create FormData for API request
-      const formData = new FormData();
-      formData.append('file', pdfFile);
-      
-      // Get employee full name
+
+      // Prepare FormData
+      const formDataToSend = new FormData();
+      formDataToSend.append('file', pdfBlob, 'PerformanceCertificate.pdf');
+      Object.entries(formData).forEach(([key, value]) => formDataToSend.append(key, value));
+
+      // Compose API endpoint
       const employeeFullName = `${selectedEmployee.firstName} ${selectedEmployee.lastName}`;
-      
-      // Send the document using the backend API
-      const response = await axios.post(
-        `http://localhost:8282/api/certificate/send/${subadmin.id}/${encodeURIComponent(employeeFullName)}/performance`,
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
-      
-      console.log('API Response:', response.data);
-      
-      if (response.data.emailSent) {
-        toast.success(`Performance certificate sent to ${selectedEmployee.email} successfully!`);
-      } else if (response.data.filePath) {
-        toast.success('Performance certificate saved successfully, but email could not be sent.');
-      } else {
-        toast.error('Failed to process the performance certificate.');
-      }
+      const apiUrl = `http://localhost:8282/api/certificate/send/${subadmin.id}/${encodeURIComponent(employeeFullName)}/performance`;
+
+      // Send to backend
+      await axios.post(apiUrl, formDataToSend, { headers: { 'Content-Type': 'multipart/form-data' } });
+      toast.success('Certificate sent successfully!');
     } catch (error) {
-      console.error("Error sending performance certificate:", error);
-      toast.error("Failed to send performance certificate: " + (error.response?.data?.error || error.message));
+      toast.error('Failed to send certificate.');
     } finally {
       setSendingEmail(false);
     }
@@ -692,29 +558,16 @@ const PerformanceCertificate = () => {
                 ></textarea>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Signatory Name</label>
-                  <input 
-                    type="text" 
-                    name="signatoryName"
-                    value={formData.signatoryName || (subadmin ? `${subadmin.name} ${subadmin.lastname}` : "")}
-                    onChange={handleInputChange}
-                    className={`w-full p-2 border rounded ${isDarkMode ? 'bg-slate-600 border-slate-500' : 'bg-white border-gray-300'}`}
-                    placeholder="Your Name"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Signatory Title</label>
-                  <input 
-                    type="text" 
-                    name="signatoryTitle"
-                    value={formData.signatoryTitle}
-                    onChange={handleInputChange}
-                    className={`w-full p-2 border rounded ${isDarkMode ? 'bg-slate-600 border-slate-500' : 'bg-white border-gray-300'}`}
-                    placeholder="Your Title"
-                  />
-                </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1">Signatory Name</label>
+                <input 
+                  type="text" 
+                  name="signatoryName"
+                  value={formData.signatoryName || (subadmin ? `${subadmin.name} ${subadmin.lastname}` : "")}
+                  onChange={handleInputChange}
+                  className={`w-full p-2 border rounded ${isDarkMode ? 'bg-slate-600 border-slate-500' : 'bg-white border-gray-300'}`}
+                  placeholder="Your Name"
+                />
               </div>
             </div>
           </div>
@@ -904,9 +757,8 @@ const PerformanceCertificate = () => {
                       })}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold text-gray-800 mb-2">Authorized Signatory:</p>
                       {subadmin && subadmin.signature ? (
-                        <div>
+                        <div className="flex flex-col items-end">
                           <img 
                             src={`http://localhost:8282/images/profile/${subadmin.signature}`} 
                             alt="Signature" 
@@ -917,15 +769,15 @@ const PerformanceCertificate = () => {
                             }}
                           />
                           <div className="border-b border-gray-400 w-48 mb-2 ml-auto"></div>
-                          <p className="font-semibold text-gray-800">{formData.signatoryName || (subadmin ? `${subadmin.name} ${subadmin.lastname}` : "[Signatory Name]")}</p>
-                          <p className="text-sm text-gray-600">{formData.signatoryTitle || "[Signatory Title]"}</p>
+                          <p className="font-semibold text-gray-800 mt-2">{formData.signatoryName || (subadmin ? `${subadmin.name} ${subadmin.lastname}` : "[Signatory Name]")}</p>
+                          <p className="font-semibold text-gray-800 mb-2">Authorized Signatory:</p>
                         </div>
                       ) : (
-                        <div>
+                        <div className="flex flex-col items-end">
                           <div className="h-16 mb-2"></div>
                           <div className="border-b border-gray-400 w-48 mb-2 ml-auto"></div>
-                          <p className="font-semibold text-gray-800">{formData.signatoryName || (subadmin ? `${subadmin.name} ${subadmin.lastname}` : "[Signatory Name]")}</p>
-                          <p className="text-sm text-gray-600">{formData.signatoryTitle || "[Signatory Title]"}</p>
+                          <p className="font-semibold text-gray-800 mt-2">{formData.signatoryName || (subadmin ? `${subadmin.name} ${subadmin.lastname}` : "[Signatory Name]")}</p>
+                          <p className="font-semibold text-gray-800 mb-2">Authorized Signatory:</p>
                         </div>
                       )}
                     </div>

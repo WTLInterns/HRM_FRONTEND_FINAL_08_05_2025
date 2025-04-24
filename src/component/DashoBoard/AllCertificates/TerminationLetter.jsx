@@ -149,6 +149,23 @@ const TerminationLetter = () => {
     if (!letterRef.current) return;
     
     setPdfGenerating(true);
+    
+    // Store original styles to restore later
+    const letterContainer = letterRef.current;
+    const originalStyle = letterContainer.style.cssText;
+    
+    // Temporarily adjust the container to optimize for PDF generation
+    letterContainer.style.width = '210mm';
+    letterContainer.style.height = 'auto';
+    letterContainer.style.fontSize = '10pt';
+    letterContainer.style.lineHeight = '1.3';
+    
+    // Reduce margins and padding for paragraphs
+    const paragraphs = letterContainer.querySelectorAll('p');
+    paragraphs.forEach(p => {
+      p.style.marginBottom = '0.6em';
+      p.style.marginTop = '0.6em';
+    });
     try {
       // First check and fix any image with missing dimensions
       const images = letterRef.current.querySelectorAll('img');
@@ -226,9 +243,26 @@ const TerminationLetter = () => {
         }
       });
       
-      // Generate the PDF with html2canvas using exact sizing
+      // Apply scaling to letter container to ensure it fits on one page
+      const letterContainer = letterRef.current;
+      const originalStyle = letterContainer.style.cssText;
+      
+      // Temporarily adjust the container to optimize for PDF generation
+      letterContainer.style.width = '210mm';
+      letterContainer.style.height = 'auto';
+      letterContainer.style.fontSize = '10pt';
+      letterContainer.style.lineHeight = '1.3';
+      
+      // Reduce margins and padding
+      const paragraphs = letterContainer.querySelectorAll('p');
+      paragraphs.forEach(p => {
+        p.style.marginBottom = '0.6em';
+        p.style.marginTop = '0.6em';
+      });
+      
+      // Generate the PDF with html2canvas using high quality settings
       const options = {
-        scale: 1.5, // Lower scale for better text/image ratio
+        scale: 2, // Balanced scale for better text/image ratio
         useCORS: true,
         allowTaint: true,
         logging: false, // Disable logging for production
@@ -236,6 +270,8 @@ const TerminationLetter = () => {
         removeContainer: false,
         foreignObjectRendering: false,
         letterRendering: true,
+        backgroundColor: '#FFFFFF',
+        imageRendering: 'high-quality',
         onclone: (clonedDoc) => {
           // Process all images in the cloned document to ensure proper sizing
           const clonedImages = clonedDoc.querySelectorAll('img');
@@ -285,19 +321,20 @@ const TerminationLetter = () => {
         throw new Error('Generated canvas has invalid dimensions (width or height is 0)');
       }
       
-      // Create PDF with precise A4 sizing
+      // Create PDF with precise A4 sizing and high quality settings
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
         format: 'a4',
-        compress: true
+        compress: true,
+        precision: 16 // Higher precision for better quality
       });
       
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
-      // Convert the canvas to an image with high quality
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      // Convert the canvas to an image with maximum quality
+      const imgData = canvas.toDataURL('image/jpeg', 1.0);
       
       // Calculate dimensions to maintain aspect ratio but fit on A4
       const imgWidth = pdfWidth;
@@ -343,9 +380,17 @@ const TerminationLetter = () => {
           page++;
         }
       }
+      // Restore original styles
+      letterContainer.style.cssText = originalStyle;
       
-      pdf.save(`${formData.employeeName || 'Employee'}_Termination_Letter.pdf`);
-      toast.success("PDF successfully downloaded!");
+      // Save the PDF with safe filename (handles case when employee data is not defined)
+      const fileName = selectedEmployee 
+        ? `Termination_Letter_${selectedEmployee.firstName}_${selectedEmployee.lastName}.pdf`
+        : `Termination_Letter_${formData.employeeName.replace(/\s+/g, '_') || 'Employee'}.pdf`;
+      
+      pdf.save(fileName);
+      toast.success('PDF downloaded successfully!');
+      setPdfGenerating(false);
     } catch (error) {
       console.error("Error generating PDF:", error);
       toast.error("Failed to download PDF: " + error.message);
@@ -443,9 +488,26 @@ const TerminationLetter = () => {
         }
       });
       
+      // Apply scaling to letter container to ensure it fits on one page
+      const letterContainer = letterRef.current;
+      const originalStyle = letterContainer.style.cssText;
+      
+      // Temporarily adjust the container to optimize for PDF generation
+      letterContainer.style.width = '210mm';
+      letterContainer.style.height = 'auto';
+      letterContainer.style.fontSize = '10pt';
+      letterContainer.style.lineHeight = '1.3';
+      
+      // Reduce margins and padding for paragraphs
+      const paragraphs = letterContainer.querySelectorAll('p');
+      paragraphs.forEach(p => {
+        p.style.marginBottom = '0.6em';
+        p.style.marginTop = '0.6em';
+      });
+      
       // Generate PDF with enhanced options
       const options = {
-        scale: 1.5, // Lower scale for better text/image ratio
+        scale: 2, // Balanced scale for better text/image ratio
         useCORS: true,
         allowTaint: true,
         logging: false, // Disable logging for production
@@ -453,6 +515,8 @@ const TerminationLetter = () => {
         removeContainer: false,
         foreignObjectRendering: false,
         letterRendering: true,
+        backgroundColor: '#FFFFFF',
+        imageRendering: 'high-quality',
         onclone: (clonedDoc) => {
           // Process all images in the cloned document to ensure proper sizing
           const clonedImages = clonedDoc.querySelectorAll('img');
@@ -502,15 +566,16 @@ const TerminationLetter = () => {
         throw new Error('Generated canvas has invalid dimensions (width or height is 0)');
       }
       
-      // Convert the canvas to a high quality JPEG image
-      const imgData = canvas.toDataURL("image/jpeg", 0.95);
+      // Convert the canvas to a maximum quality JPEG image
+      const imgData = canvas.toDataURL("image/jpeg", 1.0);
       
-      // Create PDF with precise A4 sizing
+      // Create PDF with precise A4 sizing and high quality settings
       const pdf = new jsPDF({
         orientation: "portrait",
         unit: "mm",
         format: "a4",
-        compress: true
+        compress: true,
+        precision: 16 // Higher precision for better quality
       });
       
       const pdfWidth = pdf.internal.pageSize.getWidth();

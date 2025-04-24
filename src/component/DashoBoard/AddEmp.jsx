@@ -34,6 +34,7 @@ export default function AddEmp() {
   const [branchName, setbranchName] = useState("");
   const [salary, setsalary] = useState("");
   const [bankAccountNo, setbankAccountNo] = useState("");
+  const [department, setDepartment] = useState("");
   
   // States for navigation and success messages
   const [showUpdateSuccess, setShowUpdateSuccess] = useState(false);
@@ -166,6 +167,7 @@ export default function AddEmp() {
     setbankIfscCode("");
     setbranchName("");
     setsalary("");
+    setDepartment("");
     
     // Reset image states
     setEmpImg(null);
@@ -215,6 +217,7 @@ export default function AddEmp() {
       formData.append('bankIfscCode', bankIfscCode);
       formData.append('branchName', branchName);
       formData.append('salary', salary);
+      formData.append('department', department);
       
       // Add image files if they exist
       if (empImg) {
@@ -294,6 +297,7 @@ export default function AddEmp() {
       formData.append('bankIfscCode', bankIfscCode);
       formData.append('branchName', branchName);
       formData.append('salary', salary);
+      formData.append('department', department);
       
       // Add image files if they exist
       if (empImg) {
@@ -411,6 +415,7 @@ export default function AddEmp() {
     setbankIfscCode(employee.bankIfscCode);
     setbranchName(employee.branchName);
     setsalary(employee.salary);
+    setDepartment(employee.department || "");
     
     // Reset image states
     setEmpImg(null);
@@ -866,6 +871,35 @@ export default function AddEmp() {
                       ></textarea>
                     </div>
 
+                    <div className="space-y-2 md:col-span-2">
+                      <label htmlFor="department" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                        Department:
+                      </label>
+                      <select
+                        id="department"
+                        value={department}
+                        onChange={(e) => setDepartment(e.target.value)}
+                        className={`block w-full px-4 py-2 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                      >
+                        <option value="">Select department</option>
+                        <option value="Engineering (Development)">Engineering (Development)</option>
+                        <option value="Quality Assurance (QA / Test)">Quality Assurance (QA / Test)</option>
+                        <option value="DevOps / Release Management">DevOps / Release Management</option>
+                        <option value="IT Operations / Infrastructure">IT Operations / Infrastructure</option>
+                        <option value="Product Management">Product Management</option>
+                        <option value="UI/UX / Design">UI/UX / Design</option>
+                        <option value="Information Security">Information Security</option>
+                        <option value="Data & Analytics">Data & Analytics</option>
+                        <option value="Human Resources (HR)">Human Resources (HR)</option>
+                        <option value="Finance & Accounting">Finance & Accounting</option>
+                        <option value="Sales & Business Development">Sales & Business Development</option>
+                        <option value="Marketing">Marketing</option>
+                        <option value="Customer Support / Service Desk">Customer Support / Service Desk</option>
+                        <option value="Legal / Compliance">Legal / Compliance</option>
+                        <option value="Procurement / Vendor Management">Procurement / Vendor Management</option>
+                      </select>
+                    </div>
+
                     <div className="space-y-2">
                       <label htmlFor="birthDate" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                         Birth Date:
@@ -1306,6 +1340,35 @@ export default function AddEmp() {
                         placeholder="Address Details"
                         className={`block w-full px-4 py-2 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
                       ></textarea>
+                    </div>
+
+                    <div className="space-y-2 md:col-span-2">
+                      <label htmlFor="departmentUpd" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                        Department:
+                      </label>
+                      <select
+                        id="departmentUpd"
+                        value={department}
+                        onChange={(e) => setDepartment(e.target.value)}
+                        className={`block w-full px-4 py-2 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                      >
+                        <option value="">Select department</option>
+                        <option value="Engineering (Development)">Engineering (Development)</option>
+                        <option value="Quality Assurance (QA / Test)">Quality Assurance (QA / Test)</option>
+                        <option value="DevOps / Release Management">DevOps / Release Management</option>
+                        <option value="IT Operations / Infrastructure">IT Operations / Infrastructure</option>
+                        <option value="Product Management">Product Management</option>
+                        <option value="UI/UX / Design">UI/UX / Design</option>
+                        <option value="Information Security">Information Security</option>
+                        <option value="Data & Analytics">Data & Analytics</option>
+                        <option value="Human Resources (HR)">Human Resources (HR)</option>
+                        <option value="Finance & Accounting">Finance & Accounting</option>
+                        <option value="Sales & Business Development">Sales & Business Development</option>
+                        <option value="Marketing">Marketing</option>
+                        <option value="Customer Support / Service Desk">Customer Support / Service Desk</option>
+                        <option value="Legal / Compliance">Legal / Compliance</option>
+                        <option value="Procurement / Vendor Management">Procurement / Vendor Management</option>
+                      </select>
                     </div>
                     <div className="space-y-2">
                       <label htmlFor="birthDateUpd" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>

@@ -148,6 +148,23 @@ const RelievingLetter = () => {
     if (!letterRef.current) return;
     
     setPdfGenerating(true);
+    
+    // Store original styles to restore later
+    const letterContainer = letterRef.current;
+    const originalStyle = letterContainer.style.cssText;
+    
+    // Temporarily adjust the container to optimize for PDF generation
+    letterContainer.style.width = '210mm';
+    letterContainer.style.height = 'auto';
+    letterContainer.style.fontSize = '10pt';
+    letterContainer.style.lineHeight = '1.3';
+    
+    // Reduce margins and padding for paragraphs
+    const paragraphs = letterContainer.querySelectorAll('p');
+    paragraphs.forEach(p => {
+      p.style.marginBottom = '0.6em';
+      p.style.marginTop = '0.6em';
+    });
     try {
       // First check and fix any image with missing dimensions
       const images = letterRef.current.querySelectorAll('img');
@@ -248,12 +265,12 @@ const RelievingLetter = () => {
         }
       });
       
-      // Generate PDF with html2canvas
+      // Generate PDF with html2canvas using high quality settings
       const canvas = await html2canvas(letterRef.current, {
-        scale: 2,
+        scale: 3, // Higher scale for better image quality
         useCORS: true,
         allowTaint: true,
-        logging: true,
+        logging: false,
         imageTimeout: 15000,
         windowWidth: letterRef.current.scrollWidth,
         windowHeight: letterRef.current.scrollHeight,
@@ -262,6 +279,8 @@ const RelievingLetter = () => {
         width: letterRef.current.offsetWidth,
         height: letterRef.current.offsetHeight,
         letterRendering: true,
+        backgroundColor: '#FFFFFF',
+        imageRendering: 'high-quality',
         foreignObjectRendering: false, // This can be problematic with some text
         onclone: (clonedDoc) => {
           // Get the cloned letter element
@@ -315,41 +334,51 @@ const RelievingLetter = () => {
       
       console.log(`Canvas generated: ${canvas.width}x${canvas.height}`);
       
-      // Define PDF dimensions based on the content
-      // Use standard A4 aspect ratio but trim to content size
-      const pdfOptions = {
+      // Create PDF with precise A4 sizing
+      const pdf = new jsPDF({
         orientation: 'portrait',
-        unit: 'px',
-        format: [canvas.width, canvas.height],
+        unit: 'mm',
+        format: 'a4',
         compress: true,
-        precision: 16
-      };
+        precision: 16 // Higher precision for better quality
+      });
       
-      // Create PDF with dimensions that match the content
-      const pdf = new jsPDF(pdfOptions);
-      
-      // Add the image to the PDF with exact dimensions (no scaling needed)
-      const imgData = canvas.toDataURL('image/jpeg', 1.0);
-      
-      // Calculate optimal dimensions to fit the PDF page
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
-      // Add the image to fit exactly in the page
+      // Convert the canvas to an image with maximum quality
+      const imgData = canvas.toDataURL('image/jpeg', 1.0);
+      
+      // Calculate dimensions to maintain aspect ratio but fit on A4
+      const imgWidth = pdfWidth;
+      let imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      // If content is too tall, scale it down to fit on one page
+      if (imgHeight > pdfHeight) {
+        imgHeight = pdfHeight * 0.95; // 95% of page height to leave small margins
+      }
+      
+      // Add image to PDF (single page only)
       pdf.addImage(
         imgData,
         'JPEG',
         0,
         0,
-        pdfWidth,
-        pdfHeight,
+        imgWidth,
+        imgHeight,
         undefined,
         'FAST'
       );
       
-      // Save the PDF
-      pdf.save(`${formData.employeeName || 'Employee'}_Relieving_Letter.pdf`);
+      // Restore original styles
+      letterContainer.style.cssText = originalStyle;
       
+      // Save the PDF with safe filename (handles case when employee data is not defined)
+      const fileName = selectedEmployee 
+        ? `Relieving_Letter_${selectedEmployee.firstName}_${selectedEmployee.lastName}.pdf`
+        : `Relieving_Letter_${formData.employeeName.replace(/\s+/g, '_') || 'Employee'}.pdf`;
+      
+      pdf.save(fileName);
       toast.success('PDF downloaded successfully!');
     } catch (error) {
       console.error('Error generating PDF:', error);
@@ -376,6 +405,47 @@ const RelievingLetter = () => {
     setSendingEmail(true);
     try {
       console.log("Preparing relieving letter for:", selectedEmployee.email);
+      
+      // Store original styles to restore later
+      const letterContainer = letterRef.current;
+      const originalStyle = letterContainer.style.cssText;
+      
+      // Temporarily adjust the container to optimize for PDF generation - CRITICAL FOR EMAIL
+      letterContainer.style.width = '210mm';
+      letterContainer.style.height = 'auto';
+      letterContainer.style.fontSize = '9pt'; // Slightly smaller font for email to ensure fit on one page
+      letterContainer.style.lineHeight = '1.2'; // Tighter line height for email
+      
+      // Optimize spacing for paragraphs to fit on one page
+      const paragraphs = letterContainer.querySelectorAll('p');
+      paragraphs.forEach(p => {
+        p.style.marginBottom = '0.5em';
+        p.style.marginTop = '0.5em';
+      });
+      
+      // Adjust the spacing of elements to ensure everything fits on one page
+      const contentDivs = letterContainer.querySelectorAll('div');
+      contentDivs.forEach(div => {
+        if (div.classList.contains('mt-16') || div.classList.contains('mt-12') || div.classList.contains('mt-10') || div.classList.contains('mt-6')) {
+          div.style.marginTop = '0.75rem';
+        }
+        if (div.classList.contains('mt-8')) {
+          div.style.marginTop = '0.5rem';
+        }
+        // Reduce height of spacer divs
+        if (div.classList.contains('h-28')) {
+          div.style.height = '1rem';
+        }
+      });
+      
+      // Adjust stamp position to ensure it's on the first page
+      const stampElement = letterRef.current.querySelector('.absolute.bottom-32.right-8');
+      if (stampElement) {
+        stampElement.style.bottom = 'auto';
+        stampElement.style.top = '75%'; // Position from top instead of bottom
+        stampElement.style.right = '2rem';
+      }
+      
       // Check for images with missing dimensions first
       const images = letterRef.current.querySelectorAll('img');
       console.log(`Found ${images.length} images in the letter for email`);
@@ -439,32 +509,35 @@ const RelievingLetter = () => {
         console.warn("Signatory name element not found for email generation");
       }
       
-      // Set proper constraints on images
+      // Set proper constraints on images - optimized for email to fit on one page
       letterRef.current.querySelectorAll('img').forEach(img => {
         if (img.classList.contains('h-20')) {
-          img.style.maxHeight = '80px';
-          img.style.height = 'auto';
-          img.style.width = 'auto';
-          img.style.maxWidth = '200px';
-        } else if (img.classList.contains('h-16')) {
-          img.style.maxHeight = '60px';
+          img.style.maxHeight = '70px';
           img.style.height = 'auto';
           img.style.width = 'auto';
           img.style.maxWidth = '180px';
-        } else if (img.classList.contains('h-32') || img.src.includes('stampImg')) {
-          img.style.maxHeight = '100px';
-          img.style.maxWidth = '100px';
+          img.style.objectFit = 'contain';
+        } else if (img.classList.contains('h-16')) {
+          img.style.maxHeight = '50px';
           img.style.height = 'auto';
           img.style.width = 'auto';
+          img.style.maxWidth = '150px';
+          img.style.objectFit = 'contain';
+        } else if (img.classList.contains('h-32') || img.src.includes('stampImg')) {
+          img.style.maxHeight = '90px';
+          img.style.maxWidth = '90px';
+          img.style.height = 'auto';
+          img.style.width = 'auto';
+          img.style.objectFit = 'contain';
         }
       });
       
-      // Generate PDF with html2canvas
+      // Generate PDF with html2canvas - optimized settings for email to fit on one page
       const canvas = await html2canvas(letterRef.current, {
-        scale: 2,
+        scale: 1.3, // Lower scale for better text/image ratio and to fit on one page
         useCORS: true,
         allowTaint: true,
-        logging: true,
+        logging: false, // Disable logging for production
         imageTimeout: 15000,
         letterRendering: true,
         foreignObjectRendering: false,

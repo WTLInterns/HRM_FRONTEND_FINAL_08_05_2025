@@ -6,7 +6,7 @@ import "react-calendar/dist/Calendar.css";
 import "./calendar-custom.css";
 import "./theme-calendar.css";
 import axios from "axios";
-import { toast } from "react-hot-toast";
+import { toast, Toaster } from "react-hot-toast";
 import { useApp } from "../../context/AppContext";
 
 export default function Attendance() {
@@ -21,6 +21,8 @@ export default function Attendance() {
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ x: 0, y: 0 });
   const [submitting, setSubmitting] = useState(false);
+  const [employeeList, setEmployeeList] = useState([]);
+  const [suggestions, setSuggestions] = useState([]);
 
   // Attendance statuses
   const statusOptions = [
@@ -31,6 +33,57 @@ export default function Attendance() {
     "Week Off",
     "Holiday"
   ];
+
+  // Fetch employee list when component mounts
+  useEffect(() => {
+    const userData = localStorage.getItem("user");
+    if (userData) {
+      const user = JSON.parse(userData);
+      const subAdminId = user?.id || 2;
+      
+      // Fetch employee list for autocomplete
+      axios
+        .get(`http://localhost:8282/api/employee/${subAdminId}/employee/all`)
+        .then(res => {
+          console.log("Loaded employee list:", res.data.length, "employees");
+          setEmployeeList(res.data);
+        })
+        .catch(err => {
+          console.error("Failed to load employee list:", err);
+          toast.error("Failed to load employee list");
+        });
+    }
+  }, []);
+
+  // Compute autocomplete suggestions when employeeName changes
+  useEffect(() => {
+    const query = employeeName.trim().toLowerCase();
+    if (!query) {
+      setSuggestions([]);
+      return;
+    }
+    
+    // Map employees to a simpler format for suggestions
+    const list = employeeList.map(emp => ({
+      empId: emp.empId,
+      fullName: `${emp.firstName} ${emp.lastName}`
+    }));
+    
+    // Sort suggestions by relevance (starts with > ends with > includes)
+    const startsWith = [];
+    const endsWith = [];
+    const includes = [];
+    
+    list.forEach(item => {
+      const name = item.fullName.toLowerCase();
+      if (name.startsWith(query)) startsWith.push(item);
+      else if (name.endsWith(query)) endsWith.push(item);
+      else if (name.includes(query)) includes.push(item);
+    });
+    
+    // Combine all matches with priority order
+    setSuggestions([...startsWith, ...endsWith, ...includes].slice(0, 10)); // Limit to 10 suggestions
+  }, [employeeName, employeeList]);
 
   // When the user selects dates via the calendar,
   // add new attendance records for dates not already selected.
@@ -105,7 +158,17 @@ export default function Attendance() {
   // Handle status selection.
   const handleStatusSelect = async (status) => {
     if (!employeeName || employeeName.trim() === '') {
-      toast.error('Please enter employee name first');
+      toast.error('Please enter employee name first', {
+        duration: 3000,
+        style: {
+          background: '#FF5555',
+          color: '#fff',
+          fontWeight: 'bold',
+          padding: '16px',
+          borderRadius: '10px',
+        },
+        icon: '🚫',
+      });
       setShowStatusDropdown(false);
       return;
     }
@@ -166,10 +229,28 @@ export default function Attendance() {
         console.log('PUT response:', response);
         
         if (existingStatus === status) {
-          // Use toast without .info since it might not be available
-          toast(`Attendance for ${formattedDateForDisplay} is already marked as "${status}"`);
+          toast(`Attendance for ${formattedDateForDisplay} is already marked as "${status}"`, {
+            duration: 3000,
+            style: {
+              background: '#3498db',
+              color: '#fff',
+              padding: '16px',
+              borderRadius: '10px',
+            },
+            icon: 'ℹ️',
+          });
         } else {
-          toast.success(`Updated attendance for ${formattedDateForDisplay} from "${existingStatus}" to "${status}"`);
+          toast.success(`Updated attendance for ${formattedDateForDisplay} from "${existingStatus}" to "${status}"`, {
+            duration: 3000,
+            style: {
+              background: '#2ecc71',
+              color: '#fff',
+              fontWeight: 'bold',
+              padding: '16px',
+              borderRadius: '10px',
+            },
+            icon: '✅',
+          });
         }
         
         // Update the local state with the updated record
@@ -304,13 +385,36 @@ export default function Attendance() {
   // Validate that employeeName and at least one date are provided.
   const validateForm = () => {
     if (!employeeName || employeeName.trim() === "") {
-      setError("Please enter employee name");
+      setError("Please enter an employee name.");
+      toast.error("Please enter employee name first", {
+        duration: 4000,
+        style: {
+          background: '#FF5555',
+          color: '#fff',
+          fontWeight: 'bold',
+          padding: '16px',
+          borderRadius: '10px',
+        },
+        icon: '🚫',
+      });
       return false;
     }
     if (selectedDates.length === 0) {
-      setError("Please select at least one date");
+      setError("Please select at least one date.");
+      toast.error("Please select at least one date", {
+        duration: 4000,
+        style: {
+          background: '#FF5555',
+          color: '#fff',
+          fontWeight: 'bold',
+          padding: '16px',
+          borderRadius: '10px',
+        },
+        icon: '📅',
+      });
       return false;
     }
+    setError(null);
     return true;
   };
 
@@ -373,7 +477,7 @@ export default function Attendance() {
       if (updateRecords.length > 0) {
         promises.push(
           axios
-            .post(
+            .put(
               `http://localhost:8282/api/employee/${subAdminId}/${encodedEmployeeName}/attendance/update/bulk`,
               updateRecords,
               config
@@ -387,22 +491,46 @@ export default function Attendance() {
       }
 
       const results = await Promise.allSettled(promises);
+      let successCount = 0;
       results.forEach(result => {
         if (result.status === "fulfilled") {
           const { type, records } = result.value;
           if (type === "add") {
-            records.forEach(rec => {
-              toast.success(`Added attendance for ${formatDate(rec.date)}: ${rec.status}`);
-            });
+            successCount += records.length;
+            // Show individual toasts only if there are few records
+            if (records.length <= 3) {
+              records.forEach(rec => {
+                toast.success(`Added attendance for ${formatDate(rec.date)}: ${rec.status}`);
+              });
+            }
           } else if (type === "update") {
-            records.forEach(rec => {
-              toast.success(`Updated attendance for ${formatDate(rec.date)}: ${rec.status}`);
-            });
+            successCount += records.length;
+            // Show individual toasts only if there are few records
+            if (records.length <= 3) {
+              records.forEach(rec => {
+                toast.success(`Updated attendance for ${formatDate(rec.date)}: ${rec.status}`);
+              });
+            }
           }
         } else {
           toast.error(`Error processing bulk attendance: ${result.reason}`);
         }
       });
+      
+      // Show a summary toast if there are many records
+      if (successCount > 3) {
+        toast.success(`Successfully marked attendance for ${successCount} dates`, {
+          duration: 5000,
+          style: {
+            background: '#2ecc71',
+            color: '#fff',
+            fontWeight: 'bold',
+            padding: '16px',
+            borderRadius: '10px',
+          },
+          icon: '🎉',
+        });
+      }
 
       setShowSuccessModal(true);
       localStorage.setItem("submittedDatesCount", selectedDates.length.toString());
@@ -459,6 +587,7 @@ export default function Attendance() {
 
   return (
     <div className={`p-6 ${isDarkMode ? 'bg-slate-900 text-white' : 'bg-gray-50 text-gray-800'} min-h-screen animate-fadeIn`}>
+      <Toaster position="top-right" toastOptions={{ className: 'react-hot-toast' }} />
       <h1 className={`text-2xl font-bold mb-6 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>
         <FaCalendarAlt className="inline-block mr-2" /> Mark Attendance
       </h1>
@@ -472,13 +601,32 @@ export default function Attendance() {
               <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'} mb-2`}>
                 Employee Name
               </label>
-              <input
-                type="text"
-                className={`w-full p-2 border ${isDarkMode ? 'border-gray-700 bg-slate-700 text-gray-100' : 'border-gray-300 bg-white text-gray-900'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
-                value={employeeName}
-                onChange={e => setEmployeeName(e.target.value)}
-                required
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  className={`w-full p-2 border ${isDarkMode ? 'border-gray-700 bg-slate-700 text-gray-100' : 'border-gray-300 bg-white text-gray-900'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
+                  value={employeeName}
+                  onChange={e => setEmployeeName(e.target.value)}
+                  placeholder="Enter employee name"
+                  required
+                />
+                {suggestions.length > 0 && (
+                  <ul className={`absolute z-10 w-full border mt-1 rounded-lg max-h-60 overflow-auto ${isDarkMode ? 'bg-slate-700 border-slate-600' : 'bg-white border-gray-300'}`}>
+                    {suggestions.map(item => (
+                      <li
+                        key={item.empId}
+                        onClick={() => { 
+                          setEmployeeName(item.fullName); 
+                          setSuggestions([]); 
+                        }}
+                        className={`px-3 py-2 cursor-pointer ${isDarkMode ? 'hover:bg-slate-600 text-white' : 'hover:bg-gray-100 text-gray-800'}`}
+                      >
+                        {item.fullName}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
 
             {/* Calendar */}
@@ -609,3 +757,7 @@ export default function Attendance() {
     </div>
   );
 }
+
+
+
+

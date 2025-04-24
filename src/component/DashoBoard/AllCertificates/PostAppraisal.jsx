@@ -234,253 +234,92 @@ const PostAppraisal = () => {
     `,
   });
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
     if (!certificateRef.current) return;
-    
+
     setPdfGenerating(true);
-    
-    // Add delay to ensure images are fully loaded
-    setTimeout(async () => {
-      try {
-        // Preload images to ensure they're rendered correctly
-        const images = certificateRef.current.querySelectorAll('img');
-        const imagePromises = [];
-        
-        images.forEach(img => {
-          if (img.src.startsWith('http')) {
-            img.crossOrigin = 'Anonymous';
-            // Convert relative URLs to absolute URLs if needed
-            if (img.src.includes('localhost:8282')) {
-              const imageUrl = new URL(img.src);
-              img.src = imageUrl.href;
-            }
-            // Create a promise for each image loading
-            const promise = new Promise((resolve, reject) => {
-              img.onload = resolve;
-              img.onerror = reject;
-            });
-            imagePromises.push(promise);
-          }
-        });
-        
-        // Wait for all images to load
-        await Promise.all(imagePromises).catch(err => console.warn('Some images failed to load', err));
-        
-        // Setup PDF options
-        const pdfWidth = 210; // A4 width in mm
-        const pdfHeight = 297; // A4 height in mm
-        const pdf = new jsPDF({
-          orientation: 'portrait',
-          unit: 'mm',
-          format: 'a4'
-        });
-        
-        // Get certificate dimensions
-        const certificateElement = certificateRef.current;
-        const canvas = await html2canvas(certificateElement, {
-          scale: 2,
-          useCORS: true,
-          logging: true,
-          allowTaint: true,
-          backgroundColor: '#ffffff'
-        });
-        
-        // Calculate the number of pages needed
-        const imgWidth = pdfWidth - 20; // Adding margins
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        const pageHeight = pdfHeight - 20; // Adding margins
-        const totalPages = Math.ceil(imgHeight / pageHeight);
-        
-        console.log('PDF dimensions:', {
-          imgWidth, imgHeight, pageHeight, totalPages,
-          canvasWidth: canvas.width,
-          canvasHeight: canvas.height
-        });
-        
-        // Add pages to the PDF
-        let remainingHeight = canvas.height;
-        let position = 0;
-        
-        for (let i = 0; i < totalPages; i++) {
-          if (i > 0) {
-            pdf.addPage();
-          }
-          
-          const pageCanvas = document.createElement('canvas');
-          const pageCtx = pageCanvas.getContext('2d');
-          
-          const pageCanvasHeight = Math.min(canvas.height - position, (pageHeight * canvas.width) / imgWidth);
-          
-          pageCanvas.width = canvas.width;
-          pageCanvas.height = pageCanvasHeight;
-          
-          pageCtx.fillStyle = '#FFFFFF';
-          pageCtx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
-          
-          // Draw portion of the certificate
-          pageCtx.drawImage(
-            canvas, 
-            0, position, canvas.width, pageCanvasHeight,
-            0, 0, pageCanvas.width, pageCanvas.height
-          );
-          
-          const imgData = pageCanvas.toDataURL('image/jpeg', 1.0);
-          pdf.addImage(imgData, 'JPEG', 10, 10, imgWidth, (pageCanvasHeight * imgWidth) / canvas.width);
-          
-          position += pageCanvasHeight;
-          remainingHeight -= pageCanvasHeight;
-        }
-        
-        // Save the PDF with the employee's name in the filename
-        const fileName = `${formData.employeeName.replace(/\s+/g, '_') || 'Employee'}_Post_Appraisal.pdf`;
-        pdf.save(fileName);
-        
-        toast.success('PDF downloaded successfully!');
-      } catch (error) {
-        console.error('Error generating PDF:', error);
-        toast.error('Failed to generate PDF. Please try again.');
-      } finally {
-        setPdfGenerating(false);
-      }
-    }, 2000);
+    try {
+      const a4WidthPx = 794;
+      const a4HeightPx = 1123;
+      const certificateContainer = certificateRef.current;
+
+      // Calculate scale factor to fit all content within A4 height
+      const contentHeight = certificateContainer.scrollHeight;
+      const scale = Math.min(1, a4HeightPx / contentHeight);
+
+      const originalStyle = {
+        width: certificateContainer.style.width,
+        height: certificateContainer.style.height,
+        transform: certificateContainer.style.transform,
+        transformOrigin: certificateContainer.style.transformOrigin,
+        overflow: certificateContainer.style.overflow,
+      };
+
+      certificateContainer.style.width = `${a4WidthPx}px`;
+      certificateContainer.style.height = 'auto';
+      certificateContainer.style.transform = `scale(${scale})`;
+      certificateContainer.style.transformOrigin = 'top left';
+      certificateContainer.style.overflow = 'visible';
+
+      await new Promise(resolve => setTimeout(resolve, 800)); // Wait for reflow
+
+      const canvas = await html2canvas(certificateContainer, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#fff'
+      });
+
+      // Restore original styles
+      certificateContainer.style.width = originalStyle.width;
+      certificateContainer.style.height = originalStyle.height;
+      certificateContainer.style.transform = originalStyle.transform;
+      certificateContainer.style.transformOrigin = originalStyle.transformOrigin;
+      certificateContainer.style.overflow = originalStyle.overflow;
+
+      const imgData = canvas.toDataURL('image/jpeg', 1.0);
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'px',
+        format: [a4WidthPx, a4HeightPx]
+      });
+
+      pdf.addImage(imgData, 'JPEG', 0, 0, a4WidthPx, a4HeightPx);
+      pdf.save('Employee_Post_Appraisal.pdf');
+      toast.success('PDF downloaded successfully!');
+    } catch (error) {
+      toast.error('Failed to generate PDF. Please try again.');
+    } finally {
+      setPdfGenerating(false);
+    }
   };
 
   const handleSendEmail = async () => {
-    if (!certificateRef.current) return;
-    
-    // Validate that we have a selected employee
-    if (!selectedEmployee) {
-      toast.error('Please select an employee first.');
+    if (!certificateRef.current || !selectedEmployee || !subadmin) {
+      toast.error('Missing required data.');
       return;
     }
-    
-    if (!subadmin) {
-      toast.error('Company information not loaded');
-      return;
-    }
-    
     setSendingEmail(true);
-    
     try {
-      // Wait for images to load and set crossOrigin
-      const images = certificateRef.current.querySelectorAll('img');
-      images.forEach(img => {
-        if (img.src.startsWith('http')) {
-          img.crossOrigin = 'Anonymous';
-        }
-        // If image src is relative path to profile image, convert to absolute URL
-        if (img.src.includes('/images/profile/') && !img.src.startsWith('http')) {
-          const newSrc = `http://localhost:8282${img.src.startsWith('/') ? '' : '/'}${img.src}`;
-          console.log(`Converting relative URL to absolute: ${img.src} -> ${newSrc}`);
-          img.src = newSrc;
-        }
-      });
-      
-      // Add delay to ensure images are loaded
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Generate PDF
-      const certificateElement = certificateRef.current;
-      const canvas = await html2canvas(certificateElement, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        allowTaint: true,
-        backgroundColor: '#ffffff',
-        imageTimeout: 15000
-      });
-      
-      // Setup PDF options
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-        compress: true
-      });
-      
-      // Calculate dimensions
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = pdfWidth - 20; // A4 width with margins
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      
-      if (imgHeight <= pdfHeight - 20) {
-        // Content fits on one page
-        pdf.addImage(
-          canvas.toDataURL('image/jpeg', 0.95),
-          'JPEG',
-          10,
-          10,
-          imgWidth,
-          imgHeight
-        );
-      } else {
-        // Content needs multiple pages
-        let heightLeft = imgHeight;
-        let position = 0;
-        let page = 0;
-        const imgData = canvas.toDataURL('image/jpeg', 0.95);
-        
-        while (heightLeft > 0) {
-          if (page > 0) {
-            pdf.addPage();
-          }
-          
-          pdf.addImage(
-            imgData,
-            'JPEG',
-            10,
-            position,
-            imgWidth,
-            imgHeight
-          );
-          
-          heightLeft -= (pdfHeight - 20);
-          position -= (pdfHeight - 20);
-          page++;
-        }
-      }
-      
-      // Get the PDF as blob
+      // Generate PDF as Blob
+      const canvas = await html2canvas(certificateRef.current, { scale: 2, useCORS: true, backgroundColor: '#fff' });
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [794, 1123] });
+      pdf.addImage(canvas.toDataURL('image/jpeg', 1.0), 'JPEG', 0, 0, 794, 1123);
       const pdfBlob = pdf.output('blob');
-      
-      // Create File object from blob
-      const pdfFile = new File(
-        [pdfBlob], 
-        `${selectedEmployee.firstName}_${selectedEmployee.lastName}_Post_Appraisal.pdf`, 
-        { type: 'application/pdf' }
-      );
-      
-      // Create FormData for API request
-      const formData = new FormData();
-      formData.append('file', pdfFile);
-      
-      // Get employee full name
+
+      // Prepare FormData
+      const formDataToSend = new FormData();
+      formDataToSend.append('file', pdfBlob, 'PostAppraisal.pdf');
+      Object.entries(formData).forEach(([key, value]) => formDataToSend.append(key, value));
+
+      // Compose API endpoint
       const employeeFullName = `${selectedEmployee.firstName} ${selectedEmployee.lastName}`;
-      
-      // Send the document using the backend API
-      const response = await axios.post(
-        `http://localhost:8282/api/certificate/send/${subadmin.id}/${encodeURIComponent(employeeFullName)}/postAppraisal`,
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
-      
-      console.log('API Response:', response.data);
-      
-      if (response.data.emailSent) {
-        toast.success(`Post appraisal certificate sent to ${selectedEmployee.email} successfully!`);
-      } else if (response.data.filePath) {
-        toast.success('Post appraisal certificate saved successfully, but email could not be sent.');
-      } else {
-        toast.error('Failed to process the post appraisal certificate.');
-      }
+      const apiUrl = `http://localhost:8282/api/certificate/send/${subadmin.id}/${encodeURIComponent(employeeFullName)}/postAppraisal`;
+
+      // Send to backend
+      await axios.post(apiUrl, formDataToSend, { headers: { 'Content-Type': 'multipart/form-data' } });
+      toast.success('Certificate sent successfully!');
     } catch (error) {
-      console.error('Error sending post appraisal certificate:', error);
-      toast.error("Failed to send post appraisal certificate: " + (error.response?.data?.error || error.message));
+      toast.error('Failed to send certificate.');
     } finally {
       setSendingEmail(false);
     }
@@ -545,9 +384,10 @@ const PostAppraisal = () => {
             </button>
             <button 
               onClick={handleSendEmail}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition duration-300 flex items-center"
+              disabled={sendingEmail}
+              style={{ marginLeft: '12px', background: '#2563eb', color: '#fff', padding: '8px 16px', borderRadius: '6px', border: 'none', cursor: sendingEmail ? 'not-allowed' : 'pointer' }}
             >
-              <FaEnvelope className="mr-2" /> Email
+              {sendingEmail ? 'Sending...' : (<><FaEnvelope style={{ marginRight: 6, verticalAlign: 'middle' }}/>Send Email</>)}
             </button>
           </div>
         </div>
@@ -763,7 +603,7 @@ const PostAppraisal = () => {
                     placeholder="Your Name"
                   />
                 </div>
-                <div>
+                {/* <div>
                   <label className="block text-sm font-medium mb-1">Signatory Title</label>
                   <input 
                     type="text" 
@@ -773,7 +613,7 @@ const PostAppraisal = () => {
                     className={`w-full p-2 border rounded ${isDarkMode ? 'bg-slate-600 border-slate-500' : 'bg-white border-gray-300'}`}
                     placeholder="Your Title"
                   />
-                </div>
+                </div> */}
               </div>
             </div>
           </div>
@@ -850,8 +690,8 @@ const PostAppraisal = () => {
 
                   {/* Decorative Elements - Medals and Icons */}
                   <div className="flex justify-between mb-6">
-                    <FaMedal className="text-blue-700 text-4xl opacity-40" />
-                    <FaTrophy className="text-blue-700 text-4xl opacity-40" />
+                    <FaMedal style={{ color: '#FFD700', fontSize: '2.25rem', opacity: 1 }} />
+                    <FaTrophy style={{ color: '#FFD700', fontSize: '2.25rem', opacity: 1 }} />
                   </div>
                   
                   {/* Certificate Body */}
@@ -880,26 +720,28 @@ const PostAppraisal = () => {
                       {renderStarRating(parseFloat(formData.rating))}
                     </div>
                     
-                    <div className="bg-blue-50 rounded-lg p-6 mb-6 inline-block w-full max-w-lg">
-                      <div className="mb-4">
-                        <h3 className="text-xl font-semibold text-blue-800 mb-2 flex items-center justify-center">
-                          <FaAward className="mr-2" /> Performance Highlights
-                        </h3>
-                        <p className="text-gray-700 italic">
-                          {formData.performanceHighlights || "Exceptional work quality, team collaboration, meeting deadlines, and innovative problem-solving."}
-                        </p>
-                      </div>
-                      
-                      {formData.areasOfImprovement && (
-                        <div>
-                          <h3 className="text-xl font-semibold text-blue-800 mb-2 flex items-center justify-center">
-                            Areas for Development
-                          </h3>
-                          <p className="text-gray-700 italic">
-                            {formData.areasOfImprovement}
-                          </p>
-                        </div>
-                      )}
+                    <div
+                      style={{
+                        background: '#f0f4fa',
+                        borderRadius: '16px',
+                        border: '2px solid red', // DEBUG ONLY
+                        padding: '24px',
+                        marginBottom: '24px',
+                        color: '#222',
+                        opacity: 1,
+                        zIndex: 10,
+                        position: 'relative',
+                        boxSizing: 'border-box',
+                        width: '100%'
+                      }}
+                    >
+                      <h3 style={{ fontSize: '2rem', fontWeight: 600, color: '#2056b3', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '12px' }}>
+                        <span><svg width="28" height="28" viewBox="0 0 24 24" fill="#2056b3" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C10.343 2 9 3.343 9 5C9 6.657 10.343 8 12 8C13.657 8 15 6.657 15 5C15 3.343 13.657 2 12 2ZM12 10C7.589 10 4 13.589 4 18H20C20 13.589 16.411 10 12 10Z"/></svg></span>
+                        Performance Highlights
+                      </h3>
+                      <p style={{ fontStyle: 'italic', fontSize: '1.1rem', textAlign: 'center', margin: 0 }}>
+                        {formData.performanceHighlights || "Exceptional work quality, team collaboration, meeting deadlines, and innovative problem-solving."}
+                      </p>
                     </div>
                     
                     <div className="mb-6">
@@ -937,9 +779,8 @@ const PostAppraisal = () => {
                       })}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold mb-2">Authorized Signatory:</p>
                       {subadmin && subadmin.signature ? (
-                        <div>
+                        <div className="flex flex-col items-end">
                           <img 
                             src={`http://localhost:8282/images/profile/${subadmin.signature}`} 
                             alt="Signature" 
@@ -949,16 +790,16 @@ const PostAppraisal = () => {
                               e.target.src = 'https://via.placeholder.com/150x50?text=Signature';
                             }}
                           />
-                          <div className="border-b border-gray-300 w-48 mb-2 ml-auto"></div>
-                          <p className="font-semibold text-blue-800">{formData.signatoryName || (subadmin ? `${subadmin.name} ${subadmin.lastname}` : "[Signatory Name]")}</p>
-                          <p className="text-sm">{formData.signatoryTitle || "[Signatory Title]"}</p>
+                          <div className="border-b border-gray-400 w-48 mb-2 ml-auto"></div>
+                          <p className="font-semibold text-gray-800 mt-2">{formData.signatoryName || (subadmin ? `${subadmin.name} ${subadmin.lastname}` : "[Signatory Name]")}</p>
+                          <p className="font-semibold text-gray-800 mb-2">Authorized Signatory:</p>
                         </div>
                       ) : (
-                        <div>
+                        <div className="flex flex-col items-end">
                           <div className="h-16 mb-2"></div>
-                          <div className="border-b border-gray-300 w-48 mb-2 ml-auto"></div>
-                          <p className="font-semibold">{formData.signatoryName || (subadmin ? `${subadmin.name} ${subadmin.lastname}` : "[Signatory Name]")}</p>
-                          <p className="text-sm">{formData.signatoryTitle || "[Signatory Title]"}</p>
+                          <div className="border-b border-gray-400 w-48 mb-2 ml-auto"></div>
+                          <p className="font-semibold text-gray-800 mt-2">{formData.signatoryName || (subadmin ? `${subadmin.name} ${subadmin.lastname}` : "[Signatory Name]")}</p>
+                          <p className="font-semibold text-gray-800 mb-2">Authorized Signatory:</p>
                         </div>
                       )}
                     </div>

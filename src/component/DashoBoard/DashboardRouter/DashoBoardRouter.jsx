@@ -11,6 +11,12 @@ import JoiningLetter from "../AllCertificates/JoiningLetter";
 import CompanyLetterhead from "../AllCertificates/CompanyLetterhead";
 import PostAppraisal from "../AllCertificates/PostAppraisal";
 import PerformanceCertificate from "../AllCertificates/PerformanceCertificate";
+import Agreement_Contract_Letter from "../AllCertificates/Agreement_Contract_Letter";
+import AppointmentLetter from "../AllCertificates/AppointmentLetter";
+import ExitLetter from "../AllCertificates/ExitLetter";
+import IncrementLetter from "../AllCertificates/IncrementLetter";
+import AchievementCertificate from "../AllCertificates/AchievementCertificate";
+import IntershipCertificate from "../AllCertificates/IntershipCertificate";
 
 const DashoBoardRouter = () => {
   console.log("Dashboard Router Component Rendering");
@@ -29,17 +35,17 @@ const DashoBoardRouter = () => {
         
         {/* Add other certificate routes as needed */}
         <Route path="letterhead" element={<CompanyLetterhead />} />
-        <Route path="appointment" element={<div>Appointment Letter Template (To be implemented)</div>} />
+        <Route path="appointment" element={<AppointmentLetter />} />
         <Route path="joining" element={<JoiningLetter />} />
-        <Route path="agreement" element={<div>Agreement Template (To be implemented)</div>} />
-        <Route path="increment" element={<div>Increment Letter Template (To be implemented)</div>} />
+        <Route path="agreement" element={<Agreement_Contract_Letter />} />
+        <Route path="increment" element={<IncrementLetter />} />
         <Route path="relieving" element={<RelievingLetter />} />
-        <Route path="exit" element={<div>Exit Letter Template (To be implemented)</div>} />
+        <Route path="exit" element={<ExitLetter />} />
         <Route path="termination" element={<TerminationLetter />} />
         
         {/* Internship certificate routes */}
-        <Route path="internship-completion" element={<div>Internship Completion Certificate (To be implemented)</div>} />
-        <Route path="achievement" element={<div>Achievement Certificate (To be implemented)</div>} />
+        <Route path="internship-completion" element={<IntershipCertificate />} />
+        <Route path="achievement" element={<AchievementCertificate />} />
         <Route path="performance" element={<PerformanceCertificate />} />
         <Route path="post-appraisal" element={<PostAppraisal />} />
       </Routes>

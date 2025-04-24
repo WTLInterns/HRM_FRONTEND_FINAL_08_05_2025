@@ -23,9 +23,37 @@ import DashoBoardRouter from "./DashboardRouter/DashoBoardRouter";
 // Register Chart.js components
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement);
 
+// Add custom scrollbar styles
+const scrollbarStyles = `
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(59, 130, 246, 0.5);
+    border-radius: 20px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(59, 130, 246, 0.8);
+  }
+`;
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const { fetchAllEmp, emp, logoutUser, isDarkMode, toggleTheme } = useApp();
+  
+  // Add scrollbar styles to document head
+  useEffect(() => {
+    const styleElement = document.createElement('style');
+    styleElement.innerHTML = scrollbarStyles;
+    document.head.appendChild(styleElement);
+    
+    return () => {
+      document.head.removeChild(styleElement);
+    };
+  }, []);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [attendanceDropdownOpen, setAttendanceDropdownOpen] = useState(false);
 
@@ -437,9 +465,9 @@ const Dashboard = () => {
 
       {/* Sidebar */}
       <aside 
-        className={`w-64 h-full ${isDarkMode ? 'bg-slate-800' : 'bg-white shadow-lg'} fixed inset-y-0 left-0 z-50 lg:relative lg:translate-x-0 transform transition-transform duration-300 ease-in-out ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
+        className={`w-64 h-full ${isDarkMode ? 'bg-slate-800' : 'bg-white shadow-lg'} fixed inset-y-0 left-0 z-50 lg:relative lg:translate-x-0 transform transition-transform duration-300 ease-in-out flex flex-col ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
       >
-        <div className={`flex flex-col items-center px-4 py-5 ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-blue-50 border-blue-200'} border-b relative`}>
+        <div className={`flex flex-col items-center px-4 py-5 ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-blue-50 border-blue-200'} border-b relative flex-shrink-0`}>
           <Link to="/dashboard/profileform" className="group transition-all duration-300">
             <div className={`w-24 h-24 rounded-full ${isDarkMode ? 'bg-slate-100 border-blue-800' : 'bg-white border-blue-500'} border-4 overflow-hidden mb-4 group-hover:border-blue-400 transition-all duration-300 shadow-lg group-hover:shadow-blue-900/40`}>
               {userData.companylogo && logoLoadAttempt < 1 ? (
@@ -489,7 +517,7 @@ const Dashboard = () => {
           </button>
         </div>
 
-        <nav className="px-4 py-3 flex-grow">
+        <nav className="px-4 py-3 flex-grow overflow-y-auto custom-scrollbar">
           <div className="space-y-0">
             {navLinks.map((link, index) => (
               link.dropdown ? (
@@ -537,9 +565,8 @@ const Dashboard = () => {
           </div>
         </nav>
 
-        <div className="mt-auto px-4 pb-6">
+        <div className="mt-auto px-4 pb-6 flex-shrink-0">
           {/* Theme Toggle Button */}
-
           
           <button
             onClick={handleLogoutClick}

@@ -147,9 +147,9 @@ const CompanyLetterhead = () => {
         }
       });
       
-      // Generate the PDF with html2canvas using exact sizing
+      // Generate the PDF with html2canvas using high quality settings
       const options = {
-        scale: 1.5, // Lower scale for better text/image ratio
+        scale: 3, // Higher scale for better image quality
         useCORS: true,
         allowTaint: true,
         logging: false, // Disable logging for production
@@ -157,6 +157,8 @@ const CompanyLetterhead = () => {
         removeContainer: false,
         foreignObjectRendering: false,
         letterRendering: true,
+        backgroundColor: '#FFFFFF',
+        imageRendering: 'high-quality',
         onclone: (clonedDoc) => {
           // Process all images in the cloned document to ensure proper sizing
           const clonedImages = clonedDoc.querySelectorAll('img');
@@ -196,19 +198,20 @@ const CompanyLetterhead = () => {
         throw new Error('Generated canvas has invalid dimensions (width or height is 0)');
       }
       
-      // Create PDF with precise A4 sizing
+      // Create PDF with precise A4 sizing and high quality settings
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
         format: 'a4',
-        compress: true
+        compress: true,
+        precision: 16 // Higher precision for better quality
       });
       
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
-      // Convert the canvas to an image with high quality
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      // Convert the canvas to an image with maximum quality
+      const imgData = canvas.toDataURL('image/jpeg', 1.0);
       
       // Calculate dimensions to maintain aspect ratio but fit on A4
       const imgWidth = pdfWidth;

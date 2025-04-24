@@ -145,6 +145,23 @@ const ExperienceLetter = () => {
     if (!letterRef.current) return;
     
     setPdfGenerating(true);
+    
+    // Store original styles to restore later
+    const letterContainer = letterRef.current;
+    const originalStyle = letterContainer.style.cssText;
+    
+    // Temporarily adjust the container to optimize for PDF generation
+    letterContainer.style.width = '210mm';
+    letterContainer.style.height = 'auto';
+    letterContainer.style.fontSize = '10pt';
+    letterContainer.style.lineHeight = '1.3';
+    
+    // Reduce margins and padding for paragraphs
+    const paragraphs = letterContainer.querySelectorAll('p');
+    paragraphs.forEach(p => {
+      p.style.marginBottom = '0.6em';
+      p.style.marginTop = '0.6em';
+    });
     try {
       // First check and fix any image with missing dimensions
       const images = letterRef.current.querySelectorAll('img');
@@ -286,14 +303,15 @@ const ExperienceLetter = () => {
         orientation: 'portrait',
         unit: 'mm',
         format: 'a4',
-        compress: true
+        compress: true,
+        precision: 16 // Higher precision for better quality
       });
       
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
       // Convert the canvas to an image with high quality
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      const imgData = canvas.toDataURL('image/jpeg', 1.0); // Maximum quality
       
       // Calculate dimensions to maintain aspect ratio but fit on A4
       const imgWidth = pdfWidth;
@@ -340,7 +358,15 @@ const ExperienceLetter = () => {
         }
       }
       
-      pdf.save(`${formData.employeeName || 'Employee'}_Experience_Letter.pdf`);
+      // Restore original styles
+      letterContainer.style.cssText = originalStyle;
+      
+      // Save the PDF with safe filename (handles case when employee data is not defined)
+      const fileName = selectedEmployee 
+        ? `Experience_Letter_${selectedEmployee.firstName}_${selectedEmployee.lastName}.pdf`
+        : `Experience_Letter_${formData.employeeName.replace(/\s+/g, '_') || 'Employee'}.pdf`;
+      
+      pdf.save(fileName);
       toast.success("PDF successfully downloaded!");
     } catch (error) {
       console.error("Error generating PDF:", error);
@@ -363,6 +389,34 @@ const ExperienceLetter = () => {
     
     setSendingEmail(true);
     try {
+      // Store original styles to restore later
+      const letterContainer = letterRef.current;
+      const originalStyle = letterContainer.style.cssText;
+      
+      // Temporarily adjust the container to optimize for PDF generation - CRITICAL FOR EMAIL
+      letterContainer.style.width = '210mm';
+      letterContainer.style.height = 'auto';
+      letterContainer.style.fontSize = '9pt'; // Slightly smaller font for email to ensure fit on one page
+      letterContainer.style.lineHeight = '1.2'; // Tighter line height for email
+      
+      // Optimize spacing for paragraphs to fit on one page
+      const paragraphs = letterContainer.querySelectorAll('p');
+      paragraphs.forEach(p => {
+        p.style.marginBottom = '0.5em';
+        p.style.marginTop = '0.5em';
+      });
+      
+      // Adjust the spacing of elements to ensure everything fits on one page
+      const contentDivs = letterContainer.querySelectorAll('div');
+      contentDivs.forEach(div => {
+        if (div.classList.contains('mt-16') || div.classList.contains('mt-12') || div.classList.contains('mt-10')) {
+          div.style.marginTop = '1rem';
+        }
+        if (div.classList.contains('mt-8')) {
+          div.style.marginTop = '0.75rem';
+        }
+      });
+      
       // First check and fix any image with missing dimensions
       const images = letterRef.current.querySelectorAll('img');
       
@@ -412,36 +466,44 @@ const ExperienceLetter = () => {
       // Wait additional time to ensure everything is rendered
       await new Promise(resolve => setTimeout(resolve, 500));
       
+      // Adjust stamp position to ensure it's on the first page
+      const stampElement = letterRef.current.querySelector('.absolute.bottom-24.right-8');
+      if (stampElement) {
+        stampElement.style.bottom = 'auto';
+        stampElement.style.top = '75%'; // Position from top instead of bottom
+        stampElement.style.right = '2rem';
+      }
+      
       // Set proper constraints on images to prevent them from being too large in PDF
       letterRef.current.querySelectorAll('img').forEach(img => {
         // Preserve original image classes but ensure max dimensions are set
         if (img.classList.contains('h-20')) {
-          // Company logo shouldn't be more than 80px high in the PDF
-          img.style.maxHeight = '80px';
-          img.style.height = 'auto';
-          img.style.width = 'auto';
-          img.style.maxWidth = '200px';
-          img.style.objectFit = 'contain';
-        } else if (img.classList.contains('h-16') || img.classList.contains('h-12')) {
-          // Signature shouldn't be more than 60px high
-          img.style.maxHeight = '60px';
+          // Company logo shouldn't be more than 70px high in the PDF for email
+          img.style.maxHeight = '70px';
           img.style.height = 'auto';
           img.style.width = 'auto';
           img.style.maxWidth = '180px';
           img.style.objectFit = 'contain';
+        } else if (img.classList.contains('h-16') || img.classList.contains('h-12')) {
+          // Signature shouldn't be more than 50px high for email
+          img.style.maxHeight = '50px';
+          img.style.height = 'auto';
+          img.style.width = 'auto';
+          img.style.maxWidth = '150px';
+          img.style.objectFit = 'contain';
         } else if (img.src.includes('stampImg')) {
-          // Stamp shouldn't be more than 100px in any dimension
-          img.style.maxHeight = '100px';
-          img.style.maxWidth = '100px';
+          // Stamp shouldn't be more than 90px in any dimension for email
+          img.style.maxHeight = '90px';
+          img.style.maxWidth = '90px';
           img.style.height = 'auto';
           img.style.width = 'auto';
           img.style.objectFit = 'contain';
         }
       });
       
-      // Generate PDF with enhanced options
+      // Generate PDF with enhanced options optimized for email
       const options = {
-        scale: 1.5, // Lower scale for better text/image ratio
+        scale: 1.3, // Lower scale for better text/image ratio and to fit on one page
         useCORS: true,
         allowTaint: true,
         logging: false, // Disable logging for production
@@ -457,18 +519,18 @@ const ExperienceLetter = () => {
             
             // Make sure the cloned document has the same image size constraints
             if (img.classList.contains('h-20')) {
-              img.style.maxHeight = '80px';
-              img.style.height = 'auto';
-              img.style.width = 'auto';
-              img.style.maxWidth = '200px';
-            } else if (img.classList.contains('h-16') || img.classList.contains('h-12')) {
-              img.style.maxHeight = '60px';
+              img.style.maxHeight = '70px';
               img.style.height = 'auto';
               img.style.width = 'auto';
               img.style.maxWidth = '180px';
+            } else if (img.classList.contains('h-16') || img.classList.contains('h-12')) {
+              img.style.maxHeight = '50px';
+              img.style.height = 'auto';
+              img.style.width = 'auto';
+              img.style.maxWidth = '150px';
             } else if (img.src.includes('stampImg')) {
-              img.style.maxHeight = '100px';
-              img.style.maxWidth = '100px';
+              img.style.maxHeight = '90px';
+              img.style.maxWidth = '90px';
               img.style.height = 'auto';
               img.style.width = 'auto';
             }
