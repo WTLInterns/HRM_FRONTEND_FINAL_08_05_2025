@@ -314,13 +314,13 @@ export default function AddEmp() {
 
       console.log("Updating employee data...");
       
-      // Get the full name for the API endpoint as required by the backend
-      const fullName = `${selectedEmployee.firstName} ${selectedEmployee.lastName}`;
+      // Use the employee ID for the API endpoint instead of full name
+      const empId = selectedEmployee.empId;
       
       // Use the dynamic subadminId from state and the correct API endpoint
-      // The backend expects /update-employee/{subadminId}/{fullName} format
+      // Modified to use empId instead of fullName to ensure uniqueness
       const response = await axios.put(
-        `http://localhost:8282/api/employee/update-employee/${subadminId}/${encodeURIComponent(fullName)}`,
+        `http://localhost:8282/api/employee/update-employee/${subadminId}/id/${empId}`,
         formData,
         {
           headers: {

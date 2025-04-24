@@ -581,7 +581,7 @@ const RegisterCompany = () => {
           {/* Signature */}
           <div className="bg-slate-900/30 p-4 rounded-lg border border-slate-700 shadow-sm">
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Signature <span className="text-red-400">*</span>
+              Signature
             </label>
             <div className="flex flex-col items-center space-y-2">
               <div className="w-full h-32 border-2 border-dashed border-blue-700/50 rounded-lg flex flex-col justify-center items-center p-2 hover:border-blue-500 transition-all duration-300 relative overflow-hidden bg-slate-800/50 shadow-sm">
@@ -615,7 +615,6 @@ const RegisterCompany = () => {
                   accept="image/*"
                   onChange={(e) => handleFileChange(e, 'signature')}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  required={!signaturePreview && !isEditMode}
                 />
               </div>
             </div>
@@ -624,7 +623,7 @@ const RegisterCompany = () => {
           {/* Company Stamp */}
           <div className="bg-slate-900/30 p-4 rounded-lg border border-slate-700 shadow-sm">
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Company Stamp <span className="text-red-400">*</span>
+              Company Stamp
             </label>
             <div className="flex flex-col items-center space-y-2">
               <div className="w-full h-32 border-2 border-dashed border-blue-700/50 rounded-lg flex flex-col justify-center items-center p-2 hover:border-blue-500 transition-all duration-300 relative overflow-hidden bg-slate-800/50 shadow-sm">
@@ -658,7 +657,6 @@ const RegisterCompany = () => {
                   accept="image/*"
                   onChange={(e) => handleFileChange(e, 'stampImage')}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  required={!stampPreview && !isEditMode}
                 />
               </div>
             </div>

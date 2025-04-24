@@ -149,7 +149,7 @@ const Sidebar = () => {
       )}
       
       {/* Sidebar Header */}
-      <div className={`p-4 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+      <div className={`p-4 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'} flex flex-col items-center justify-center`}>
         <div className="h-24 w-24 rounded-full border-4 border-white/20 overflow-hidden mb-4 shadow-lg bg-blue-900/50 flex items-center justify-center">
           {profileImg ? (
             <img
@@ -166,7 +166,7 @@ const Sidebar = () => {
           )}
         </div>
         <h1 className="text-xl font-bold text-center">{userName}</h1>
-        <p className="text-blue-400 text-sm">Dashboard</p>
+        <p className="text-blue-400 text-sm">Master Admin HRM</p>
       </div>
 
       {/* Navigation */}

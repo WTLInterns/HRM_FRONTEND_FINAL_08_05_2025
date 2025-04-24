@@ -5,8 +5,9 @@ import axios from 'axios';
 import { useApp } from '../../../context/AppContext';
 import { toast } from 'react-toastify';
 import { motion } from 'framer-motion';
+import html2pdf from "html2pdf.js";
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import './JoiningLetterPdf.css';
 
 const JoiningLetter = () => {
   const { isDarkMode } = useApp();
@@ -30,7 +31,6 @@ const JoiningLetter = () => {
     joiningDate: new Date().toISOString().split('T')[0],
     salary: '',
     workHours: '',
-    probationPeriod: '3 months',
     benefits: '',
     contactPerson: '',
     contactEmail: '',
@@ -43,6 +43,9 @@ const JoiningLetter = () => {
   const [pdfGenerating, setPdfGenerating] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
   const [emailSending, setEmailSending] = useState(false);
+
+  // Add state to store subadmin profile data (with phone)
+  const [profileData, setProfileData] = useState({});
 
   // Fetch subadmin data by email
   useEffect(() => {
@@ -86,6 +89,14 @@ const JoiningLetter = () => {
       setLoading(false);
     }
   };
+
+  // Fetch profile data (subadmin) on mount
+  useEffect(() => {
+    const userFromStorage = JSON.parse(localStorage.getItem('user'));
+    if (userFromStorage) {
+      setProfileData(userFromStorage);
+    }
+  }, []);
 
   useEffect(() => {
     // Close dropdown when clicking outside
@@ -146,417 +157,72 @@ const JoiningLetter = () => {
     window.print();
   };
 
-  const handleDownloadPDF = async () => {
+  const handleDownloadPDF = () => {
     if (!letterRef.current) return;
-    
     setPdfGenerating(true);
-    try {
-      // First check and fix any image with missing dimensions
-      const images = letterRef.current.querySelectorAll('img');
-      
-      // Create array of promises to ensure all images are loaded properly
-      const imagePromises = Array.from(images).map(img => {
-        return new Promise((resolve, reject) => {
-          // Skip if image is already loaded with valid dimensions
-          if (img.complete && img.naturalWidth > 0) {
-            img.crossOrigin = 'Anonymous';
-            return resolve();
-          }
-          
-          // Set crossOrigin before setting src
-          img.crossOrigin = 'Anonymous';
-          
-          // Add event listeners for load and error
-          img.onload = () => {
-            console.log(`Image loaded: ${img.src}, dimensions: ${img.naturalWidth}x${img.naturalHeight}`);
-            resolve();
-          };
-          
-          img.onerror = (err) => {
-            console.error(`Error loading image: ${img.src}`, err);
-            // Try to set a placeholder instead of failing
-            img.src = 'https://via.placeholder.com/150x50?text=Image+Error';
-            // Still resolve to not block the PDF generation
-            resolve();
-          };
-          
-          // If image src is relative path to profile image, convert to absolute URL
-          if (img.src.includes('/images/profile/') && !img.src.startsWith('http')) {
-            const newSrc = `http://localhost:8282${img.src.startsWith('/') ? '' : '/'}${img.src}`;
-            console.log(`Converting relative URL to absolute: ${img.src} -> ${newSrc}`);
-            img.src = newSrc;
-          } else {
-            // Force reload by setting the same src
-            const currentSrc = img.src;
-            img.src = currentSrc;
-          }
-        });
+
+    const opt = {
+      margin:       0,
+      filename:     `${formData.employeeName || 'Employee'}_Joining_Letter.pdf`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2, useCORS: true, backgroundColor: "#fff" },
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+    };
+
+    html2pdf().set(opt).from(letterRef.current).save()
+      .then(() => {
+        setPdfGenerating(false);
+        toast.success("PDF successfully downloaded!");
+      })
+      .catch((err) => {
+        setPdfGenerating(false);
+        toast.error("Error generating PDF");
+        console.error(err);
       });
-      
-      // Wait for all images to be properly loaded
-      await Promise.all(imagePromises);
-      console.log('All images loaded successfully');
-      
-      // Wait additional time to ensure everything is rendered
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Set proper constraints on images to prevent them from being too large in PDF
-      letterRef.current.querySelectorAll('img').forEach(img => {
-        // Preserve original image classes but ensure max dimensions are set
-        if (img.classList.contains('h-20')) {
-          // Company logo shouldn't be more than 80px high in the PDF
-          img.style.maxHeight = '80px';
-          img.style.height = 'auto';
-          img.style.width = 'auto';
-          img.style.maxWidth = '200px';
-          img.style.objectFit = 'contain';
-        } else if (img.classList.contains('h-16')) {
-          // Signature shouldn't be more than 60px high
-          img.style.maxHeight = '60px';
-          img.style.height = 'auto';
-          img.style.width = 'auto';
-          img.style.maxWidth = '180px';
-          img.style.objectFit = 'contain';
-        } else if (img.classList.contains('h-32') || img.src.includes('stampImg')) {
-          // Stamp shouldn't be more than 100px in any dimension
-          img.style.maxHeight = '100px';
-          img.style.maxWidth = '100px';
-          img.style.height = 'auto';
-          img.style.width = 'auto';
-          img.style.objectFit = 'contain';
-        }
-      });
-      
-      // Generate the PDF with html2canvas using exact sizing
-      const options = {
-        scale: 1.5, // Lower scale for better text/image ratio
-        useCORS: true,
-        allowTaint: true,
-        logging: false, // Disable logging for production
-        imageTimeout: 15000,
-        removeContainer: false,
-        foreignObjectRendering: false,
-        letterRendering: true,
-        onclone: (clonedDoc) => {
-          // Process all images in the cloned document to ensure proper sizing
-          const clonedImages = clonedDoc.querySelectorAll('img');
-          clonedImages.forEach(img => {
-            img.crossOrigin = 'Anonymous';
-            
-            // Make sure the cloned document has the same image size constraints
-            if (img.classList.contains('h-20')) {
-              img.style.maxHeight = '80px';
-              img.style.height = 'auto';
-              img.style.width = 'auto';
-              img.style.maxWidth = '200px';
-            } else if (img.classList.contains('h-16')) {
-              img.style.maxHeight = '60px';
-              img.style.height = 'auto';
-              img.style.width = 'auto';
-              img.style.maxWidth = '180px';
-            } else if (img.classList.contains('h-32') || img.src.includes('stampImg')) {
-              img.style.maxHeight = '100px';
-              img.style.maxWidth = '100px';
-              img.style.height = 'auto';
-              img.style.width = 'auto';
-            }
-            
-            // Ensure any remaining images with no dimensions get defaults
-            if (!img.style.width && !img.hasAttribute('width') && img.naturalWidth) {
-              const maxWidth = Math.min(img.naturalWidth, 200);
-              img.style.width = `${maxWidth}px`;
-            }
-            if (!img.style.height && !img.hasAttribute('height') && img.naturalHeight) {
-              const maxHeight = Math.min(img.naturalHeight, 100);
-              img.style.height = `${maxHeight}px`;
-            }
-            
-            // Fix image URLs for server resources
-            if (img.src.includes('/images/profile/') && !img.src.startsWith('http')) {
-              img.src = `http://localhost:8282${img.src.startsWith('/') ? '' : '/'}${img.src}`;
-            }
-          });
-        }
-      };
-      
-      const canvas = await html2canvas(letterRef.current, options);
-      
-      // Check if canvas has valid dimensions
-      if (canvas.width === 0 || canvas.height === 0) {
-        throw new Error('Generated canvas has invalid dimensions (width or height is 0)');
-      }
-      
-      // Create PDF with precise A4 sizing
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-        compress: true
-      });
-      
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      
-      // Convert the canvas to an image with high quality
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
-      
-      // Calculate dimensions to maintain aspect ratio but fit on A4
-      const imgWidth = pdfWidth;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      
-      // Handle multi-page if content is long
-      if (imgHeight <= pdfHeight) {
-        // Content fits on one page - add with centering
-        pdf.addImage(
-          imgData,
-          'JPEG',
-          0,
-          0,
-          imgWidth,
-          imgHeight,
-          undefined,
-          'FAST'
-        );
-      } else {
-        // Content needs multiple pages
-        let heightLeft = imgHeight;
-        let position = 0;
-        let page = 0;
-        
-        while (heightLeft > 0) {
-          if (page > 0) {
-            pdf.addPage();
-          }
-          
-          pdf.addImage(
-            imgData,
-            'JPEG',
-            0,
-            position,
-            imgWidth,
-            imgHeight,
-            undefined,
-            'FAST'
-          );
-          
-          heightLeft -= pdfHeight;
-          position -= pdfHeight;
-          page++;
-        }
-      }
-      
-      pdf.save(`${formData.employeeName || 'Employee'}_Joining_Letter.pdf`);
-      toast.success("PDF successfully downloaded!");
-    } catch (error) {
-      console.error("Error generating PDF:", error);
-      toast.error("Failed to download PDF: " + error.message);
-    } finally {
-      setPdfGenerating(false);
-    }
   };
 
   const handleSendEmail = async () => {
-    if (!selectedEmployee) {
-      toast.error('Please select an employee first');
+    if (!subadmin || !formData.employeeName) {
+      toast.error('Missing subadmin or employee name');
       return;
     }
-    
-    if (!subadmin) {
-      toast.error('Company information not loaded');
-      return;
-    }
-    
     setEmailSending(true);
     try {
-      // First check and fix any image with missing dimensions
-      const images = letterRef.current.querySelectorAll('img');
-      console.log(`Found ${images.length} images in the letter for email`);
-      
-      // Create array of promises to ensure all images are loaded properly
-      const imagePromises = Array.from(images).map(img => {
-        return new Promise((resolve) => {
-          // Skip if image is already loaded with valid dimensions
-          if (img.complete && img.naturalWidth > 0) {
-            img.crossOrigin = 'Anonymous';
-            console.log(`Image already loaded: ${img.src}, dimensions: ${img.naturalWidth}x${img.naturalHeight}`);
-            return resolve();
-          }
-          
-          // Set crossOrigin before setting src
-          img.crossOrigin = 'Anonymous';
-          
-          // Add event listeners for load and error
-          img.onload = () => {
-            console.log(`Image loaded: ${img.src}, dimensions: ${img.naturalWidth}x${img.naturalHeight}`);
-            resolve();
-          };
-          
-          img.onerror = (err) => {
-            console.error(`Error loading image: ${img.src}`, err);
-            // Try to set a placeholder instead of failing
-            img.src = 'https://via.placeholder.com/150x50?text=Image+Error';
-            // Still resolve to not block the PDF generation
-            resolve();
-          };
-          
-          // If image src is relative path to profile image, convert to absolute URL
-          if (img.src.includes('/images/profile/') && !img.src.startsWith('http')) {
-            const newSrc = `http://localhost:8282${img.src.startsWith('/') ? '' : '/'}${img.src}`;
-            console.log(`Converting relative URL to absolute: ${img.src} -> ${newSrc}`);
-            img.src = newSrc;
-          } else {
-            // Force reload by setting the same src
-            const currentSrc = img.src;
-            console.log(`Reloading image: ${currentSrc}`);
-            img.src = currentSrc;
-          }
-        });
+      // 1. Generate PDF as Blob using html2pdf.js
+      const opt = {
+        margin: 0,
+        filename: `${formData.employeeName || 'Employee'}_Joining_Letter.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: "#fff" },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+      };
+      // html2pdf().outputPdf('blob') returns a Promise<Blob>
+      const pdfBlob = await html2pdf().set(opt).from(letterRef.current).outputPdf('blob');
+
+      // 2. Prepare FormData
+      const file = new File([pdfBlob], `${formData.employeeName}_Joining_Letter.pdf`, { type: 'application/pdf' });
+      const formDataToSend = new FormData();
+      formDataToSend.append('file', file);
+
+      // 3. Send to backend as multipart/form-data
+      const documentType = 'joining';
+      const apiUrl = `http://localhost:8282/api/certificate/send/${subadmin.id}/${encodeURIComponent(formData.employeeName)}/${documentType}`;
+      const response = await axios.post(apiUrl, formDataToSend, {
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
-      
-      // Wait for all images to be properly loaded
-      await Promise.all(imagePromises);
-      console.log("All images loaded for email PDF generation");
-      
-      // Wait additional time to ensure everything is rendered
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Set proper constraints on images
-      letterRef.current.querySelectorAll('img').forEach(img => {
-        if (img.classList.contains('h-20')) {
-          img.style.maxHeight = '80px';
-          img.style.height = 'auto';
-          img.style.width = 'auto';
-          img.style.maxWidth = '200px';
-        } else if (img.classList.contains('h-16')) {
-          img.style.maxHeight = '60px';
-          img.style.height = 'auto';
-          img.style.width = 'auto';
-          img.style.maxWidth = '180px';
-        } else if (img.classList.contains('h-32') || img.src.includes('stampImg')) {
-          img.style.maxHeight = '100px';
-          img.style.maxWidth = '100px';
-          img.style.height = 'auto';
-          img.style.width = 'auto';
-        }
-      });
-      
-      // Generate PDF with html2canvas
-      const canvas = await html2canvas(letterRef.current, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        logging: true,
-        imageTimeout: 15000,
-        onclone: (clonedDoc) => {
-          const clonedImages = clonedDoc.querySelectorAll('img');
-          console.log(`Processing ${clonedImages.length} images in cloned document for email`);
-          clonedImages.forEach(img => {
-            img.crossOrigin = 'Anonymous';
-            // Apply same styling constraints as above
-            if (img.classList.contains('h-20')) {
-              img.style.maxHeight = '80px';
-              img.style.maxWidth = '200px';
-            } else if (img.classList.contains('h-16')) {
-              img.style.maxHeight = '60px';
-              img.style.maxWidth = '180px';
-            } else if (img.classList.contains('h-32') || img.src.includes('stampImg')) {
-              img.style.maxHeight = '100px';
-              img.style.maxWidth = '100px';
-            }
-            
-            // Fix image URLs for server resources
-            if (img.src.includes('/images/profile/') && !img.src.startsWith('http')) {
-              const originalSrc = img.src;
-              img.src = `http://localhost:8282${img.src.startsWith('/') ? '' : '/'}${img.src}`;
-              console.log(`Fixed image URL: ${originalSrc} -> ${img.src}`);
-            }
-          });
-        }
-      });
-      
-      console.log(`Canvas generated for email: ${canvas.width}x${canvas.height}`);
-      
-      // Create PDF with A4 size
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-        compress: true
-      });
-      
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
-      
-      // Calculate dimensions to maintain aspect ratio
-      const imgWidth = pdfWidth;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      
-      // Handle multi-page if content is long
-      if (imgHeight <= pdfHeight) {
-        pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight, undefined, 'FAST');
+
+      if (response.status === 200) {
+        toast.success('Joining Letter sent successfully by email!');
       } else {
-        let heightLeft = imgHeight;
-        let position = 0;
-        let page = 0;
-        
-        while (heightLeft > 0) {
-          if (page > 0) {
-            pdf.addPage();
-          }
-          
-          pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
-          
-          heightLeft -= pdfHeight;
-          position -= pdfHeight;
-          page++;
-        }
-      }
-      
-      // Get the PDF as blob
-      const pdfBlob = pdf.output('blob');
-      
-      // Create File object from blob
-      const pdfFile = new File(
-        [pdfBlob], 
-        `${selectedEmployee.firstName}_${selectedEmployee.lastName}_Joining_Letter.pdf`, 
-        { type: 'application/pdf' }
-      );
-      
-      // Create FormData for API request
-      const formData = new FormData();
-      formData.append('file', pdfFile);
-      
-      // Get employee full name
-      const employeeFullName = `${selectedEmployee.firstName} ${selectedEmployee.lastName}`;
-      
-      // Send the document using the backend API
-      const response = await axios.post(
-        `http://localhost:8282/api/certificate/send/${subadmin.id}/${encodeURIComponent(employeeFullName)}/joining`,
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
-      
-      console.log('API Response:', response.data);
-      
-      if (response.data.emailSent) {
-        toast.success(`Joining letter sent to ${selectedEmployee.email} successfully!`);
-      } else if (response.data.filePath) {
-        toast.success('Joining letter saved successfully, but email could not be sent.');
-      } else {
-        toast.error('Failed to process the joining letter.');
+        toast.error('Failed to send Joining Letter email.');
       }
     } catch (error) {
-      console.error('Error sending joining letter:', error);
-      toast.error("Failed to send joining letter: " + (error.response?.data?.error || error.message));
-    } finally {
-      setEmailSending(false);
+      toast.error('Error sending Joining Letter email.');
+      console.error(error);
     }
+    setEmailSending(false);
   };
 
   const handleBackClick = () => {
@@ -718,7 +384,7 @@ const JoiningLetter = () => {
                 </div>
                 
                 {/* Joining Letter Specific Fields */}
-                <div>
+                {/* <div>
                   <label className={`block mb-2 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                     Salary/Compensation
                   </label>
@@ -734,7 +400,7 @@ const JoiningLetter = () => {
                     } focus:ring-blue-500 focus:border-blue-500`}
                     placeholder="e.g., ₹50,000 per month"
                   />
-                </div>
+                </div> */}
                 
                 <div>
                   <label className={`block mb-2 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
@@ -756,24 +422,7 @@ const JoiningLetter = () => {
                 
                 <div>
                   <label className={`block mb-2 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                    Probation Period
-                  </label>
-                  <input
-                    type="text"
-                    name="probationPeriod"
-                    value={formData.probationPeriod}
-                    onChange={handleInputChange}
-                    className={`block w-full p-2 rounded-md border ${
-                      isDarkMode 
-                        ? 'bg-gray-700 border-gray-600 text-white' 
-                        : 'bg-gray-50 border-gray-300 text-gray-900'
-                    } focus:ring-blue-500 focus:border-blue-500`}
-                  />
-                </div>
-                
-                <div>
-                  <label className={`block mb-2 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                    Benefits
+                  Salary/Compensation/Benefits
                   </label>
                   <textarea
                     name="benefits"
@@ -813,8 +462,8 @@ const JoiningLetter = () => {
                   </label>
                   <input
                     type="email"
-                    name="employeeEmail"
-                    value={formData.employeeEmail}
+                    name="contactEmail"
+                    value={formData.contactEmail}
                     onChange={handleInputChange}
                     className={`block w-full p-2 rounded-md border ${
                       isDarkMode 
@@ -904,7 +553,7 @@ const JoiningLetter = () => {
                   <button
                     onClick={handleSendEmail}
                     className="flex items-center space-x-1 px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition duration-300"
-                    disabled={emailSending || !selectedEmployee}
+                    disabled={emailSending || !subadmin || !formData.employeeName}
                   >
                     <FaEnvelope />
                     <span>{emailSending ? 'Sending...' : 'Email'}</span>
@@ -941,7 +590,7 @@ const JoiningLetter = () => {
                     <h2 className="text-xl font-bold">{subadmin?.registercompanyname || 'Company Name'}</h2>
                     <p>{subadmin?.address || 'Company Address'}</p>
                     <p>{subadmin?.email || 'company@example.com'}</p>
-                    <p>{subadmin?.contact || '+91 1234567890'}</p>
+                    <p>{profileData.phoneno ? `+91 ${profileData.phoneno}` : ''}</p>
                   </div>
                 </div>
                 
@@ -967,49 +616,110 @@ const JoiningLetter = () => {
                     the <strong>{formData.employeeDepartment || '[Department]'}</strong> department at <strong>{subadmin?.registercompanyname || 'our organization'}</strong>.
                   </p>
                   
-                  <p>
+                  {/* Inserted Offer & Policy Content Start */}
+                  <div className="no-break">
+                    <p>We are pleased to formally offer you the position of <strong>{formData.employeeJobTitle || '[Job Title]'}</strong> with <strong>{subadmin?.registercompanyname || '[Company Name]'}</strong>, effective from <strong>{formData.joiningDate ? new Date(formData.joiningDate).toLocaleDateString('en-GB') : '[Joining Date]'}</strong>. We were impressed with your background, skills, and attitude, and we believe you will be a valuable asset to our growing team.</p>
+                    <p>This letter outlines the terms and conditions of your employment with us.</p>
+                    <ol className="list-decimal pl-5">
+                      <li><strong>Position and Reporting</strong><br />You will be designated as <strong>{formData.employeeJobTitle || '[Job Title]'}</strong> <p>
                     Your employment will commence on <strong>{new Date(formData.joiningDate).toLocaleDateString('en-GB') || '[Joining Date]'}</strong>.
                     Please report to <strong>{formData.contactPerson || 'HR Department'}</strong> at 9:00 AM on your joining date.
-                  </p>
+                  </p></li>
+                      <li><strong>Place of Posting</strong><br />Your primary location of work will be <strong>{subadmin?.address || '[City, Office Address]'}</strong>. However, the company may require you to work at any of its current or future branches, client sites, or locations, as per operational requirements.</li>
+                      <li><strong>Working Hours</strong><br />Your regular working hours will be {formData.workHours ? <strong>{formData.workHours}</strong> : '[Working Hours]'} per week. You may be required to work outside these hours depending on the business needs.</li>
+                      <li><strong>Compensation and Benefits</strong><br />
+                        <span>
+                          {formData.benefits && formData.benefits.trim() !== ''
+                            ? formData.benefits
+                            : '[Benefits details will appear here based on form input]'}
+                        </span>
+                      </li>
+                      <li><strong>Probation Period</strong><br />You will be on probation for a period of [3 months or as applicable] from your joining date. Your performance and conduct will be reviewed periodically. Upon successful completion, your employment may be confirmed in writing.</li>
+                      <li><strong>Confidentiality and Non-Disclosure</strong><br />You are expected to maintain the confidentiality of company data, projects, client information, and all proprietary materials. You will be required to sign a Non-Disclosure Agreement (NDA) and comply with our IT and Security Policy.</li>
+                      <li><strong>Termination Clause</strong><br />Either party may terminate this employment by providing [30 days / 1 month] written notice or salary in lieu thereof.<br />The company reserves the right to terminate employment without notice in case of misconduct, breach of policy, or under disciplinary action.</li>
+                      <li><strong>Code of Conduct</strong><br />All employees must adhere to the company’s code of conduct and maintain the highest standards of professionalism, ethics, and integrity in their work.</li>
+                      <li><strong>Acceptance of Offer</strong><br />We request you to sign and return a copy of this letter to indicate your acceptance. A detailed onboarding schedule and documentation checklist will be shared shortly after your confirmation.</li>
+                      <li><strong>Welcome Aboard</strong><br />We look forward to having you on our team and are confident that you will play a key role in our ongoing success. Your experience and enthusiasm will be instrumental in driving our mission forward.<br />Should you have any queries or require any clarification, please feel free to contact our HR team <br />Once again, congratulations and welcome to <strong>{subadmin?.registercompanyname || '[Company Name]'}</strong>!<br /><br /><br /></li>
+                    </ol>
+                    <hr style={{ margin: '16px 0' }} />
+                    <h4 className="font-bold">Privacy & Confidentiality Policy</h4>
+                    <p>This Privacy & Confidentiality Policy outlines the standards and expectations of <strong>{subadmin?.registercompanyname || '[Company Name]'}</strong> regarding the protection of sensitive company and customer data. All employees must follow these policies to safeguard business integrity, data privacy, and intellectual property.</p>
+                                        <ul>
+                      <li><strong>Confidentiality of Company Information</strong>: Employees must not share internal documents, reports, customer data, pricing, or financial details with unauthorized individuals inside or outside the company. Information received during employment must be treated as strictly confidential, even after the employment ends. Any discussions related to company matters must happen only on authorized communication channels (e.g., company email, Slack, Teams).</li>
+                      <li><strong>Use of Company Devices and Accounts</strong>: Company laptops, desktops, mobile devices, and email accounts must be used strictly for official purposes. Employees are prohibited from saving or transferring confidential data to personal devices, USB drives, or personal cloud storage. Passwords and credentials must be kept private and should not be shared, written down, or reused on personal platforms.</li>
+                      <li><strong>Data Access and Storage</strong>: Only employees with official, role-based access are allowed to view, edit, or store sensitive information. All data should be stored only in secure, company-approved platforms such as internal servers, encrypted cloud services, or databases. Physical files with confidential information must be locked and access-controlled.</li>
+                      <li><strong>Client & Customer Data Protection</strong>: All personal and financial details of customers or vendors must be handled with utmost sensitivity. Employees must not use customer contact details for personal communication or for marketing outside the approved processes. No employee may share client data with third parties unless officially authorized and in compliance with NDAs.</li>
+                      <li><strong>Prohibition on Unauthorized Sharing</strong>: Employees must not disclose any project details, source code, algorithms, designs, strategies, or intellectual property to anyone outside the organization. Public discussions on platforms like LinkedIn, Twitter, WhatsApp, Telegram, or any media about internal tools or processes are strictly prohibited unless permitted by HR or Marketing.</li>
+                    </ul>
+                    <strong>Breach of Policy and Disciplinary Actions</strong>
+                    <p>Violation of this policy may result in:</p>
+                    <ul><li>Written warnings</li><li>Suspension</li><li>Termination of employment</li><li>Legal action including claims for damages or prosecution under applicable data protection laws (e.g., IT Act, GDPR, etc.)</li></ul>
+                    <p>All breaches must be reported immediately to [Designated Privacy Officer or HR Manager].</p>
+                    <strong>Exceptions</strong>
+                    <p>Any exceptions to this policy must be approved in writing by senior management or the data protection officer. No verbal approvals shall be considered valid.</p>
+                    <hr style={{ margin: '16px 0' }} />
+                    <h4 className="font-semibold">Salary Structure</h4>
+                    <table className="w-full text-sm mb-2 border border-gray-400">
+                      <thead>
+                        <tr className="bg-gray-100">
+                          <th className="border border-gray-400 px-2 py-1">Component</th>
+                          <th className="border border-gray-400 px-2 py-1">Amount/Percentage</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td className="border border-gray-400 px-2 py-1">Basic Salary</td>
+                          <td className="border border-gray-400 px-2 py-1">{formData.salary || '[Amount]'}</td>
+                        </tr>
+                        <tr>
+                          <td className="border border-gray-400 px-2 py-1">House Rent Allowance (HRA)</td>
+                          <td className="border border-gray-400 px-2 py-1">10%</td>
+                        </tr>
+                        <tr>
+                          <td className="border border-gray-400 px-2 py-1">Dearness Allowance (DA)</td>
+                          <td className="border border-gray-400 px-2 py-1">53%</td>
+                        </tr>
+                        <tr>
+                          <td className="border border-gray-400 px-2 py-1">Special Allowance</td>
+                          <td className="border border-gray-400 px-2 py-1">37%</td>
+                        </tr>
+                        <tr>
+                          <td className="border border-gray-400 px-2 py-1 font-bold">Total (Gross Salary)</td>
+                          <td className="border border-gray-400 px-2 py-1 font-bold">100%</td>
+                        </tr>
+                      </tbody>
+                    </table> <br /><br />
+                    {/* Acceptance Letter and Checklist Section */}
+                    <div>
+                      <h4 className="font-bold text-lg mb-2">📄 Acceptance Letter</h4>
+                      <p>To,<br />The HR Department<br /><strong>{subadmin?.registercompanyname || '[Company Name]'}</strong><br /><strong>{subadmin?.address || '[Company Address]'}</strong></p>
+                      <p>Subject: Acceptance of Employment Offer</p>
+                      <p>Dear Sir/Madam,</p>
+                      <p>I am pleased to accept the offer of employment for the position of <strong>{formData.employeeJobTitle || '[Job Title]'}</strong> at <strong>{subadmin?.registercompanyname || '[Company Name]'}</strong>, as mentioned in the appointment letter dated <strong>{formData.joiningDate ? new Date(formData.joiningDate).toLocaleDateString('en-GB') : '[Offer Date]'}</strong>.</p>
+                      <p>I have carefully read and understood all the terms and conditions, including the company’s policies, CTC structure, code of conduct, and confidentiality clauses. I confirm that I will adhere to these terms throughout my tenure.</p>
+                      <p>I understand that my employment is subject to the company’s policies and procedures, and I agree to comply with all rules and expectations set forth.</p>
+                      <p>I appreciate the opportunity to work with <strong>{subadmin?.registercompanyname || '[Company Name]'}</strong>, and I look forward to contributing to the success of the organization.</p>
+
+                      <h4 className="font-semibold mt-6 mb-2">Acceptance Checklist</h4>
+                      <ul className="list-disc pl-6 mb-4">
+                        <li>☐ I have read and understood the terms and conditions mentioned in the appointment letter.</li>
+                        <li>☐ I agree to maintain the confidentiality of company information during and after my employment.</li>
+                        <li>☐ I have reviewed and accepted the detailed CTC breakdown and salary structure.</li>
+                        <li>☐ I acknowledge that I have received and read the company's privacy policy.</li>
+                        <li>☐ I hereby accept this employment offer and agree to abide by all the rules and policies of the company.</li>
+                      </ul>
+                      <p>Thank you for your trust and consideration.</p>
+                      <p>Sincerely,<br /><strong>{formData.employeeName || '[Employee Full Name]'}</strong><br />Signature: ____________________<br />Date: ________________________<br />Place: _______________________</p>
+                    </div>
+                    
+                  </div> <br />
+
                   
-                  <p>Your appointment is subject to the following terms and conditions:</p>
                   
-                  <ol className="list-decimal pl-5 space-y-2">
-                    <li>
-                      <strong>Position and Responsibilities:</strong> You will be employed as <strong>{formData.employeeJobTitle || '[Job Title]'}</strong> and will be 
-                      responsible for duties as discussed during your interview and as detailed in your job description.
-                    </li>
-                    
-                    <li>
-                      <strong>Compensation:</strong> Your compensation will be <strong>{formData.salary || '[Salary Details]'}</strong>.
-                    </li>
-                    
-                    <li>
-                      <strong>Working Hours:</strong> Your working hours will be <strong>{formData.workHours || 'as per company policy'}</strong>.
-                    </li>
-                    
-                    <li>
-                      <strong>Probation Period:</strong> You will be on probation for <strong>{formData.probationPeriod || '3 months'}</strong> from the date of joining.
-                    </li>
-                    
-                    <li>
-                      <strong>Benefits:</strong> You will be entitled to the following benefits:
-                      <p>{formData.benefits || 'As per company policy and discussed during your interview process.'}</p>
-                    </li>
-                    
-                    <li>
-                      <strong>Notice Period:</strong> During and after the probation period, either party can terminate this employment by giving one month's notice or salary in lieu thereof.
-                    </li>
-                    
-                    <li>
-                      <strong>Company Policies:</strong> You will be governed by the company's policies, rules, and regulations in force or as introduced or amended from time to time.
-                    </li>
-                  </ol>
-                  
-                  <p>
+
+                  <p className="font-bold">
                     On your joining day, please bring the following documents:
                   </p>
-                  
                   <ul className="list-disc pl-5">
                     <li>Educational certificates (originals and photocopies)</li>
                     <li>Experience and relieving letters from previous employers</li>
@@ -1021,8 +731,10 @@ const JoiningLetter = () => {
                   
                   <p>
                     We look forward to a mutually beneficial and fruitful association with you. If you have any questions or require further clarification, 
-                    please feel free to contact {formData.contactPerson || 'our HR department'} at {formData.employeeEmail || 'hr@company.com'} or 
-                    {formData.contactPhone || 'contact number'}.
+                    please feel free to contact our HR department. <br /> 
+                    Contact Person: <strong>{formData.contactPerson || '[Contact Person]'}</strong> <br />
+                    Contact Email: <strong>{formData.contactEmail || '[Contact Email]'}</strong> <br />
+                    Contact Phone: <strong>{formData.contactPhone || '[Contact Phone]'}</strong> <br />
                   </p>
                   
                   <p>
@@ -1040,7 +752,7 @@ const JoiningLetter = () => {
                   </div>
                   
                   <div className="text-right">
-                    <p className="font-semibold mb-1">For {subadmin?.registercompanyname || 'Company Name'}</p>
+                    <p className="font-semibold mb-1">For <strong>{subadmin?.registercompanyname || 'Company Name'}</strong></p>
                     {subadmin && subadmin.signature ? (
                       <img
                         src={`http://localhost:8282/images/profile/${subadmin.signature}`}

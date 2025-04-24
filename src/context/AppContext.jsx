@@ -283,16 +283,19 @@ export const AppProvider = ({ children }) => {
     try {
       setLoading(true);
       
-      // Check if we're on the login page
-      const isLoginPage = window.location.pathname.includes('/login');
+      // Check if we're on the login page, masteradmin or dashboard routes
+      const currentPath = window.location.pathname;
+      const isLoginPage = currentPath.includes('/login');
+      const isMasterAdminRoute = currentPath.includes('/masteradmin');
+      const isDashboardRoute = currentPath.includes('/dashboard');
       
       // Get the current user from localStorage
       const currentUser = JSON.parse(localStorage.getItem('user'));
       
       if (!currentUser || !currentUser.id) {
         // If we're on the login page, silently return without showing error
-        if (isLoginPage) {
-          console.log('No user logged in yet, skipping employee fetch');
+        if (isLoginPage || isMasterAdminRoute || isDashboardRoute) {
+          console.log('No user logged in yet or on protected route, skipping employee fetch');
           setLoading(false);
           return [];
         }
@@ -316,15 +319,18 @@ export const AppProvider = ({ children }) => {
       console.error('Error fetching employees:', error);
       setLoading(false);
       
-      // Check if we're on the login page
-      const isLoginPage = window.location.pathname.includes('/login');
+      // Check if we're on routes where we should suppress error messages
+      const currentPath = window.location.pathname;
+      const isLoginPage = currentPath.includes('/login');
+      const isMasterAdminRoute = currentPath.includes('/masteradmin');
+      const isDashboardRoute = currentPath.includes('/dashboard');
       
       // If API fails, use static data as fallback
       setEmp(STATIC_EMPLOYEES);
       calculateStats(STATIC_EMPLOYEES);
       
-      // Only show error toast if not on login page
-      if (!isLoginPage) {
+      // Only show error toast if not on login page, masteradmin or dashboard routes
+      if (!isLoginPage && !isMasterAdminRoute && !isDashboardRoute) {
         toast.error('Failed to fetch employees: ' + (error.response?.data?.message || error.message));
       }
       
