@@ -74,7 +74,7 @@ const PostAppraisal = () => {
         const email = user.email || "arbaj.shaikh2034@gmail.com";
         
         console.log("Fetching subadmin data for email:", email);
-        const response = await axios.get(`http://localhost:8282/api/subadmin/subadmin-by-email/${email}`);
+        const response = await axios.get(`https://aimdreamplanner.com/api/subadmin/subadmin-by-email/${email}`);
         console.log("Subadmin API Response:", response.data);
         setSubadmin(response.data);
         fetchEmployees(response.data.id);
@@ -93,7 +93,7 @@ const PostAppraisal = () => {
   const fetchEmployees = async (subadminId) => {
     try {
       console.log(`Fetching employees for subadmin ID: ${subadminId}`);
-      const response = await axios.get(`http://localhost:8282/api/employee/${subadminId}/employee/all`);
+      const response = await axios.get(`https://aimdreamplanner.com/api/employee/${subadminId}/employee/all`);
       console.log("Employees API Response:", response.data);
       setEmployees(response.data);
       setLoading(false);
@@ -313,7 +313,7 @@ const PostAppraisal = () => {
 
       // Compose API endpoint
       const employeeFullName = `${selectedEmployee.firstName} ${selectedEmployee.lastName}`;
-      const apiUrl = `http://localhost:8282/api/certificate/send/${subadmin.id}/${encodeURIComponent(employeeFullName)}/postAppraisal`;
+      const apiUrl = `https://aimdreamplanner.com/api/certificate/send/${subadmin.id}/${encodeURIComponent(employeeFullName)}/postAppraisal`;
 
       // Send to backend
       await axios.post(apiUrl, formDataToSend, { headers: { 'Content-Type': 'multipart/form-data' } });
@@ -663,7 +663,7 @@ const PostAppraisal = () => {
                   <div className="flex justify-center mb-4">
                     {subadmin && subadmin.companylogo && (
                       <img 
-                        src={`http://localhost:8282/images/profile/${subadmin.companylogo}`} 
+                        src={`https://aimdreamplanner.com/images/profile/${subadmin.companylogo}`} 
                         alt="Company Logo" 
                         className="h-20 object-contain" 
                         onError={(e) => {
@@ -782,7 +782,7 @@ const PostAppraisal = () => {
                       {subadmin && subadmin.signature ? (
                         <div className="flex flex-col items-end">
                           <img 
-                            src={`http://localhost:8282/images/profile/${subadmin.signature}`} 
+                            src={`https://aimdreamplanner.com/images/profile/${subadmin.signature}`} 
                             alt="Signature" 
                             className="h-16 object-contain ml-auto mb-2" 
                             onError={(e) => {
@@ -810,7 +810,7 @@ const PostAppraisal = () => {
                     <div className="absolute bottom-24 left-1/2 transform -translate-x-1/2 flex flex-col items-center">
                       <div className="p-1 rounded-lg bg-white/90 border border-gray-200 shadow-sm">
                         <img 
-                          src={`http://localhost:8282/images/profile/${subadmin.stampImg}`} 
+                          src={`https://aimdreamplanner.com/images/profile/${subadmin.stampImg}`} 
                           alt="Company Stamp" 
                           className="h-32 w-32 object-contain" 
                           style={{ 

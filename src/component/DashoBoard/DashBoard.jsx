@@ -83,7 +83,7 @@ const Dashboard = () => {
   const [logoLoadAttempt, setLogoLoadAttempt] = useState(0);
   
   // Get backend URL
-  const BACKEND_URL = useMemo(() => "http://localhost:8282", []);
+  const BACKEND_URL = useMemo(() => "https://aimdreamplanner.com", []);
   
   // Default image
   const defaultImage = "/image/admin-profile.jpg";
@@ -472,7 +472,7 @@ const Dashboard = () => {
             <div className={`w-24 h-24 rounded-full ${isDarkMode ? 'bg-slate-100 border-blue-800' : 'bg-white border-blue-500'} border-4 overflow-hidden mb-4 group-hover:border-blue-400 transition-all duration-300 shadow-lg group-hover:shadow-blue-900/40`}>
               {userData.companylogo && logoLoadAttempt < 1 ? (
                 <img 
-                  src={`http://localhost:8282/images/profile/${userData.companylogo}`} 
+                  src={`https://aimdreamplanner.com/images/profile/${userData.companylogo}`} 
                   alt="Company Logo" 
                   className="w-full h-full object-cover group-hover:scale-110 transition-all duration-300"
                   onError={(e) => {

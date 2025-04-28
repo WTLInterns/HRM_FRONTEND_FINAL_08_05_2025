@@ -148,7 +148,7 @@ const RegisterCompany = () => {
     try {
       if (isEditMode) {
         // Update existing company using the API
-        const apiUrl = `http://localhost:8282/api/subadmin/update-fields/${formData.id}`;
+        const apiUrl = `https://aimdreamplanner.com/api/subadmin/update-fields/${formData.id}`;
         
         // Create FormData and append text fields and file fields
         const formDataToSend = new FormData();
@@ -208,7 +208,7 @@ const RegisterCompany = () => {
       } else {
         // Add new company using the API with multipart/form-data
         // Use the correct Master Admin ID (1) in the URL
-        const apiUrl = `http://localhost:8282/masteradmin/addSubAdmin/1`;
+        const apiUrl = `https://aimdreamplanner.com/masteradmin/addSubAdmin/1`;
         
         // Create FormData and append text fields and file fields
         const formDataToSend = new FormData();
@@ -545,7 +545,7 @@ const RegisterCompany = () => {
                 {logoPreview ? (
                   <div className="w-full h-full flex justify-center items-center">
                     <img 
-                      src={typeof formData.logo === 'string' ? `http://localhost:8282/images/profile/${formData.logo}` : logoPreview}
+                      src={typeof formData.logo === 'string' ? `https://aimdreamplanner.com/images/profile/${formData.logo}` : logoPreview}
                       alt="Company Logo" 
                       className="max-h-full max-w-full object-contain" 
                     />
@@ -588,7 +588,7 @@ const RegisterCompany = () => {
                 {signaturePreview ? (
                   <div className="w-full h-full flex justify-center items-center">
                     <img 
-                      src={typeof formData.signature === 'string' ? `http://localhost:8282/images/profile/${formData.signature}` : signaturePreview}
+                      src={typeof formData.signature === 'string' ? `https://aimdreamplanner.com/images/profile/${formData.signature}` : signaturePreview}
                       alt="Signature" 
                       className="max-h-full max-w-full object-contain" 
                     />
@@ -630,7 +630,7 @@ const RegisterCompany = () => {
                 {stampPreview ? (
                   <div className="w-full h-full flex justify-center items-center">
                     <img 
-                      src={typeof formData.stampImage === 'string' ? `http://localhost:8282/images/profile/${formData.stampImage}` : stampPreview}
+                      src={typeof formData.stampImage === 'string' ? `https://aimdreamplanner.com/images/profile/${formData.stampImage}` : stampPreview}
                       alt="Company Stamp" 
                       className="max-h-full max-w-full object-contain" 
                     />

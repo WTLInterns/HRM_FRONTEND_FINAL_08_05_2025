@@ -88,7 +88,7 @@ export default function AddEmp() {
       setLoading(true);
       try {
         console.log(`Fetching employees for subadmin ID: ${subadminId}`);
-        const response = await axios.get(`http://localhost:8282/api/employee/${subadminId}/employee/all`);
+        const response = await axios.get(`https://aimdreamplanner.com/api/employee/${subadminId}/employee/all`);
         console.log("Fetched employees:", response.data);
         setEmployees(response.data);
       } catch (error) {
@@ -236,7 +236,7 @@ export default function AddEmp() {
 
       // Use the dynamic subadminId from state
       const response = await axios.post(
-        `http://localhost:8282/api/subadmin/add-employee/${subadminId}`, 
+        `https://aimdreamplanner.com/api/subadmin/add-employee/${subadminId}`, 
         formData,
         {
           headers: {
@@ -251,7 +251,7 @@ export default function AddEmp() {
       handleReset(e);
       
       // Refresh the employee list
-      const refreshResponse = await axios.get(`http://localhost:8282/api/employee/${subadminId}/employee/all`);
+      const refreshResponse = await axios.get(`https://aimdreamplanner.com/api/employee/${subadminId}/employee/all`);
       setEmployees(refreshResponse.data);
       
       // Dispatch event to notify Dashboard of employee updates
@@ -320,7 +320,7 @@ export default function AddEmp() {
       // Use the dynamic subadminId from state and the correct API endpoint
       // Modified to use empId instead of fullName to ensure uniqueness
       const response = await axios.put(
-        `http://localhost:8282/api/employee/update-employee/${subadminId}/id/${empId}`,
+        `https://aimdreamplanner.com/api/employee/update-employee/${subadminId}/id/${empId}`,
         formData,
         {
           headers: {
@@ -335,7 +335,7 @@ export default function AddEmp() {
       handleReset(e);
       
       // Refresh the employee list
-      const refreshResponse = await axios.get(`http://localhost:8282/api/employee/${subadminId}/employee/all`);
+      const refreshResponse = await axios.get(`https://aimdreamplanner.com/api/employee/${subadminId}/employee/all`);
       setEmployees(refreshResponse.data);
       
       // Show success message with back button
@@ -369,7 +369,7 @@ export default function AddEmp() {
       
       // Use the dynamic subadminId from state
       const response = await axios.delete(
-        `http://localhost:8282/api/employee/${subadminId}/delete/${empId}`,
+        `https://aimdreamplanner.com/api/employee/${subadminId}/delete/${empId}`,
         {
           headers: {
             'Content-Type': 'application/json'
@@ -381,7 +381,7 @@ export default function AddEmp() {
       toast.success("Employee deleted successfully");
       
       // Refresh the employee list
-      const refreshResponse = await axios.get(`http://localhost:8282/api/employee/${subadminId}/employee/all`);
+      const refreshResponse = await axios.get(`https://aimdreamplanner.com/api/employee/${subadminId}/employee/all`);
       setEmployees(refreshResponse.data);
       
       // Dispatch event to notify Dashboard of employee updates
@@ -427,7 +427,7 @@ export default function AddEmp() {
     
     // Profile image - using the correct field name from the backend entity (empimg)
     if (employee.empimg) {
-      const profileImageUrl = `http://localhost:8282/images/profile/${employee.empimg}`;
+      const profileImageUrl = `https://aimdreamplanner.com/images/profile/${employee.empimg}`;
       console.log("Setting profile image URL:", profileImageUrl);
       setEmpImgPreview(profileImageUrl);
       
@@ -442,7 +442,7 @@ export default function AddEmp() {
     
     // Aadhar image - using the correct field name from the backend entity (adharimg)
     if (employee.adharimg) {
-      const aadharImageUrl = `http://localhost:8282/images/profile/${employee.adharimg}`;
+      const aadharImageUrl = `https://aimdreamplanner.com/images/profile/${employee.adharimg}`;
       console.log("Setting aadhar image URL:", aadharImageUrl);
       setAdharImgPreview(aadharImageUrl);
       
@@ -457,7 +457,7 @@ export default function AddEmp() {
     
     // PAN image - using the correct field name from the backend entity (panimg)
     if (employee.panimg) {
-      const panImageUrl = `http://localhost:8282/images/profile/${employee.panimg}`;
+      const panImageUrl = `https://aimdreamplanner.com/images/profile/${employee.panimg}`;
       console.log("Setting PAN image URL:", panImageUrl);
       setPanImgPreview(panImageUrl);
       
@@ -1508,7 +1508,7 @@ export default function AddEmp() {
                                     setEmpImg(null);
                                     // If there was an existing image, restore that preview
                                     if (selectedEmployee?.empimg) {
-                                      setEmpImgPreview(`http://localhost:8282/images/profile/${selectedEmployee.empimg}`);
+                                      setEmpImgPreview(`https://aimdreamplanner.com/images/profile/${selectedEmployee.empimg}`);
                                     } else {
                                       setEmpImgPreview("");
                                     }
@@ -1575,7 +1575,7 @@ export default function AddEmp() {
                                     setAdharImg(null);
                                     // If there was an existing image, restore that preview
                                     if (selectedEmployee?.adharimg) {
-                                      setAdharImgPreview(`http://localhost:8282/images/profile/${selectedEmployee.adharimg}`);
+                                      setAdharImgPreview(`https://aimdreamplanner.com/images/profile/${selectedEmployee.adharimg}`);
                                     } else {
                                       setAdharImgPreview("");
                                     }
@@ -1642,7 +1642,7 @@ export default function AddEmp() {
                                     setPanImg(null);
                                     // If there was an existing image, restore that preview
                                     if (selectedEmployee?.panimg) {
-                                      setPanImgPreview(`http://localhost:8282/images/profile/${selectedEmployee.panimg}`);
+                                      setPanImgPreview(`https://aimdreamplanner.com/images/profile/${selectedEmployee.panimg}`);
                                     } else {
                                       setPanImgPreview("");
                                     }

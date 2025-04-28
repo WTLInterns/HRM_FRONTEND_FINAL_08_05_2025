@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import axios from 'axios';
 import { useApp } from '../../../context/AppContext';
-const IMAGE_BASE_URL = 'http://localhost:8282/images/profile/';
+const IMAGE_BASE_URL = 'https://aimdreamplanner.com/images/profile/';
 
 const getImageUrl = (filename) => {
   if (!filename) return null;
@@ -51,7 +51,7 @@ const AchievementCertificate = () => {
         setEmployeeLoading(true);
         const user = JSON.parse(localStorage.getItem('user'));
         if (!user || !user.id) return;
-        const res = await axios.get(`http://localhost:8282/api/employee/${user.id}/employee/all`);
+        const res = await axios.get(`https://aimdreamplanner.com/api/employee/${user.id}/employee/all`);
         if (Array.isArray(res.data)) {
           setEmployeeOptions(res.data);
         }
@@ -132,7 +132,7 @@ const AchievementCertificate = () => {
 
       // Compose API endpoint
       const employeeFullName = formData.recipientName;
-      const apiUrl = `http://localhost:8282/api/certificate/send/${profileData.id}/${encodeURIComponent(employeeFullName)}/achievement`;
+      const apiUrl = `https://aimdreamplanner.com/api/certificate/send/${profileData.id}/${encodeURIComponent(employeeFullName)}/achievement`;
 
       // Send to backend
       await axios.post(apiUrl, formDataToSend, { headers: { 'Content-Type': 'multipart/form-data' } });
