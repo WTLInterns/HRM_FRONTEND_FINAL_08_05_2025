@@ -55,7 +55,7 @@ const RelievingLetter = () => {
         const email = user.email || "arbaj.shaikh2034@gmail.com";
         
         console.log("Fetching subadmin data for email:", email);
-        const response = await axios.get(`https://aimdreamplanner.com/api/subadmin/subadmin-by-email/${email}`);
+        const response = await axios.get(`https://api.aimdreamplanner.com/api/subadmin/subadmin-by-email/${email}`);
         console.log("Subadmin API Response:", response.data);
         setSubadmin(response.data);
         fetchEmployees(response.data.id);
@@ -74,7 +74,7 @@ const RelievingLetter = () => {
   const fetchEmployees = async (subadminId) => {
     try {
       console.log(`Fetching employees for subadmin ID: ${subadminId}`);
-      const response = await axios.get(`https://aimdreamplanner.com/api/employee/${subadminId}/employee/all`);
+      const response = await axios.get(`https://api.aimdreamplanner.com/api/employee/${subadminId}/employee/all`);
       console.log("Employees API Response:", response.data);
       setEmployees(response.data);
       setLoading(false);
@@ -658,7 +658,7 @@ const RelievingLetter = () => {
       
       // Send the document using the backend API
       const response = await axios.post(
-        `https://aimdreamplanner.com/api/certificate/send/${subadmin.id}/${encodeURIComponent(employeeFullName)}/relieving`,
+        `https://api.aimdreamplanner.com/api/certificate/send/${subadmin.id}/${encodeURIComponent(employeeFullName)}/relieving`,
         formData,
         {
           headers: {
@@ -1080,7 +1080,7 @@ const RelievingLetter = () => {
                   <div className="flex-shrink-0 mr-4">
                     {subadmin && subadmin.companylogo ? (
                       <img 
-                        src={`https://aimdreamplanner.com/images/profile/${subadmin.companylogo}`} 
+                        src={`https://api.aimdreamplanner.com/images/profile/${subadmin.companylogo}`} 
                         alt="Company Logo" 
                         className="h-20 object-contain" 
                         onError={(e) => {
@@ -1164,7 +1164,7 @@ const RelievingLetter = () => {
                   {subadmin && subadmin.signature ? (
                     <div className="border-b border-gray-300 pb-0 w-48">
                       <img 
-                        src={`https://aimdreamplanner.com/images/profile/${subadmin.signature}`} 
+                        src={`https://api.aimdreamplanner.com/images/profile/${subadmin.signature}`} 
                         alt="Signature" 
                         className="h-16 mb-0 object-contain" 
                         onError={(e) => {
@@ -1188,7 +1188,7 @@ const RelievingLetter = () => {
                     <span className="font-bold text-black text-sm uppercase bg-white/80 px-2 py-0.5 rounded-md shadow-sm">STAMP</span>
                   </div>
                   <img 
-                    src={`https://aimdreamplanner.com/images/profile/${subadmin.stampImg}`} 
+                    src={`https://api.aimdreamplanner.com/images/profile/${subadmin.stampImg}`} 
                     alt="Company Stamp" 
                     className="h-28 w-28 object-contain transform scale-100 shadow-md bg-white p-1 border-2 border-green-600" 
                     style={{ 

@@ -23,7 +23,7 @@ const ViewCompany = () => {
         setLoading(true);
         
         // Fetch data from the API
-        const response = await fetch('https://aimdreamplanner.com/api/subadmin/all');
+        const response = await fetch('https://api.aimdreamplanner.com/api/subadmin/all');
         
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
@@ -140,7 +140,7 @@ const ViewCompany = () => {
     if (companyToDelete) {
       try {
         // Make an API call to delete the company
-        const response = await fetch(`https://aimdreamplanner.com/api/subadmin/delete/${companyToDelete.id}`, {
+        const response = await fetch(`https://api.aimdreamplanner.com/api/subadmin/delete/${companyToDelete.id}`, {
           method: 'DELETE'
         });
         
@@ -187,7 +187,7 @@ const ViewCompany = () => {
       }
       
       // Call the API to send login details
-      const response = await fetch(`https://aimdreamplanner.com/api/subadmin/send-email/${company.email}`, {
+      const response = await fetch(`https://api.aimdreamplanner.com/api/subadmin/send-email/${company.email}`, {
         method: 'POST'
       });
       
@@ -344,12 +344,12 @@ const ViewCompany = () => {
                               <FaSignature className="mr-1" /> 
                               <span className="text-xs font-semibold">Yes</span>
                               <button 
-                                onClick={() => window.open(`https://aimdreamplanner.com/images/profile/${company.signature}`, '_blank')}
+                                onClick={() => window.open(`https://api.aimdreamplanner.com/images/profile/${company.signature}`, '_blank')}
                                 className="ml-1 hover:text-blue-300 transition-colors"
                                 title="View signature"
                               >
                                 <img 
-                                  src={`https://aimdreamplanner.com/images/profile/${company.signature}`}
+                                  src={`https://api.aimdreamplanner.com/images/profile/${company.signature}`}
                                   alt="Signature"
                                   className="h-4 w-4 rounded-sm object-cover inline-block ml-1"
                                   onError={(e) => {
@@ -370,12 +370,12 @@ const ViewCompany = () => {
                               <FaStamp className="mr-1" /> 
                               <span className="text-xs font-semibold">Yes</span>
                               <button 
-                                onClick={() => window.open(`https://aimdreamplanner.com/images/profile/${company.stampImg}`, '_blank')}
+                                onClick={() => window.open(`https://api.aimdreamplanner.com/images/profile/${company.stampImg}`, '_blank')}
                                 className="ml-1 hover:text-blue-300 transition-colors"
                                 title="View stamp"
                               >
                                 <img 
-                                  src={`https://aimdreamplanner.com/images/profile/${company.stampImg}`}
+                                  src={`https://api.aimdreamplanner.com/images/profile/${company.stampImg}`}
                                   alt="Stamp"
                                   className="h-4 w-4 rounded-sm object-cover inline-block ml-1"
                                   onError={(e) => {
@@ -396,12 +396,12 @@ const ViewCompany = () => {
                               <FaBuilding className="mr-1" /> 
                               <span className="text-xs font-semibold">Logo</span>
                               <button 
-                                onClick={() => window.open(`https://aimdreamplanner.com/images/profile/${company.companylogo}`, '_blank')}
+                                onClick={() => window.open(`https://api.aimdreamplanner.com/images/profile/${company.companylogo}`, '_blank')}
                                 className="ml-1 hover:text-blue-300 transition-colors"
                                 title="View logo"
                               >
                                 <img 
-                                  src={`https://aimdreamplanner.com/images/profile/${company.companylogo}`}
+                                  src={`https://api.aimdreamplanner.com/images/profile/${company.companylogo}`}
                                   alt="Logo"
                                   className="h-4 w-4 rounded-sm object-cover inline-block ml-1"
                                   onError={(e) => {

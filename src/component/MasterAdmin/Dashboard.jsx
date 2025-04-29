@@ -24,7 +24,7 @@ const Dashboard = () => {
         setLoading(true);
         
         // Fetch companies directly from the API instead of localStorage
-        const response = await fetch('https://aimdreamplanner.com/api/subadmin/all');
+        const response = await fetch('https://api.aimdreamplanner.com/api/subadmin/all');
         
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);

@@ -68,7 +68,7 @@
 //       console.log(`Fetching attendance for Subadmin ID ${subadminId} and name ${encodedFullName}`);
 
 //       const response = await axios.get(
-//         `https://aimdreamplanner.com/api/employee/${subadminId}/${encodedFullName}/attendance`
+//         `https://api.aimdreamplanner.com/api/employee/${subadminId}/${encodedFullName}/attendance`
 //       );
 //       console.log("Attendance data:", response.data);
 
@@ -305,7 +305,7 @@ export default function ViewAttendance() {
       const user = JSON.parse(userData);
       setLoggedUser(user);
       axios
-        .get(`https://aimdreamplanner.com/api/employee/${user.id}/employee/all`)
+        .get(`https://api.aimdreamplanner.com/api/employee/${user.id}/employee/all`)
         .then(res => setEmployeeList(res.data))
         .catch(err => console.error("Failed to load employee list:", err));
     }
@@ -359,7 +359,7 @@ export default function ViewAttendance() {
       const subadminId = loggedUser.id;
       const encodedName = encodeURIComponent(empFullName);
       const res = await axios.get(
-        `https://aimdreamplanner.com/api/employee/${subadminId}/${encodedName}/attendance`
+        `https://api.aimdreamplanner.com/api/employee/${subadminId}/${encodedName}/attendance`
       );
       setAttendanceData(res.data);
       setEmpName(res.data[0]?.employee?.firstName || "Employee");

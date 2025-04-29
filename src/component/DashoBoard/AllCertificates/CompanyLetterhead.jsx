@@ -44,7 +44,7 @@ const CompanyLetterhead = () => {
         const email = user.email || "arbaj.shaikh2034@gmail.com";
         
         console.log("Fetching subadmin data for email:", email);
-        const response = await axios.get(`https://aimdreamplanner.com/api/subadmin/subadmin-by-email/${email}`);
+        const response = await axios.get(`https://api.aimdreamplanner.com/api/subadmin/subadmin-by-email/${email}`);
         console.log("Subadmin API Response:", response.data);
         setSubadmin(response.data);
         setLoading(false);
@@ -359,7 +359,7 @@ const CompanyLetterhead = () => {
                     {letterheadConfig.showLogo && subadmin && subadmin.companylogo && (
                       <div className="mb-4">
                         <img 
-                          src={`https://aimdreamplanner.com/images/profile/${subadmin.companylogo}`} 
+                          src={`https://api.aimdreamplanner.com/images/profile/${subadmin.companylogo}`} 
                           alt="Company Logo" 
                           className="h-20 object-contain" 
                           onError={(e) => {

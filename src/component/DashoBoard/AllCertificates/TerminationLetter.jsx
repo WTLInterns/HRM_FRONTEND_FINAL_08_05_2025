@@ -57,7 +57,7 @@ const TerminationLetter = () => {
         const email = user.email || "arbaj.shaikh2034@gmail.com";
         
         console.log("Fetching subadmin data for email:", email);
-        const response = await axios.get(`https://aimdreamplanner.com/api/subadmin/subadmin-by-email/${email}`);
+        const response = await axios.get(`https://api.aimdreamplanner.com/api/subadmin/subadmin-by-email/${email}`);
         console.log("Subadmin API Response:", response.data);
         setSubadmin(response.data);
         fetchEmployees(response.data.id);
@@ -76,7 +76,7 @@ const TerminationLetter = () => {
   const fetchEmployees = async (subadminId) => {
     try {
       console.log(`Fetching employees for subadmin ID: ${subadminId}`);
-      const response = await axios.get(`https://aimdreamplanner.com/api/employee/${subadminId}/employee/all`);
+      const response = await axios.get(`https://api.aimdreamplanner.com/api/employee/${subadminId}/employee/all`);
       console.log("Employees API Response:", response.data);
       setEmployees(response.data);
       setLoading(false);
@@ -645,7 +645,7 @@ const TerminationLetter = () => {
       
       // Send the document using the backend API
       const response = await axios.post(
-        `https://aimdreamplanner.com/api/certificate/send/${subadmin.id}/${encodeURIComponent(employeeFullName)}/termination`,
+        `https://api.aimdreamplanner.com/api/certificate/send/${subadmin.id}/${encodeURIComponent(employeeFullName)}/termination`,
         formData,
         {
           headers: {
@@ -964,7 +964,7 @@ const TerminationLetter = () => {
                   <div className="flex-shrink-0 mr-4">
                     {subadmin && subadmin.companylogo ? (
                       <img 
-                        src={`https://aimdreamplanner.com/images/profile/${subadmin.companylogo}`} 
+                        src={`https://api.aimdreamplanner.com/images/profile/${subadmin.companylogo}`} 
                         alt="Company Logo" 
                         className="h-20 object-contain" 
                         onError={(e) => {
@@ -1054,7 +1054,7 @@ const TerminationLetter = () => {
                   {subadmin && subadmin.signature ? (
                     <div>
                       <img 
-                        src={`https://aimdreamplanner.com/images/profile/${subadmin.signature}`} 
+                        src={`https://api.aimdreamplanner.com/images/profile/${subadmin.signature}`} 
                         alt="Signature" 
                         className="h-16 object-contain mb-2" 
                         onError={(e) => {
@@ -1084,7 +1084,7 @@ const TerminationLetter = () => {
                     <span className="font-bold text-purple-800 text-xs uppercase">Official Stamp</span>
                   </div>
                   <img 
-                    src={`https://aimdreamplanner.com/images/profile/${subadmin.stampImg}`} 
+                    src={`https://api.aimdreamplanner.com/images/profile/${subadmin.stampImg}`} 
                     alt="Company Stamp" 
                     className="h-32 w-32 object-contain transform scale-100 shadow-sm" 
                     style={{ 

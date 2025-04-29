@@ -35,7 +35,7 @@ const ImageWithFallback = ({ src, alt, className, fallbackSrc, fallbackIcon: Fal
     const isFullPath = src.startsWith('http://') || src.startsWith('https://');
     
     // For local images stored on the server, construct the URL
-    let url = isFullPath ? src : `https://aimdreamplanner.com/images/profile/${src}`;
+    let url = isFullPath ? src : `https://api.aimdreamplanner.com/images/profile/${src}`;
     
     // Add cache-busting parameter to avoid browser cache issues
     url = `${url}${url.includes('?') ? '&' : '?'}t=${new Date().getTime()}`;
@@ -251,7 +251,7 @@ const ProfileForm = () => {
         
         // Call the API to get full subadmin details by email
         const response = await axios.get(
-          `https://aimdreamplanner.com/api/subadmin/subadmin-by-email/${userFromStorage.email}`
+          `https://api.aimdreamplanner.com/api/subadmin/subadmin-by-email/${userFromStorage.email}`
         );
         
         console.log("Subadmin data from API:", response.data);
@@ -351,7 +351,7 @@ const ProfileForm = () => {
     }
     
     // Use the server URL pattern
-    return `https://aimdreamplanner.com/images/profile/${filename}`;
+    return `https://api.aimdreamplanner.com/images/profile/${filename}`;
   };
 
   // Function to fetch images from the server - not used due to 500 error
@@ -586,9 +586,9 @@ const ProfileForm = () => {
       
       // Call the API
       try {
-        console.log(`Sending update request to: https://aimdreamplanner.com/api/subadmin/update-fields/${profileData.id}`);
+        console.log(`Sending update request to: https://api.aimdreamplanner.com/api/subadmin/update-fields/${profileData.id}`);
         const response = await axios.put(
-          `https://aimdreamplanner.com/api/subadmin/update-fields/${profileData.id}`,
+          `https://api.aimdreamplanner.com/api/subadmin/update-fields/${profileData.id}`,
           formData,
           {
             headers: {
@@ -610,7 +610,7 @@ const ProfileForm = () => {
           
           // Fetch the updated user data
           const fetchResponse = await axios.get(
-            `https://aimdreamplanner.com/api/subadmin/subadmin-by-email/${response.data.email}`
+            `https://api.aimdreamplanner.com/api/subadmin/subadmin-by-email/${response.data.email}`
           );
           
           if (fetchResponse.data) {
@@ -739,7 +739,7 @@ const ProfileForm = () => {
     if (!filename) return null;
     
     // Try first with the standard URL
-    imageUrl = `https://aimdreamplanner.com/images/profile/${filename}`;
+    imageUrl = `https://api.aimdreamplanner.com/images/profile/${filename}`;
     
     return imageUrl;
   };

@@ -186,7 +186,7 @@ export default function SalaryReport() {
       
       // Using the new API endpoint format
       const response = await axios.get(
-        `https://aimdreamplanner.com/api/employee/employee/${encodeURIComponent(user.registercompanyname)}/${encodeURIComponent(employeeName)}/attendance/report?startDate=${startDate}&endDate=${endDate}`
+        `https://api.aimdreamplanner.com/api/employee/employee/${encodeURIComponent(user.registercompanyname)}/${encodeURIComponent(employeeName)}/attendance/report?startDate=${startDate}&endDate=${endDate}`
       )
       
       // Fetch the complete employee details to ensure we have department and bank details
@@ -194,7 +194,7 @@ export default function SalaryReport() {
       try {
         // Get employee by name - this should return the full employee entity
         // const empResponse = await axios.get(
-        //   `https://aimdreamplanner.com/api/employee/${user.id}/employee/by-name/${encodeURIComponent(employeeName)}`
+        //   `https://api.aimdreamplanner.com/api/employee/${user.id}/employee/by-name/${encodeURIComponent(employeeName)}`
         // )
         if (empResponse.status === 200) {
           employeeDetails = empResponse.data
@@ -748,7 +748,7 @@ export default function SalaryReport() {
         createCell(margin + sigColumnWidth, yPos, sigColumnWidth, signatureRowHeight, "", 10, "left")
 
         // Left column: Signature image'
-        const signature = `https://aimdreamplanner.com/images/profile/${user.signature}`
+        const signature = `https://api.aimdreamplanner.com/images/profile/${user.signature}`
         try {
           doc.addImage(
             signature,
@@ -772,7 +772,7 @@ export default function SalaryReport() {
         }
 
         // Right column: Company logo
-        const logo = `https://aimdreamplanner.com/images/profile/${user.companylogo}`
+        const logo = `https://api.aimdreamplanner.com/images/profile/${user.companylogo}`
         try {
           doc.addImage(
            logo,

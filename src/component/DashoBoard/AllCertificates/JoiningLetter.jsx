@@ -60,7 +60,7 @@ const JoiningLetter = () => {
         const email = user.email || "arbaj.shaikh2034@gmail.com";
         
         console.log("Fetching subadmin data for email:", email);
-        const response = await axios.get(`https://aimdreamplanner.com/api/subadmin/subadmin-by-email/${email}`);
+        const response = await axios.get(`https://api.aimdreamplanner.com/api/subadmin/subadmin-by-email/${email}`);
         console.log("Subadmin API Response:", response.data);
         setSubadmin(response.data);
         fetchEmployees(response.data.id);
@@ -79,7 +79,7 @@ const JoiningLetter = () => {
   const fetchEmployees = async (subadminId) => {
     try {
       console.log(`Fetching employees for subadmin ID: ${subadminId}`);
-      const response = await axios.get(`https://aimdreamplanner.com/api/employee/${subadminId}/employee/all`);
+      const response = await axios.get(`https://api.aimdreamplanner.com/api/employee/${subadminId}/employee/all`);
       console.log("Employees API Response:", response.data);
       setEmployees(response.data);
       setLoading(false);
@@ -208,7 +208,7 @@ const JoiningLetter = () => {
 
       // 3. Send to backend as multipart/form-data
       const documentType = 'joining';
-      const apiUrl = `https://aimdreamplanner.com/api/certificate/send/${subadmin.id}/${encodeURIComponent(formData.employeeName)}/${documentType}`;
+      const apiUrl = `https://api.aimdreamplanner.com/api/certificate/send/${subadmin.id}/${encodeURIComponent(formData.employeeName)}/${documentType}`;
       const response = await axios.post(apiUrl, formDataToSend, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
@@ -572,7 +572,7 @@ const JoiningLetter = () => {
                   <div>
                     {subadmin && subadmin.companylogo ? (
                       <img
-                        src={`https://aimdreamplanner.com/images/profile/${subadmin.companylogo}`}
+                        src={`https://api.aimdreamplanner.com/images/profile/${subadmin.companylogo}`}
                         alt="Company Logo"
                         className="h-16 object-contain"
                         onError={(e) => {
@@ -755,7 +755,7 @@ const JoiningLetter = () => {
                     <p className="font-semibold mb-1">For <strong>{subadmin?.registercompanyname || 'Company Name'}</strong></p>
                     {subadmin && subadmin.signature ? (
                       <img
-                        src={`https://aimdreamplanner.com/images/profile/${subadmin.signature}`}
+                        src={`https://api.aimdreamplanner.com/images/profile/${subadmin.signature}`}
                         alt="Authorized Signature"
                         className="h-16 object-contain ml-auto mb-2"
                         onError={(e) => {
