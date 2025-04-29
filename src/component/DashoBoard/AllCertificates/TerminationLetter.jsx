@@ -1050,62 +1050,61 @@ const TerminationLetter = () => {
               {/* Closing with refined styling */}
               <div className="mt-12">
                 <p className="font-semibold text-gray-800">Best regards,</p>
-                <div className="mt-2">
-                  {subadmin && subadmin.signature ? (
-                    <div>
+                <div className="mt-2 flex justify-between items-end">
+                  <div>
+                    {subadmin && subadmin.signature ? (
+                      <div>
+                        <img 
+                          src={`https://api.aimdreamplanner.com/images/profile/${subadmin.signature}`} 
+                          alt="Signature" 
+                          className="h-16 object-contain mb-2" 
+                          onError={(e) => {
+                            console.error('Error loading signature:', e);
+                            e.target.src = 'https://via.placeholder.com/150x50?text=Signature';
+                          }}
+                        />
+                        <div className="border-b border-gray-300 w-48 mb-2"></div>
+                        <p className="text-gray-700 mt-1 font-semibold">{formData.signatoryName || (subadmin ? `${subadmin.name} ${subadmin.lastname}` : "")}</p>
+                        {formData.signatoryTitle && <p className="text-gray-600 text-sm">{formData.signatoryTitle}</p>}
+                      </div>
+                    ) : (
+                      <div>
+                        <div className="h-16 mb-2"></div>
+                        <div className="border-b border-gray-300 w-48 mb-2"></div>
+                        <p className="text-gray-700 mt-1 font-semibold">{formData.signatoryName || (subadmin ? `${subadmin.name} ${subadmin.lastname}` : "")}</p>
+                        {formData.signatoryTitle && <p className="text-gray-600 text-sm">{formData.signatoryTitle}</p>}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Stamp if available - with improved styling */}
+                  {subadmin && subadmin.stampImg && (
+                    <div className="flex flex-col items-center">
                       <img 
-                        src={`https://api.aimdreamplanner.com/images/profile/${subadmin.signature}`} 
-                        alt="Signature" 
-                        className="h-16 object-contain mb-2" 
+                        src={`https://api.aimdreamplanner.com/images/profile/${subadmin.stampImg}`} 
+                        alt="Company Stamp" 
+                        className="h-32 w-32 object-contain transform scale-100 shadow-sm" 
+                        style={{ 
+                          imageRendering: 'high-quality',
+                          opacity: 0.9
+                        }}
                         onError={(e) => {
-                          console.error('Error loading signature:', e);
-                          e.target.src = 'https://via.placeholder.com/150x50?text=Signature';
+                          console.error('Error loading stamp:', e);
+                          e.target.style.display = 'none';
+                          e.target.parentNode.innerHTML = `
+                            <div class="border-2 border-purple-500 rounded-full p-4 flex items-center justify-center h-32 w-32 rotate-6">
+                              <div class="text-center">
+                                <p class="font-bold text-purple-800">${subadmin.registercompanyname || "COMPANY"}</p>
+                                <p class="font-bold text-purple-800">OFFICIAL</p>
+                              </div>
+                            </div>
+                          `;
                         }}
                       />
-                      <div className="border-b border-gray-300 w-48 mb-2"></div>
-                      <p className="text-gray-700 mt-1 font-semibold">{formData.signatoryName || (subadmin ? `${subadmin.name} ${subadmin.lastname}` : "")}</p>
-                      {formData.signatoryTitle && <p className="text-gray-600 text-sm">{formData.signatoryTitle}</p>}
-                    </div>
-                  ) : (
-                    <div>
-                      <div className="h-16 mb-2"></div>
-                      <div className="border-b border-gray-300 w-48 mb-2"></div>
-                      <p className="text-gray-700 mt-1 font-semibold">{formData.signatoryName || (subadmin ? `${subadmin.name} ${subadmin.lastname}` : "")}</p>
-                      {formData.signatoryTitle && <p className="text-gray-600 text-sm">{formData.signatoryTitle}</p>}
                     </div>
                   )}
                 </div>
               </div>
-              
-              {/* Stamp if available - with improved styling */}
-              {subadmin && subadmin.stampImg && (
-                <div className="absolute bottom-24 right-8 flex flex-col items-center">
-                  <div className="text-center mb-1">
-                    <span className="font-bold text-purple-800 text-xs uppercase">Official Stamp</span>
-                  </div>
-                  <img 
-                    src={`https://api.aimdreamplanner.com/images/profile/${subadmin.stampImg}`} 
-                    alt="Company Stamp" 
-                    className="h-32 w-32 object-contain transform scale-100 shadow-sm" 
-                    style={{ 
-                      imageRendering: 'high-quality',
-                      opacity: 0.9
-                    }}
-                    onError={(e) => {
-                      console.error('Error loading stamp:', e);
-                      e.target.style.display = 'none';
-                      e.target.parentNode.innerHTML = `
-                        <div class="border-2 border-purple-500 rounded-full p-4 flex items-center justify-center h-32 w-32 rotate-6">
-                          <div class="text-center">
-                            <p class="font-bold text-purple-800">${subadmin.registercompanyname || "COMPANY"}</p>
-                            <p class="font-bold text-purple-800">OFFICIAL</p>
-                          </div>
-                        </div>
-                      `;
-                    }}
-                  />
-                </div>
-              )}
             </div>
           </div>
         </div>

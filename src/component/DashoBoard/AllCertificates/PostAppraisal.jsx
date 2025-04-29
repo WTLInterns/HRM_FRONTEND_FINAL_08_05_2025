@@ -823,7 +823,7 @@ const PostAppraisal = () => {
                           }}
                         />
                       </div>
-                      <p className="mt-2 text-black font-semibold text-sm">Company Stamp</p>
+                      {/* <p className="mt-2 text-black font-semibold text-sm">Company Stamp</p> */}
                     </div>
                   )}
                   

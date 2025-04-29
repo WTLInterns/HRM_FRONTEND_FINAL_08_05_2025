@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { FaBuilding, FaEdit, FaTrash, FaEnvelope, FaSearch, FaSignature, FaStamp, FaUser, FaChevronLeft, FaChevronRight, FaExclamationTriangle, FaTimes } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-hot-toast";
 import "../DashoBoard/animations.css";
 
 const ViewCompany = () => {
@@ -13,6 +14,11 @@ const ViewCompany = () => {
   // Delete confirmation modal state
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [companyToDelete, setCompanyToDelete] = useState(null);
+  // Email confirmation modal state
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [companyToEmail, setCompanyToEmail] = useState(null);
+  // Modal success message state
+  const [modalSuccessMsg, setModalSuccessMsg] = useState("");
   
   const navigate = useNavigate();
 
@@ -102,8 +108,8 @@ const ViewCompany = () => {
         
         // Ensure all required fields exist
         gstno: companyToEdit.gstno || '',
-        cinNo: companyToEdit.cinno || '',  // Normalize capitalization (cinNo vs cinno)
-        companyUrl: companyToEdit.companyurl || '', // Normalize capitalization
+        cinNo: companyToEdit.cinNo || companyToEdit.cinno || '',  // Fix: support both cinNo and cinno
+        companyUrl: companyToEdit.companyUrl || companyToEdit.companyurl || '', // Fix: support both companyUrl and companyurl
         address: companyToEdit.address || '',
         status: companyToEdit.status || 'Active',
         
@@ -130,6 +136,7 @@ const ViewCompany = () => {
 
   // Open delete confirmation modal
   const handleDeleteClick = (id) => {
+    setModalSuccessMsg("");
     const company = companies.find(company => company.id === id);
     setCompanyToDelete(company);
     setShowDeleteModal(true);
@@ -160,14 +167,15 @@ const ViewCompany = () => {
         // Dispatch custom event to update dashboard
         window.dispatchEvent(new Event('companiesUpdated'));
         
-        // Close the modal
-        setShowDeleteModal(false);
-        setCompanyToDelete(null);
-        
-        alert('Company deleted successfully');
+        setModalSuccessMsg("Company deleted successfully!");
+        setTimeout(() => {
+          setShowDeleteModal(false);
+          setCompanyToDelete(null);
+          setModalSuccessMsg("");
+        }, 2000);
       } catch (error) {
         console.error("Error deleting company:", error);
-        alert("Failed to delete company. Please try again.");
+        toast.error("Failed to delete company. Please try again.");
       }
     }
   };
@@ -182,7 +190,7 @@ const ViewCompany = () => {
     try {
       const company = companies.find(c => c.id === id);
       if (!company || !company.email) {
-        alert('Company email not found');
+        toast.error('Company email not found');
         return;
       }
       
@@ -195,10 +203,15 @@ const ViewCompany = () => {
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
       
-      alert(`Login details successfully sent to ${company.email}`);
+      setModalSuccessMsg("Login details sent successfully!");
+      setTimeout(() => {
+        setShowEmailModal(false);
+        setCompanyToEmail(null);
+        setModalSuccessMsg("");
+      }, 2000);
     } catch (error) {
       console.error('Error sending login details:', error);
-      alert('Failed to send login details. Please try again.');
+      toast.error('Failed to send login details. Please try again.');
     }
   };
 
@@ -218,29 +231,90 @@ const ViewCompany = () => {
             </div>
             
             <div className="mb-6">
-              <p className="mb-2">Are you sure you want to delete this company?</p>
-              {companyToDelete && (
-                <div className="bg-slate-900/60 p-3 rounded-md border border-slate-700 mt-3">
-                  <p className="font-semibold text-blue-400">{companyToDelete.registercompanyname}</p>
-                  <p className="text-sm text-gray-300">{companyToDelete.email}</p>
+              {modalSuccessMsg ? (
+                <div className="flex flex-col items-center justify-center text-green-400">
+                  <svg className="w-10 h-10 mb-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                  <span className="text-lg font-semibold">{modalSuccessMsg}</span>
                 </div>
+              ) : (
+                <>
+                  <p className="mb-2">Are you sure you want to delete this company?</p>
+                  {companyToDelete && (
+                    <div className="bg-slate-900/60 p-3 rounded-md border border-slate-700 mt-3">
+                      <p className="font-semibold text-blue-400">{companyToDelete.registercompanyname}</p>
+                      <p className="text-sm text-gray-300">{companyToDelete.email}</p>
+                    </div>
+                  )}
+                </>
               )}
             </div>
             
-            <div className="flex space-x-3 justify-end">
-              <button 
-                onClick={cancelDelete}
-                className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-md transition-colors"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={confirmDelete}
-                className="px-4 py-2 bg-gradient-to-r from-red-700 to-red-600 hover:from-red-600 hover:to-red-500 text-white rounded-md transition-colors"
-              >
-                Delete
+            {!modalSuccessMsg && (
+              <div className="flex space-x-3 justify-end">
+                <button 
+                  onClick={cancelDelete}
+                  className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-md transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={confirmDelete}
+                  className="px-4 py-2 bg-gradient-to-r from-red-700 to-red-600 hover:from-red-600 hover:to-red-500 text-white rounded-md transition-colors"
+                >
+                  Delete
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Email Confirmation Modal */}
+      {showEmailModal && companyToEmail && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fadeIn">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setShowEmailModal(false)}></div>
+          <div className="bg-slate-800 rounded-lg shadow-xl border border-green-800 w-full max-w-md p-6 z-10 animate-scaleIn">
+            <div className="flex items-center mb-4 text-green-500">
+              <FaEnvelope className="text-2xl mr-3" />
+              <h3 className="text-xl font-semibold">Send Login Details?</h3>
+              <button onClick={() => setShowEmailModal(false)} className="ml-auto p-1 hover:bg-slate-700 rounded-full transition-colors">
+                <FaTimes className="text-gray-400 hover:text-white" />
               </button>
             </div>
+            <div className="mb-6">
+              {modalSuccessMsg ? (
+                <div className="flex flex-col items-center justify-center text-green-400">
+                  <svg className="w-10 h-10 mb-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                  <span className="text-lg font-semibold">{modalSuccessMsg}</span>
+                </div>
+              ) : (
+                <>
+                  <p className="mb-2">Are you sure you want to send login details to:</p>
+                  <div className="bg-slate-900/60 p-3 rounded-md border border-slate-700 mt-3">
+                    <p className="font-semibold text-blue-400">{companyToEmail.registercompanyname}</p>
+                    <p className="text-sm text-gray-300">{companyToEmail.email}</p>
+                  </div>
+                </>
+              )}
+            </div>
+            {!modalSuccessMsg && (
+              <div className="flex space-x-3 justify-end">
+                <button 
+                  onClick={() => setShowEmailModal(false)}
+                  className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-md transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={async () => {
+                    await handleSendLoginDetails(companyToEmail.id);
+                  }}
+                  className="px-4 py-2 bg-gradient-to-r from-green-700 to-green-600 hover:from-green-600 hover:to-green-500 text-white rounded-md transition-colors"
+                >
+                  Send
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -446,7 +520,11 @@ const ViewCompany = () => {
                             <FaTrash size={16} />
                           </button>
                           <button 
-                            onClick={() => handleSendLoginDetails(company.id)}
+                            onClick={() => {
+                              setCompanyToEmail(company);
+                              setShowEmailModal(true);
+                              setModalSuccessMsg("");
+                            }}
                             className="text-green-400 hover:text-green-300 hover:scale-125 transition-all duration-300 bg-green-900/30 p-1.5 rounded-full"
                             title="Send login details"
                           >

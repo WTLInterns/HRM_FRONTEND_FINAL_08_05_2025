@@ -1116,11 +1116,6 @@ const RelievingLetter = () => {
                 <p className="font-bold text-green-700">Subject: Relieving Letter</p>
               </div>
               
-              {/* Salutation */}
-              <div className="mb-4">
-                <p>Dear {formData.employeeName || "[Employee Name]"},</p>
-              </div>
-              
               {/* Main Content */}
               <div className="space-y-4 mb-6 text-gray-800">
                 <p className="leading-relaxed">
@@ -1157,74 +1152,76 @@ const RelievingLetter = () => {
                 <div className="h-28"></div>
               </div>
               
-              {/* Closing */}
-              <div className="mt-6">
+              {/* Closing and Signature Section */}
+              <div className="mt-8">
                 <p className="mb-0">Best regards,</p>
-                <div className="mt-1">
-                  {subadmin && subadmin.signature ? (
-                    <div className="border-b border-gray-300 pb-0 w-48">
+                <div className="mt-8 flex justify-between items-start">
+                  <div>
+                    {subadmin && subadmin.signature ? (
+                      <div className="border-b border-gray-300 pb-0 w-48">
+                        <img 
+                          src={`https://api.aimdreamplanner.com/images/profile/${subadmin.signature}`} 
+                          alt="Signature" 
+                          className="h-16 mb-0 object-contain" 
+                          onError={(e) => {
+                            console.error('Error loading signature:', e);
+                            e.target.src = 'https://via.placeholder.com/150x50?text=Signature';
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <div className="border-b border-gray-300 w-48 h-12"></div>
+                    )}
+                    <p className="font-bold mt-1 text-black" id="signatory-name">{formData.signatoryName || (subadmin ? `${subadmin.name || ''} ${subadmin.lastname || ''}` : "HR Manager")}</p>
+                    <p className="text-gray-600">{formData.signatoryTitle || (subadmin?.designation || "HR Director")}</p>
+                  </div>
+
+                  {/* Stamp if available */}
+                  {subadmin && subadmin.stampImg && (
+                    <div className="flex flex-col items-center">
+                      <div className="text-center mb-1">
+                        <p className="font-bold text-blue-600 text-sm">{subadmin.registercompanyname}</p>
+                      </div>
                       <img 
-                        src={`https://api.aimdreamplanner.com/images/profile/${subadmin.signature}`} 
-                        alt="Signature" 
-                        className="h-16 mb-0 object-contain" 
+                        src={`https://api.aimdreamplanner.com/images/profile/${subadmin.stampImg}`} 
+                        alt="Company Stamp" 
+                        className="h-28 w-28 object-contain transform scale-100 shadow-md bg-white p-1" 
+                        style={{ 
+                          imageRendering: 'high-quality',
+                          opacity: 0.9
+                        }}
                         onError={(e) => {
-                          console.error('Error loading signature:', e);
-                          e.target.src = 'https://via.placeholder.com/150x50?text=Signature';
+                          console.error('Error loading stamp:', e);
+                          e.target.style.display = 'none';
+                          e.target.parentNode.innerHTML = `
+                            <div class="p-4 flex items-center justify-center h-28 w-28 shadow-md bg-white/90">
+                              <div class="text-center">
+                                <p class="font-bold text-black">${subadmin.registercompanyname || "COMPANY"}</p>
+                                <p class="font-bold text-black">OFFICIAL</p>
+                              </div>
+                            </div>
+                          `;
                         }}
                       />
                     </div>
-                  ) : (
-                    <div className="border-b border-gray-300 w-48 h-12"></div>
                   )}
-                  <p className="font-bold mt-1 text-black" id="signatory-name">{formData.signatoryName || (subadmin ? `${subadmin.name || ''} ${subadmin.lastname || ''}` : "HR Manager")}</p>
-                  <p className="text-gray-600">{formData.signatoryTitle || (subadmin?.designation || "HR Director")}</p>
+
+                  {/* Text-based stamp alternative */}
+                  {subadmin && !subadmin.stampImg && (
+                    <div className="flex flex-col items-center">
+                      <div className="text-center mb-1">
+                        <p className="font-bold text-blue-600 text-sm">{subadmin.registercompanyname}</p>
+                      </div>
+                      <div className="p-4 flex items-center justify-center h-28 w-28 shadow-lg bg-white/90">
+                        <div className="text-center">
+                          <p className="font-bold text-blue-600 text-lg">{subadmin.registercompanyname}</p>
+                          <p className="font-bold text-blue-600">OFFICIAL</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
-              
-              {/* Stamp if available */}
-              {subadmin && subadmin.stampImg && (
-                <div className="absolute bottom-32 right-8 flex flex-col items-center z-10">
-                  <div className="text-center mb-1">
-                    <span className="font-bold text-black text-sm uppercase bg-white/80 px-2 py-0.5 rounded-md shadow-sm">STAMP</span>
-                  </div>
-                  <img 
-                    src={`https://api.aimdreamplanner.com/images/profile/${subadmin.stampImg}`} 
-                    alt="Company Stamp" 
-                    className="h-28 w-28 object-contain transform scale-100 shadow-md bg-white p-1 border-2 border-green-600" 
-                    style={{ 
-                      imageRendering: 'high-quality',
-                      opacity: 0.9
-                    }}
-                    onError={(e) => {
-                      console.error('Error loading stamp:', e);
-                      e.target.style.display = 'none';
-                      e.target.parentNode.innerHTML = `
-                        <div class="border-2 border-green-600 p-4 flex items-center justify-center h-28 w-28 shadow-md bg-white/90">
-                          <div class="text-center">
-                            <p class="font-bold text-black">${subadmin.registercompanyname || "COMPANY"}</p>
-                            <p class="font-bold text-black">OFFICIAL</p>
-                          </div>
-                        </div>
-                      `;
-                    }}
-                  />
-                </div>
-              )}
-              
-              {/* Text-based stamp alternative */}
-              {subadmin && !subadmin.stampImg && (
-                <div className="absolute bottom-32 right-8 z-10">
-                  <div className="text-center mb-1">
-                    <span className="font-bold text-black text-sm uppercase bg-white/80 px-2 py-0.5 rounded-md shadow-sm">STAMP</span>
-                  </div>
-                  <div className="border-2 border-green-600 p-4 flex items-center justify-center h-28 w-28 shadow-lg bg-white/90">
-                    <div className="text-center">
-                      <p className="font-bold text-green-700 text-lg">{subadmin.registercompanyname}</p>
-                      <p className="font-bold text-green-700">OFFICIAL</p>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </div>

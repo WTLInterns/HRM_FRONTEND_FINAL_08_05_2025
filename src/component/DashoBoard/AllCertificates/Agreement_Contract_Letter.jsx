@@ -844,32 +844,34 @@ const Agreement_Contract_Letter = () => {
 
                 {/* Signature Section */}
                 <div className="mt-16">
-                  <div className="mb-8">
-                    <p className="font-bold mb-2">For and on behalf of the Company</p>
-                    {subadmin && subadmin.signature ? (
-                      <div className="border-b border-gray-300 pb-1 w-48">
-                        <img 
-                          src={`https://api.aimdreamplanner.com/images/profile/${subadmin.signature}`} 
-                          alt="Signature" 
-                          className="h-16 mb-2 object-contain" 
-                          onError={(e) => {
-                            console.error('Error loading signature:', e);
-                            e.target.src = 'https://via.placeholder.com/150x50?text=Signature';
-                          }}
-                        />
-                      </div>
-                    ) : (
-                      <div className="h-12 w-32 bg-gray-200 flex items-center justify-center mb-1">
-                        <span className="text-gray-500">Signature</span>
-                      </div>
-                    )}
-                    <p className="font-bold mt-2">{formData.signatoryName}</p>
-                    <p>{formData.signatoryTitle}</p>
-                    <p>{subadmin?.registercompanyname}</p>
-                  </div>
+                  <div className="flex justify-between items-start">
+                    {/* Company Signature */}
+                    <div className="w-1/2">
+                      <p className="font-bold mb-2">For and on behalf of the Company</p>
+                      {subadmin && subadmin.signature ? (
+                        <div className="border-b border-gray-300 pb-1 w-48">
+                          <img 
+                            src={`https://api.aimdreamplanner.com/images/profile/${subadmin.signature}`} 
+                            alt="Signature" 
+                            className="h-16 mb-2 object-contain" 
+                            onError={(e) => {
+                              console.error('Error loading signature:', e);
+                              e.target.src = 'https://via.placeholder.com/150x50?text=Signature';
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <div className="h-12 w-32 bg-gray-200 flex items-center justify-center mb-1">
+                          <span className="text-gray-500">Signature</span>
+                        </div>
+                      )}
+                      <p className="font-bold mt-2">{formData.signatoryName}</p>
+                      <p>{formData.signatoryTitle}</p>
+                      <p>{subadmin?.registercompanyname}</p>
+                    </div>
 
-                  <div className="mt-16 flex justify-end">
-                    <div className="text-right">
+                    {/* Employee Signature */}
+                    <div className="w-1/2 text-right">
                       <p className="font-bold mb-2">Employee's Signature</p>
                       <div className="h-12 w-32 bg-gray-200 flex items-center justify-center mb-1 ml-auto">
                         <span className="text-gray-500">Signature</span>

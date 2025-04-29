@@ -714,41 +714,43 @@ const IncrementLetter = () => {
                   <p className="font-bold">{subadmin?.registercompanyname || "Company Name"}</p>
                   
                   {/* Signature Section */}
-                  <div className="mt-8">
-                    {subadmin && subadmin.signature ? (
-                      <div className="border-b border-gray-300 pb-1 w-48">
+                  <div className="mt-8 flex justify-between items-start">
+                    <div>
+                      {subadmin && subadmin.signature ? (
+                        <div className="border-b border-gray-300 pb-1 w-48">
+                          <img 
+                            src={`https://api.aimdreamplanner.com/images/profile/${subadmin.signature}`} 
+                            alt="Signature" 
+                            className="h-16 mb-2 object-contain" 
+                            onError={(e) => {
+                              e.target.src = 'https://via.placeholder.com/150x50?text=Signature';
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <div className="h-12 w-32 bg-gray-200 flex items-center justify-center mb-1">
+                          <span className="text-gray-500">Signature</span>
+                        </div>
+                      )}
+                      <p className="font-bold mt-2">{formData.signatoryName || (subadmin ? `${subadmin.name} ${subadmin.lastname}` : "Authorized Signatory")}</p>
+                      <p>{formData.signatoryTitle || "Authorized Signatory"}</p>
+                    </div>
+
+                    {/* Company Stamp */}
+                    {subadmin && subadmin.stampImg && (
+                      <div>
                         <img 
-                          src={`https://api.aimdreamplanner.com/images/profile/${subadmin.signature}`} 
-                          alt="Signature" 
-                          className="h-16 mb-2 object-contain" 
+                          src={`https://api.aimdreamplanner.com/images/profile/${subadmin.stampImg}`} 
+                          alt="Company Stamp" 
+                          className="h-28 w-auto object-contain opacity-90" 
                           onError={(e) => {
-                            e.target.src = 'https://via.placeholder.com/150x50?text=Signature';
+                            e.target.style.display = 'none';
                           }}
                         />
                       </div>
-                    ) : (
-                      <div className="h-12 w-32 bg-gray-200 flex items-center justify-center mb-1">
-                        <span className="text-gray-500">Signature</span>
-                      </div>
                     )}
-                    <p className="font-bold mt-2">{formData.signatoryName || (subadmin ? `${subadmin.name} ${subadmin.lastname}` : "Authorized Signatory")}</p>
-                    <p>{formData.signatoryTitle || "Authorized Signatory"}</p>
                   </div>
                 </div>
-
-                {/* Company Stamp */}
-                {subadmin && subadmin.stampImg && (
-                  <div className="absolute bottom-24 right-8">
-                    <img 
-                      src={`https://api.aimdreamplanner.com/images/profile/${subadmin.stampImg}`} 
-                      alt="Company Stamp" 
-                      className="h-28 w-auto object-contain opacity-90" 
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                      }}
-                    />
-                  </div>
-                )}
               </div>
             </div>
           </div>

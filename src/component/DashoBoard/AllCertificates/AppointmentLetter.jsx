@@ -731,7 +731,6 @@ const AppointmentLetter = () => {
                   {/* Text label above stamp */}
                   <div className="text-center mb-1">
                     {/* <span className="font-bold text-red-600 text-xs uppercase">Stamp</span> */}
-                    <p className="font-bold text-blue-800 text-sm">{subadmin.registercompanyname}</p>
                   </div>
                   
                   <img 

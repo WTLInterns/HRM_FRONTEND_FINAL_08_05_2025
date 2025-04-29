@@ -35,16 +35,16 @@ export default function AddEmp() {
   const [salary, setsalary] = useState("");
   const [bankAccountNo, setbankAccountNo] = useState("");
   const [department, setDepartment] = useState("");
-  
+ 
   // States for navigation and success messages
   const [showUpdateSuccess, setShowUpdateSuccess] = useState(false);
   const [showCancelNavigation, setShowCancelNavigation] = useState(false);
-  
+ 
   // File upload states
   const [empImg, setEmpImg] = useState(null);
   const [adharImg, setAdharImg] = useState(null);
   const [panImg, setPanImg] = useState(null);
-  
+ 
   // Preview URLs for images
   const [empImgPreview, setEmpImgPreview] = useState("");
   const [adharImgPreview, setAdharImgPreview] = useState("");
@@ -84,7 +84,7 @@ export default function AddEmp() {
         console.log("No subadminId available, can't fetch employees");
         return;
       }
-      
+     
       setLoading(true);
       try {
         console.log(`Fetching employees for subadmin ID: ${subadminId}`);
@@ -110,15 +110,15 @@ export default function AddEmp() {
   // Filter employees based on search term only
   const filteredEmployees = employees.filter((employee) => {
     // Only filter by search term now that we've removed the status and job role filters
-    return searchTerm === "" || 
+    return searchTerm === "" ||
       employee.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       employee.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       employee.email?.toLowerCase().includes(searchTerm.toLowerCase());
   });
-  
+ 
   // Calculate totalPages based on employees data
   const totalPages = Math.ceil(filteredEmployees.length / employeesPerPage);
-  
+ 
   const indexOfLastEmp = currentPage * employeesPerPage;
   const indexOfFirstEmp = indexOfLastEmp - employeesPerPage;
 
@@ -168,17 +168,17 @@ export default function AddEmp() {
     setbranchName("");
     setsalary("");
     setDepartment("");
-    
+   
     // Reset image states
     setEmpImg(null);
     setAdharImg(null);
     setPanImg(null);
-    
+   
     // Clear image previews
     setEmpImgPreview("");
     setAdharImgPreview("");
     setPanImgPreview("");
-    
+   
     // Clear selected employee
     setSelectedEmployee(null);
   };
@@ -187,96 +187,16 @@ export default function AddEmp() {
   const handleAddEmp = async (e) => {
     e.preventDefault();
     if (!validateFields()) return;
-    
+   
     if (!subadminId) {
       toast.error("Subadmin session expired. Please login again.");
       return;
     }
-    
+   
     try {
       // Create FormData to send to the backend API (multipart/form-data)
       const formData = new FormData();
-      
-      // Add all text fields
-      formData.append('firstName', firstName);
-      formData.append('lastName', lastName);
-      formData.append('email', email);
-      formData.append('phone', phone); 
-      formData.append('aadharNo', aadharNo);
-      formData.append('panCard', panCard);
-      formData.append('education', education);
-      formData.append('bloodGroup', bloodGroup);
-      formData.append('jobRole', jobRole);
-      formData.append('gender', gender);
-      formData.append('address', address);
-      formData.append('birthDate', birthDate);
-      formData.append('joiningDate', joiningDate);
-      formData.append('status', status);
-      formData.append('bankName', bankName);
-      formData.append('bankAccountNo', bankAccountNo);
-      formData.append('bankIfscCode', bankIfscCode);
-      formData.append('branchName', branchName);
-      formData.append('salary', salary);
-      formData.append('department', department);
-      
-      // Add image files if they exist
-      if (empImg) {
-        formData.append('empimg', empImg);
-      }
-      
-      if (adharImg) {
-        formData.append('adharimg', adharImg);
-      }
-      
-      if (panImg) {
-        formData.append('panimg', panImg);
-      }
-
-      console.log("Sending employee data to backend...");
-
-      // Use the dynamic subadminId from state
-      const response = await axios.post(
-        `https://api.aimdreamplanner.com/api/subadmin/add-employee/${subadminId}`, 
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
-        }
-      );
-
-      console.log("API response:", response);
-      toast.success("Employee Registered Successfully");
-      setModal(false);
-      handleReset(e);
-      
-      // Refresh the employee list
-      const refreshResponse = await axios.get(`https://api.aimdreamplanner.com/api/employee/${subadminId}/employee/all`);
-      setEmployees(refreshResponse.data);
-      
-      // Dispatch event to notify Dashboard of employee updates
-      window.dispatchEvent(new Event('employeesUpdated'));
-      
-    } catch (err) {
-      toast.error("Failed to register employee: " + (err.response?.data?.message || err.message));
-      console.error(err);
-    }
-  };
-
-  // Handle Update Employee submission
-  const handleUpdateEmp = async (e) => {
-    e.preventDefault();
-    if (!validateFields() || !selectedEmployee) return;
-    
-    if (!subadminId) {
-      toast.error("Subadmin session expired. Please login again.");
-      return;
-    }
-    
-    try {
-      // Create FormData for multipart/form-data submission
-      const formData = new FormData();
-      
+     
       // Add all text fields
       formData.append('firstName', firstName);
       formData.append('lastName', lastName);
@@ -298,29 +218,25 @@ export default function AddEmp() {
       formData.append('branchName', branchName);
       formData.append('salary', salary);
       formData.append('department', department);
-      
+     
       // Add image files if they exist
       if (empImg) {
         formData.append('empimg', empImg);
       }
-      
+     
       if (adharImg) {
         formData.append('adharimg', adharImg);
       }
-      
+     
       if (panImg) {
         formData.append('panimg', panImg);
       }
 
-      console.log("Updating employee data...");
-      
-      // Use the employee ID for the API endpoint instead of full name
-      const empId = selectedEmployee.empId;
-      
-      // Use the dynamic subadminId from state and the correct API endpoint
-      // Modified to use empId instead of fullName to ensure uniqueness
-      const response = await axios.put(
-        `https://api.aimdreamplanner.com/api/employee/update-employee/${subadminId}/id/${empId}`,
+      console.log("Sending employee data to backend...");
+
+      // Use the dynamic subadminId from state
+      const response = await axios.post(
+        `https://api.aimdreamplanner.com/api/subadmin/add-employee/${subadminId}`,
         formData,
         {
           headers: {
@@ -328,25 +244,112 @@ export default function AddEmp() {
           }
         }
       );
-      
+
+      console.log("API response:", response);
+      toast.success("Employee Registered Successfully");
+      setModal(false);
+      handleReset(e);
+     
+      // Refresh the employee list
+      const refreshResponse = await axios.get(`https://api.aimdreamplanner.com/api/employee/${subadminId}/employee/all`);
+      setEmployees(refreshResponse.data);
+     
+      // Dispatch event to notify Dashboard of employee updates
+      window.dispatchEvent(new Event('employeesUpdated'));
+     
+    } catch (err) {
+      toast.error("Failed to register employee: " + (err.response?.data?.message || err.message));
+      console.error(err);
+    }
+  };
+
+  // Handle Update Employee submission
+  const handleUpdateEmp = async (e) => {
+    e.preventDefault();
+    if (!validateFields() || !selectedEmployee) return;
+   
+    if (!subadminId) {
+      toast.error("Subadmin session expired. Please login again.");
+      return;
+    }
+   
+    try {
+      // Create FormData for multipart/form-data submission
+      const formData = new FormData();
+     
+      // Add all text fields
+      formData.append('firstName', firstName);
+      formData.append('lastName', lastName);
+      formData.append('email', email);
+      formData.append('phone', phone);
+      formData.append('aadharNo', aadharNo);
+      formData.append('panCard', panCard);
+      formData.append('education', education);
+      formData.append('bloodGroup', bloodGroup);
+      formData.append('jobRole', jobRole);
+      formData.append('gender', gender);
+      formData.append('address', address);
+      formData.append('birthDate', birthDate);
+      formData.append('joiningDate', joiningDate);
+      formData.append('status', status);
+      formData.append('bankName', bankName);
+      formData.append('bankAccountNo', bankAccountNo);
+      formData.append('bankIfscCode', bankIfscCode);
+      formData.append('branchName', branchName);
+      formData.append('salary', salary);
+      formData.append('department', department);
+     
+      // Add image files if they exist
+      if (empImg) {
+        formData.append('empimg', empImg);
+      }
+     
+      if (adharImg) {
+        formData.append('adharimg', adharImg);
+      }
+     
+      if (panImg) {
+        formData.append('panimg', panImg);
+      }
+
+      console.log("Updating employee data...");
+     
+      // Get the employee's full name for the API endpoint
+      const fullName = `${selectedEmployee.firstName} ${selectedEmployee.lastName}`;
+     
+      // Log the request details for debugging
+      console.log(`Updating employee with full name: ${fullName} for subadmin: ${subadminId}`);
+      console.log("Form data being sent:", Object.fromEntries(formData));
+     
+      // Use the correct API endpoint for updating an employee based on the backend code
+      const response = await axios.put(
+        `https://api.aimdreamplanner.com/api/employee/update-employee/${subadminId}/${encodeURIComponent(fullName)}`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
+     
       console.log("Update API response:", response);
       toast.success("Employee Updated Successfully");
       setUpdateModal(false);
       handleReset(e);
-      
+     
       // Refresh the employee list
       const refreshResponse = await axios.get(`https://api.aimdreamplanner.com/api/employee/${subadminId}/employee/all`);
       setEmployees(refreshResponse.data);
-      
+     
       // Show success message with back button
       setShowUpdateSuccess(true);
-      
+     
       // Dispatch event to notify Dashboard of employee updates
       window.dispatchEvent(new Event('employeesUpdated'));
-      
+     
     } catch (err) {
-      toast.error("Failed to update employee: " + (err.response?.data || err.message));
-      console.error(err);
+      console.error("Error updating employee:", err);
+      toast.error("Failed to update employee: " + (err.response?.data?.message || err.message));
     }
   };
 
@@ -356,7 +359,7 @@ export default function AddEmp() {
       toast.error("Subadmin session expired. Please login again.");
       return;
     }
-    
+   
     try {
       // Get the employee to delete
       const employee = employees.find(e => e.empId === empId);
@@ -364,9 +367,9 @@ export default function AddEmp() {
         toast.error("Employee not found");
         return;
       }
-      
+     
       console.log(`Deleting employee with ID: ${empId}`);
-      
+     
       // Use the dynamic subadminId from state
       const response = await axios.delete(
         `https://api.aimdreamplanner.com/api/employee/${subadminId}/delete/${empId}`,
@@ -376,17 +379,17 @@ export default function AddEmp() {
           }
         }
       );
-      
+     
       console.log("API response:", response);
       toast.success("Employee deleted successfully");
-      
+     
       // Refresh the employee list
       const refreshResponse = await axios.get(`https://api.aimdreamplanner.com/api/employee/${subadminId}/employee/all`);
       setEmployees(refreshResponse.data);
-      
+     
       // Dispatch event to notify Dashboard of employee updates
       window.dispatchEvent(new Event('employeesUpdated'));
-      
+     
     } catch (err) {
       toast.error("Failed to delete employee: " + (err.response?.data || err.message));
       console.error(err);
@@ -416,21 +419,21 @@ export default function AddEmp() {
     setbranchName(employee.branchName);
     setsalary(employee.salary);
     setDepartment(employee.department || "");
-    
+   
     // Reset image states
     setEmpImg(null);
     setAdharImg(null);
     setPanImg(null);
-    
+   
     // Set image previews from existing employee images if available
     console.log("Employee data for images:", employee);
-    
+   
     // Profile image - using the correct field name from the backend entity (empimg)
     if (employee.empimg) {
       const profileImageUrl = `https://api.aimdreamplanner.com/images/profile/${employee.empimg}`;
       console.log("Setting profile image URL:", profileImageUrl);
       setEmpImgPreview(profileImageUrl);
-      
+     
       // Verify image loading
       const img = new Image();
       img.onload = () => console.log("Profile image loaded successfully");
@@ -439,13 +442,13 @@ export default function AddEmp() {
     } else {
       setEmpImgPreview("");
     }
-    
+   
     // Aadhar image - using the correct field name from the backend entity (adharimg)
     if (employee.adharimg) {
       const aadharImageUrl = `https://api.aimdreamplanner.com/images/profile/${employee.adharimg}`;
       console.log("Setting aadhar image URL:", aadharImageUrl);
       setAdharImgPreview(aadharImageUrl);
-      
+     
       // Verify image loading
       const img = new Image();
       img.onload = () => console.log("Aadhar image loaded successfully");
@@ -454,13 +457,13 @@ export default function AddEmp() {
     } else {
       setAdharImgPreview("");
     }
-    
+   
     // PAN image - using the correct field name from the backend entity (panimg)
     if (employee.panimg) {
       const panImageUrl = `https://api.aimdreamplanner.com/images/profile/${employee.panimg}`;
       console.log("Setting PAN image URL:", panImageUrl);
       setPanImgPreview(panImageUrl);
-      
+     
       // Verify image loading
       const img = new Image();
       img.onload = () => console.log("PAN image loaded successfully");
@@ -469,7 +472,7 @@ export default function AddEmp() {
     } else {
       setPanImgPreview("");
     }
-    
+   
     setUpdateModal(true);
   };
 
@@ -486,7 +489,7 @@ export default function AddEmp() {
             </div>
             <p className={`${isDarkMode ? 'text-green-300' : 'text-green-700'} font-medium`}>Employee updated successfully!</p>
           </div>
-          <button 
+          <button
             onClick={() => setShowUpdateSuccess(false)}
             className={`px-4 py-2 rounded-md ${isDarkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-white hover:bg-gray-100'} ${isDarkMode ? 'text-white' : 'text-gray-800'} border ${isDarkMode ? 'border-slate-600' : 'border-gray-300'} flex items-center gap-2 transition-colors duration-200`}
           >
@@ -497,7 +500,7 @@ export default function AddEmp() {
           </button>
         </div>
       )}
-      
+     
       {/* Navigation option after canceling update */}
       {showCancelNavigation && (
         <div className={`mb-4 p-4 rounded-lg ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-gray-100 border-gray-300'} border flex items-center justify-between`}>
@@ -509,7 +512,7 @@ export default function AddEmp() {
             </div>
             <p className={`${isDarkMode ? 'text-slate-300' : 'text-gray-700'} font-medium`}>Update canceled</p>
           </div>
-          <button 
+          <button
             onClick={() => setShowCancelNavigation(false)}
             className={`px-4 py-2 rounded-md ${isDarkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-white hover:bg-gray-100'} ${isDarkMode ? 'text-white' : 'text-gray-800'} border ${isDarkMode ? 'border-slate-600' : 'border-gray-300'} flex items-center gap-2 transition-colors duration-200`}
           >
@@ -662,7 +665,7 @@ export default function AddEmp() {
           >
             <FaChevronLeft size={14} />
           </button>
-          
+         
           {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
             <button
               key={page}
@@ -672,7 +675,7 @@ export default function AddEmp() {
               {page}
             </button>
           ))}
-          
+         
           <button
             onClick={() => setCurrentPage(currentPage + 1)}
             disabled={currentPage === totalPages}
@@ -999,7 +1002,7 @@ export default function AddEmp() {
 
                     <div className="space-y-2">
                       <label htmlFor="salary" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                        Salary:
+                        Current CTC:
                       </label>
                       <input
                         id="salary"
@@ -1010,7 +1013,7 @@ export default function AddEmp() {
                       />
                     </div>
                   </div>
-                  
+                 
                   {/* Image Upload Fields */}
                   <div className="mt-6 border-t pt-4 border-gray-300">
                     <h4 className={`text-md font-medium mb-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Upload Documents</h4>
@@ -1023,13 +1026,13 @@ export default function AddEmp() {
                         <div className="flex flex-col items-center space-y-2">
                           {empImgPreview && (
                             <div className="mb-2 relative">
-                              <img 
-                                src={empImgPreview} 
-                                alt="Employee Preview" 
-                                className="h-32 w-32 object-cover rounded-md border-2 border-gray-300" 
+                              <img
+                                src={empImgPreview}
+                                alt="Employee Preview"
+                                className="h-32 w-32 object-cover rounded-md border-2 border-gray-300"
                               />
-                              <button 
-                                type="button" 
+                              <button
+                                type="button"
                                 onClick={() => {
                                   setEmpImg(null);
                                   setEmpImgPreview("");
@@ -1055,7 +1058,7 @@ export default function AddEmp() {
                           />
                         </div>
                       </div>
-                      
+                     
                       {/* Aadhar Card Image Upload */}
                       <div className="space-y-2">
                         <label htmlFor="adharImg" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
@@ -1064,13 +1067,13 @@ export default function AddEmp() {
                         <div className="flex flex-col items-center space-y-2">
                           {adharImgPreview && (
                             <div className="mb-2 relative">
-                              <img 
-                                src={adharImgPreview} 
-                                alt="Aadhar Preview" 
-                                className="h-32 w-48 object-cover rounded-md border-2 border-gray-300" 
+                              <img
+                                src={adharImgPreview}
+                                alt="Aadhar Preview"
+                                className="h-32 w-48 object-cover rounded-md border-2 border-gray-300"
                               />
-                              <button 
-                                type="button" 
+                              <button
+                                type="button"
                                 onClick={() => {
                                   setAdharImg(null);
                                   setAdharImgPreview("");
@@ -1096,7 +1099,7 @@ export default function AddEmp() {
                           />
                         </div>
                       </div>
-                      
+                     
                       {/* PAN Card Image Upload */}
                       <div className="space-y-2">
                         <label htmlFor="panImg" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
@@ -1105,13 +1108,13 @@ export default function AddEmp() {
                         <div className="flex flex-col items-center space-y-2">
                           {panImgPreview && (
                             <div className="mb-2 relative">
-                              <img 
-                                src={panImgPreview} 
-                                alt="PAN Preview" 
-                                className="h-32 w-48 object-cover rounded-md border-2 border-gray-300" 
+                              <img
+                                src={panImgPreview}
+                                alt="PAN Preview"
+                                className="h-32 w-48 object-cover rounded-md border-2 border-gray-300"
                               />
-                              <button 
-                                type="button" 
+                              <button
+                                type="button"
                                 onClick={() => {
                                   setPanImg(null);
                                   setPanImgPreview("");
@@ -1139,7 +1142,7 @@ export default function AddEmp() {
                       </div>
                     </div>
                   </div>
-                  
+                 
                   <div className="mt-5 sm:mt-6 flex justify-end space-x-3">
                     <button
                       type="button"
@@ -1460,7 +1463,7 @@ export default function AddEmp() {
                     </div>
                     <div className="space-y-2">
                       <label htmlFor="salaryUpd" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                        Salary:
+                        Current CTC:
                       </label>
                       <input
                         id="salaryUpd"
@@ -1490,10 +1493,10 @@ export default function AddEmp() {
                                 </span>
                               </div>
                               <div className="border-2 border-blue-400 p-1 rounded-md">
-                                <img 
-                                  src={empImgPreview} 
-                                  alt="Employee Preview" 
-                                  className="h-48 w-48 object-contain rounded-md" 
+                                <img
+                                  src={empImgPreview}
+                                  alt="Employee Preview"
+                                  className="h-48 w-48 object-contain rounded-md"
                                   onError={(e) => {
                                     console.error("Error loading image:", e);
                                     e.target.onerror = null;
@@ -1502,8 +1505,8 @@ export default function AddEmp() {
                                 />
                               </div>
                               {empImg && (
-                                <button 
-                                  type="button" 
+                                <button
+                                  type="button"
                                   onClick={() => {
                                     setEmpImg(null);
                                     // If there was an existing image, restore that preview
@@ -1541,7 +1544,7 @@ export default function AddEmp() {
                           <p className="text-xs text-gray-500 mt-1">Current image will be kept if no new image is selected</p>
                         </div>
                       </div>
-                      
+                     
                       {/* Aadhar Card Image Upload */}
                       <div className="space-y-2">
                         <label htmlFor="adharImgUpd" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
@@ -1557,10 +1560,10 @@ export default function AddEmp() {
                                 </span>
                               </div>
                               <div className="border-2 border-blue-400 p-1 rounded-md">
-                                <img 
-                                  src={adharImgPreview} 
-                                  alt="Aadhar Preview" 
-                                  className="h-48 w-64 object-contain rounded-md" 
+                                <img
+                                  src={adharImgPreview}
+                                  alt="Aadhar Preview"
+                                  className="h-48 w-64 object-contain rounded-md"
                                   onError={(e) => {
                                     console.error("Error loading Aadhar image:", e);
                                     e.target.onerror = null;
@@ -1569,8 +1572,8 @@ export default function AddEmp() {
                                 />
                               </div>
                               {adharImg && (
-                                <button 
-                                  type="button" 
+                                <button
+                                  type="button"
                                   onClick={() => {
                                     setAdharImg(null);
                                     // If there was an existing image, restore that preview
@@ -1608,7 +1611,7 @@ export default function AddEmp() {
                           <p className="text-xs text-gray-500 mt-1">Current image will be kept if no new image is selected</p>
                         </div>
                       </div>
-                      
+                     
                       {/* PAN Card Image Upload */}
                       <div className="space-y-2">
                         <label htmlFor="panImgUpd" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
@@ -1624,10 +1627,10 @@ export default function AddEmp() {
                                 </span>
                               </div>
                               <div className="border-2 border-blue-400 p-1 rounded-md">
-                                <img 
-                                  src={panImgPreview} 
-                                  alt="PAN Preview" 
-                                  className="h-48 w-64 object-contain rounded-md" 
+                                <img
+                                  src={panImgPreview}
+                                  alt="PAN Preview"
+                                  className="h-48 w-64 object-contain rounded-md"
                                   onError={(e) => {
                                     console.error("Error loading PAN image:", e);
                                     e.target.onerror = null;
@@ -1636,8 +1639,8 @@ export default function AddEmp() {
                                 />
                               </div>
                               {panImg && (
-                                <button 
-                                  type="button" 
+                                <button
+                                  type="button"
                                   onClick={() => {
                                     setPanImg(null);
                                     // If there was an existing image, restore that preview
@@ -1677,7 +1680,7 @@ export default function AddEmp() {
                       </div>
                     </div>
                   </div>
-                  
+                 
                   <div className="md:col-span-2 flex justify-center space-x-4 mt-6">
                     <button type="submit" className={`px-4 py-2 ${isDarkMode ? 'bg-green-600 hover:bg-green-700' : 'bg-green-500 hover:bg-green-600'} text-white rounded-md shadow-md focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors duration-200`}>
                       Update

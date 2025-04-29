@@ -632,6 +632,7 @@ const ExitLetter = () => {
 
                 <div className="mt-12">
                   <p>Sincerely,</p>
+                  <div className="h-32"></div>
                   <div className="mt-8">
                     {subadmin && subadmin.signature ? (
                       <div className="border-b border-gray-300 pb-1 w-48">

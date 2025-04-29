@@ -61,10 +61,10 @@ const RegisterCompany = () => {
           registerCompanyName: companyToEdit.registercompanyname,
           email: companyToEdit.email,
           phoneno: companyToEdit.phoneno,
-          address: companyToEdit.address,
+          address: companyToEdit.address || '',
           gstno: companyToEdit.gstno,
-          cinNo: companyToEdit.cinNo || '',
-          companyUrl: companyToEdit.companyUrl || '',
+          cinNo: companyToEdit.cinNo || companyToEdit.cinno || '',
+          companyUrl: companyToEdit.companyUrl || companyToEdit.companyurl || '',
           status: companyToEdit.status,
           logo: companyToEdit.logo || companyToEdit.companylogo,
           signature: companyToEdit.signature,
@@ -133,14 +133,6 @@ const RegisterCompany = () => {
     if (!isEditMode) {
       if (!formData.logo) {
         alert('Please upload a company logo');
-        return;
-      }
-      if (!formData.signature) {
-        alert('Please upload a signature');
-        return;
-      }
-      if (!formData.stampImage) {
-        alert('Please upload a company stamp');
         return;
       }
     }
@@ -220,8 +212,9 @@ const RegisterCompany = () => {
         formDataToSend.append("phoneno", formData.phoneno);
         formDataToSend.append("password", formData.phoneno); // Use phone number as password
         formDataToSend.append("gstno", formData.gstno);
-        formDataToSend.append("cinNo", formData.cinNo);
-        formDataToSend.append("companyUrl", formData.companyUrl);
+        formDataToSend.append("cinno", formData.cinNo);
+        formDataToSend.append("companyurl", formData.companyUrl);
+        formDataToSend.append("address", formData.address);
         formDataToSend.append("status", formData.status);
         
         // Append the files if they exist
@@ -301,14 +294,6 @@ const RegisterCompany = () => {
 
   return (
     <div className="p-4 md:p-6 bg-slate-800/90 backdrop-blur-md rounded-lg shadow-lg border border-slate-700 animate-fadeIn text-gray-100">
-      {/* Success Popup */}
-      {showSuccessPopup && (
-        <div className="fixed top-16 right-4 z-50 bg-gradient-to-r from-green-900 to-green-800 text-green-100 px-4 py-3 rounded-lg shadow-xl border border-green-700 animate-fadeIn flex items-center">
-          <FaCheck className="mr-2 text-green-300" />
-          <span>{successMessage}</span>
-        </div>
-      )}
-      
       <div className="flex items-center gap-3 mb-6">
         <div className="p-3 bg-blue-900/50 rounded-full text-blue-400">
           <FaBuilding className="text-xl md:text-2xl" />
@@ -461,6 +446,22 @@ const RegisterCompany = () => {
                   placeholder="https://www.example.com"
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="status" className="block text-sm font-medium">
+                Status
+              </label>
+              <select
+                id="status"
+                name="status"
+                className="block w-full pl-10 pr-3 py-2 bg-slate-700 border border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 text-gray-100"
+                value={formData.status}
+                onChange={handleChange}
+              >
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+              </select>
             </div>
           </div>
           
@@ -663,46 +664,15 @@ const RegisterCompany = () => {
           </div>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-          {/* Status - Only shown in edit mode */}
-          {isEditMode && (
-            <div className="space-y-4 bg-slate-900/30 p-4 rounded-lg border border-slate-700 shadow-sm">
-              <h3 className="text-lg font-medium text-blue-400 border-b border-slate-700 pb-2">Company Status</h3>
-              
-              <div className="flex items-center space-x-4">
-                <label className="inline-flex items-center">
-                  <input
-                    type="radio"
-                    name="status"
-                    value="Active"
-                    checked={formData.status === "Active"}
-                    onChange={handleChange}
-                    className="h-5 w-5 text-blue-600 border-slate-600 focus:ring-blue-500 bg-slate-700"
-                  />
-                  <span className="ml-2 text-sm flex items-center">
-                    <FaCheck className="mr-1 text-green-400" />
-                    Active
-                  </span>
-                </label>
-                
-                <label className="inline-flex items-center">
-                  <input
-                    type="radio"
-                    name="status"
-                    value="Inactive"
-                    checked={formData.status === "Inactive"}
-                    onChange={handleChange}
-                    className="h-5 w-5 text-blue-600 border-slate-600 focus:ring-blue-500 bg-slate-700"
-                  />
-                  <span className="ml-2 text-sm flex items-center">
-                    <FaTimes className="mr-1 text-red-400" />
-                    Inactive
-                  </span>
-                </label>
-              </div>
+        {/* Success Message (above buttons) */}
+        {showSuccessPopup && (
+          <div className="mb-4 w-full flex justify-center">
+            <div className="bg-gradient-to-r from-green-900 to-green-800 text-green-100 px-4 py-2 rounded-lg shadow border border-green-700 flex items-center animate-fadeIn">
+              <FaCheck className="mr-2 text-green-300" />
+              <span>{successMessage}</span>
             </div>
-          )}
-        </div>
+          </div>
+        )}
         
         <div className="flex justify-end space-x-3 pt-4">
           <button

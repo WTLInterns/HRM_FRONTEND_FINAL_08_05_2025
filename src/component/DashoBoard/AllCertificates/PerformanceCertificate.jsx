@@ -801,7 +801,6 @@ const PerformanceCertificate = () => {
                           }}
                         />
                       </div>
-                      <p className="mt-2 text-black font-semibold text-sm">Company Stamp</p>
                     </div>
                   )}
                   
