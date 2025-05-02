@@ -293,12 +293,12 @@ export const AppProvider = ({ children }) => {
       const currentUser = JSON.parse(localStorage.getItem('user'));
       
       if (!currentUser || !currentUser.id) {
-        // If we're on the login page, silently return without showing error
-        if (isLoginPage || isMasterAdminRoute || isDashboardRoute) {
-          console.log('No user logged in yet or on protected route, skipping employee fetch');
+        // If we're on the login page, masteradmin or dashboard routes, or if this is the initial mount (no user yet), do NOT throw error or log
+        if (isLoginPage || isMasterAdminRoute || isDashboardRoute || !localStorage.getItem('user')) {
           setLoading(false);
           return [];
         }
+        // Only show error if a user object was present but invalid (corrupt/missing id)
         throw new Error('User information not found');
       }
       
@@ -329,8 +329,8 @@ export const AppProvider = ({ children }) => {
       setEmp(STATIC_EMPLOYEES);
       calculateStats(STATIC_EMPLOYEES);
       
-      // Only show error toast if not on login page, masteradmin or dashboard routes
-      if (!isLoginPage && !isMasterAdminRoute && !isDashboardRoute) {
+      // Only show error toast if not on login page, masteradmin, dashboard, or if no user is present
+      if (!isLoginPage && !isMasterAdminRoute && !isDashboardRoute && localStorage.getItem('user')) {
         toast.error('Failed to fetch employees: ' + (error.response?.data?.message || error.message));
       }
       

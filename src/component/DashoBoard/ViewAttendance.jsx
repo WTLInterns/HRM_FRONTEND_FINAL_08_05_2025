@@ -123,12 +123,12 @@ export default function ViewAttendance() {
   };
 
   const statusColors = {
-    Present: "bg-green-900/30 border-green-700",
-    Absent: "bg-red-900/30 border-red-700",
-    "Half-Day": "bg-yellow-900/30 border-yellow-700",
-    "Paid Leave": "bg-purple-900/30 border-purple-700",
-    "Week Off": "bg-blue-900/30 border-blue-700",
-    Holiday: "bg-pink-900/30 border-pink-700",
+    'Present': 'bg-green-600 text-white',
+    'Absent': 'bg-red-700 text-white',
+    'Half-Day': 'bg-yellow-700 text-white',
+    'Paid Leave': 'bg-purple-800 text-white',
+    'Week Off': 'bg-blue-800 text-white',
+    'Holiday': isDarkMode ? 'bg-red-700 text-white' : 'bg-gray-200 text-gray-800', // Red in dark mode, normal in light
   };
 
   const tileContent = ({ date, view }) => {
@@ -137,18 +137,32 @@ export default function ViewAttendance() {
       d.setHours(12,0,0,0);
       const dateStr = d.toISOString().split('T')[0];
       const rec = attendanceData.find(i => i.date === dateStr);
-      return rec ? (
-        <div className={`w-full h-full p-1 ${statusColors[rec.status]}`}>
-          <div className="text-xs font-bold">{rec.status}</div>
-        </div>
-      ) : null;
+      // Highlight Sundays in dark mode only
+      const isSunday = d.getDay() === 0;
+      if (!rec && isSunday && isDarkMode) {
+        return <div className="w-full h-full p-1 bg-red-700 text-white"><div className="text-xs font-bold">Holiday</div></div>;
+      }
+      if (rec) {
+        return (
+          <div className={`w-full h-full p-1 ${statusColors[rec.status]}`}>
+            <div className="text-xs font-bold">{rec.status}</div>
+          </div>
+        );
+      }
+      // In light mode, do not color Sundays
+      return null;
     }
     return null;
   };
 
-  const renderAttendanceSummary = () => {
-    if (!attendanceData.length) return null;
-    const counts = attendanceData.reduce((acc, rec) => {
+  const filteredAttendanceData = attendanceData.filter(rec => {
+    const d = new Date(rec.date);
+    return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+  });
+
+  const renderAttendanceSummary = (data) => {
+    if (!data.length) return null;
+    const counts = data.reduce((acc, rec) => {
       acc[rec.status] = (acc[rec.status] || 0) + 1;
       return acc;
     }, {});
@@ -233,7 +247,7 @@ export default function ViewAttendance() {
             className={`${isDarkMode ? "dark-calendar bg-slate-800 text-gray-100 border-gray-700" : "light-calendar bg-white text-gray-900 border-gray-200"} rounded-lg`}
             showNeighboringMonth={false}
           />
-          {renderAttendanceSummary()}
+          {renderAttendanceSummary(filteredAttendanceData)}
           {selectedDate && tooltipContent.status && (
             <div className={`${isDarkMode ? "bg-slate-700 border-blue-900" : "bg-blue-100 border-blue-300"} mt-6 p-6 rounded-lg shadow-lg border animate-slideIn transform transition-all duration-300 hover:scale-[1.02] hover:shadow-xl`}>
               <h3 className={`text-lg font-semibold mb-3 flex items-center gap-2 ${isDarkMode ? "text-gray-100" : "text-gray-800"}`}>

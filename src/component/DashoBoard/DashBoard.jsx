@@ -102,7 +102,9 @@ const Dashboard = () => {
   }, []);
 
   useEffect(() => {
-    if (!emp || emp.length === 0) {
+    // Only fetch if the emp array is empty and user is present
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (user && user.id && (!emp || emp.length === 0)) {
       fetchAllEmp();
     }
   }, [emp, fetchAllEmp]);

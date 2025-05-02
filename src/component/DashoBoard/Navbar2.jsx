@@ -7,8 +7,9 @@ const Navbar2 = () => {
     const { fetchAllEmp, emp, logoutUser } = useApp();
 
     useEffect(() => {
-        // Only fetch if the emp array is empty
-        if (!emp || emp.length === 0) {
+        // Only fetch if the emp array is empty and user is logged in
+        const user = JSON.parse(localStorage.getItem('user'));
+        if ((!emp || emp.length === 0) && user && user.id) {
             fetchAllEmp();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
