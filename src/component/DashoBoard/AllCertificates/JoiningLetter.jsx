@@ -535,13 +535,13 @@ const JoiningLetter = () => {
                   Letter Preview
                 </h2>
                 <div className="flex space-x-2">
-                  <button
+                  {/* <button
                     onClick={handlePrint}
                     className="flex items-center space-x-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition duration-300"
                   >
                     <FaPrint />
                     <span>Print</span>
-                  </button>
+                  </button> */}
                   <button
                     onClick={handleDownloadPDF}
                     className="flex items-center space-x-1 px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition duration-300"

@@ -130,30 +130,34 @@ export default function ViewAttendance() {
     'Week Off': 'bg-blue-800 text-white',
     'Holiday': isDarkMode ? 'bg-red-700 text-white' : 'bg-gray-200 text-gray-800', // Red in dark mode, normal in light
   };
+// REPLACE your tileContent function in ViewAttendance.jsx with this:
+const tileContent = ({ date, view }) => {
+  if (view === 'month') {
+    const d = new Date(date);
+    d.setHours(12,0,0,0);
+    const dateStr = d.toISOString().split('T')[0];
+    const rec = attendanceData.find(i => i.date === dateStr);
+    const isSaturday = d.getDay() === 6;
+    const isSunday = d.getDay() === 0;
 
-  const tileContent = ({ date, view }) => {
-    if (view === 'month') {
-      const d = new Date(date);
-      d.setHours(12,0,0,0);
-      const dateStr = d.toISOString().split('T')[0];
-      const rec = attendanceData.find(i => i.date === dateStr);
-      // Highlight Sundays in dark mode only
-      const isSunday = d.getDay() === 0;
-      if (!rec && isSunday && isDarkMode) {
-        return <div className="w-full h-full p-1 bg-red-700 text-white"><div className="text-xs font-bold">Holiday</div></div>;
-      }
-      if (rec) {
-        return (
-          <div className={`w-full h-full p-1 ${statusColors[rec.status]}`}>
-            <div className="text-xs font-bold">{rec.status}</div>
-          </div>
-        );
-      }
-      // In light mode, do not color Sundays
+    // Do NOT show "Holiday" or color for Saturday or Sunday if no attendance record
+    if ((isSaturday || isSunday) && !rec) {
       return null;
     }
+
+    // Show attendance status if present (for any day)
+    if (rec) {
+      return (
+        <div className={`w-full h-full p-1 ${statusColors[rec.status]}`}>
+          <div className="text-xs font-bold">{rec.status}</div>
+        </div>
+      );
+    }
     return null;
-  };
+  }
+  return null;
+};
+
 
   const filteredAttendanceData = attendanceData.filter(rec => {
     const d = new Date(rec.date);

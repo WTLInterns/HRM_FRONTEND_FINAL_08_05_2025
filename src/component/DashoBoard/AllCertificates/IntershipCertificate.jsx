@@ -242,9 +242,9 @@ const IntershipCertificate = () => {
             <FaArrowLeft className="mr-2" /> Back to Certificates
           </button>
           <div className="flex space-x-3">
-            <button onClick={handlePrint} className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 flex items-center">
+            {/* <button onClick={handlePrint} className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 flex items-center">
               <FaPrint className="mr-2" /> Print
-            </button>
+            </button> */}
             <button onClick={handleDownloadPDF} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center">
               <FaDownload className="mr-2" /> Download PDF
             </button>

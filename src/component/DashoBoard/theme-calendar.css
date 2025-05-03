@@ -38,8 +38,14 @@
 }
 
 .calendar-theme-light .react-calendar__month-view__days__day--weekend {
-  color: #dc2626 !important;
+  /* Remove red color for all weekends in light theme */
+  color: #1e293b !important;
   font-weight: 600 !important;
+}
+
+/* Only Sundays should be red in light theme */
+.calendar-theme-light .sunday-cell {
+  color: #dc2626 !important;
 }
 
 .calendar-theme-light .react-calendar__month-view__days__day--neighboringMonth {
@@ -83,6 +89,16 @@
 
 .calendar-theme-dark .react-calendar__month-view__days__day {
   color: #e2e8f0 !important;
+}
+
+.calendar-theme-dark .react-calendar__month-view__days__day--weekend {
+  /* Remove red color for all weekends in dark theme */
+  color: #e2e8f0 !important;
+}
+
+/* Only Sundays should be red in dark theme */
+.calendar-theme-dark .sunday-cell {
+  color: #dc2626 !important;
 }
 
 .calendar-theme-dark .react-calendar__month-view__weekdays__weekday {

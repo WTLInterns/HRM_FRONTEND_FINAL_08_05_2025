@@ -296,12 +296,12 @@ const CompanyLetterhead = () => {
           </button>
           
           <div className="flex space-x-3">
-            <button 
+            {/* <button 
               onClick={handlePrint}
               className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition duration-300 flex items-center"
             >
               <FaPrint className="mr-2" /> Print
-            </button>
+            </button> */}
             <button 
               onClick={handleDownloadPDF}
               className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition duration-300 flex items-center"

@@ -100,9 +100,11 @@
   z-index: 5;
 }
 
-/* Make weekends red with consistent styling */
-.calendar-small .react-calendar__month-view__days__day--weekend {
-  color: #ef4444 !important; /* Red color for weekend days */
+/* Make only Sundays red in the calendar, override all themes */
+.sunday-cell,
+.calendar-small .sunday-cell,
+.react-calendar__tile.sunday-cell {
+  color: #ef4444 !important;
 }
 
 /* Hover styling */

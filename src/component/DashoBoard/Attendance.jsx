@@ -637,6 +637,12 @@ export default function Attendance() {
                 tileContent={tileContent}
                 className={`${isDarkMode ? 'bg-slate-800 text-gray-100 border-gray-700' : 'bg-white text-gray-900 border-gray-300'} rounded-lg w-full calendar-theme-${isDarkMode ? 'dark' : 'light'}`}
                 showNeighboringMonth={false}
+                tileClassName={({ date, view }) => {
+                  if (view === 'month' && date.getDay() === 0) {
+                    return 'sunday-cell';
+                  }
+                  return null;
+                }}
               />
 
               {/* Status Dropdown */}
