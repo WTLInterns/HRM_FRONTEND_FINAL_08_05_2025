@@ -83,7 +83,82 @@ const IntershipCertificate = () => {
   };
 
   const handlePrint = () => {
-    window.print();
+    // Create a new window for printing
+    const printWindow = window.open('', '_blank');
+    
+    // Get the certificate content
+    const certificateContent = certificateRef.current.innerHTML;
+    
+    // Create the HTML content for the new window
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Internship Certificate</title>
+          <style>
+            body {
+              margin: 0;
+              padding: 0;
+              width: 100%;
+              height: 100vh;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              background: white;
+            }
+            .certificate-container {
+              width: 100%;
+              height: 100%;
+              position: relative;
+              background: white;
+            }
+            .certificate-container * {
+              visibility: visible !important;
+              display: block !important;
+              color: black !important;
+              background: white !important;
+            }
+            .certificate-container img {
+              max-width: 100%;
+              height: auto;
+              display: inline-block !important;
+            }
+            @media print {
+              body {
+                margin: 0;
+                padding: 0;
+              }
+              .certificate-container {
+                width: 100%;
+                height: 100%;
+              }
+              @page {
+                size: landscape;
+                margin: 0;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="certificate-container">
+            ${certificateContent}
+          </div>
+          <script>
+            window.onload = function() {
+              window.print();
+              window.onafterprint = function() {
+                window.close();
+              };
+            };
+          </script>
+        </body>
+      </html>
+    `;
+    
+    // Write the content to the new window
+    printWindow.document.open();
+    printWindow.document.write(printContent);
+    printWindow.document.close();
   };
 
   const handleDownloadPDF = () => {
@@ -265,6 +340,7 @@ const IntershipCertificate = () => {
               <div className="overflow-auto p-2 border rounded">
                 <div 
                   ref={certificateRef} 
+                  id="certificate-content"
                   className="relative w-full aspect-[1.414/1] overflow-hidden" 
                   style={{ 
                     maxWidth: '900px', 

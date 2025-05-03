@@ -44,6 +44,16 @@ const TerminationLetter = () => {
     signatoryTitle: ''
   });
 
+  // Add date formatting function
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+  };
+
   // Fetch subadmin data by email
   useEffect(() => {
     const fetchSubadminByEmail = async () => {
@@ -142,7 +152,41 @@ const TerminationLetter = () => {
   };
 
   const handlePrint = () => {
+    // Add print-specific styles
+    const style = document.createElement('style');
+    style.innerHTML = `
+      @media print {
+        /* Hide everything except the letter content */
+        body * {
+          visibility: hidden;
+        }
+        
+        /* Show the letter content and all its children */
+        #letter-content, #letter-content * {
+          visibility: visible !important;
+        }
+        
+        /* Position the letter content */
+        #letter-content {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+        }
+        
+        /* Hide elements that shouldn't print */
+        .no-print {
+          display: none !important;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+
+    // Print the document
     window.print();
+
+    // Remove the print styles after printing
+    document.head.removeChild(style);
   };
 
   const handleDownloadPDF = async () => {
@@ -988,11 +1032,7 @@ const TerminationLetter = () => {
               
               {/* Date with elegant styling */}
               <div className="mb-6 text-right">
-                <p className="text-gray-700 font-semibold">{new Date().toLocaleDateString('en-US', { 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
-                })}</p>
+                <p className="text-gray-700 font-semibold">{formatDate(new Date().toISOString())}</p>
               </div>
               
               {/* Employee and Company Information */}
@@ -1038,7 +1078,7 @@ const TerminationLetter = () => {
                 </ul>
                 
                 <p className="text-justify">
-                  Your final paycheck, including compensation for {formData.finalPayDate ? `any accrued benefits, if applicable, will be provided on ${new Date(formData.finalPayDate).toLocaleDateString()}` : "any accrued benefits, if applicable, will be provided on [date]"}. Please note that this decision is final and non-negotiable, legal action may be taken if necessary.
+                  Your final paycheck, including compensation for {formData.finalPayDate ? `any accrued benefits, if applicable, will be provided on ${formatDate(formData.finalPayDate)}` : "any accrued benefits, if applicable, will be provided on [date]"}. Please note that this decision is final and non-negotiable, legal action may be taken if necessary.
                 </p>
                 
                 <p className="text-justify">

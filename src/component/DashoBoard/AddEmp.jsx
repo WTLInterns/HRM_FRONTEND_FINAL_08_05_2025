@@ -140,7 +140,48 @@ export default function AddEmp() {
 
   // Validation function for all fields
   const validateFields = () => {
-    // Removing all validations and always returning true
+    // Email validation
+    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+    if (!emailRegex.test(email)) {
+      toast.error("Please enter a valid email address");
+      return false;
+    }
+
+    // Contact number validation (10 digits)
+    const phoneRegex = /^[6-9]\d{9}$/;
+    if (!phoneRegex.test(phone)) {
+      toast.error("Please enter a valid 10-digit mobile number starting with 6, 7, 8, or 9");
+      return false;
+    }
+
+    // Aadhar number validation (12 digits)
+    const aadharRegex = /^\d{12}$/;
+    if (!aadharRegex.test(aadharNo)) {
+      toast.error("Please enter a valid 12-digit Aadhar number");
+      return false;
+    }
+
+    // PAN card validation (5 letters, 4 numbers, 1 letter)
+    const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+    if (!panRegex.test(panCard.toUpperCase())) {
+      toast.error("Please enter a valid PAN number (e.g., ABCDE1234F)");
+      return false;
+    }
+
+    // Bank account number validation (9-18 digits)
+    const bankAccountRegex = /^\d{9,18}$/;
+    if (!bankAccountRegex.test(bankAccountNo)) {
+      toast.error("Please enter a valid bank account number (9-18 digits)");
+      return false;
+    }
+
+    // IFSC code validation (4 letters, 7 alphanumeric)
+    const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+    if (!ifscRegex.test(bankIfscCode.toUpperCase())) {
+      toast.error("Please enter a valid IFSC code (e.g., SBIN0001234)");
+      return false;
+    }
+
     return true;
   };
 
@@ -266,7 +307,7 @@ export default function AddEmp() {
   // Handle Update Employee submission
   const handleUpdateEmp = async (e) => {
     e.preventDefault();
-    if (!validateFields() || !selectedEmployee) return;
+    if (!validateFields()) return;
    
     if (!subadminId) {
       toast.error("Subadmin session expired. Please login again.");

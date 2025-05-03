@@ -38,6 +38,16 @@ const ExperienceLetter = () => {
     signatoryTitle: ''
   });
 
+  // Add date formatting function
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+  };
+
   // Fetch subadmin data by email
   useEffect(() => {
     const fetchSubadminByEmail = async () => {
@@ -925,11 +935,7 @@ const ExperienceLetter = () => {
 
               {/* Date with elegant styling */}
               <div className="mb-10">
-                <p className="text-gray-700 font-semibold">{new Date().toLocaleDateString('en-US', { 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
-                })}</p>
+                <p className="text-gray-700 font-semibold">{formatDate(new Date().toISOString())}</p>
               </div>
 
               {/* Subject Line with enhanced design */}
@@ -949,16 +955,8 @@ const ExperienceLetter = () => {
                   I hereby certify that <span className="font-semibold text-blue-800">{formData.employeeName || "[Employee's Full Name]"}</span>, 
                   {formData.employeeJobTitle ? ` ${formData.employeeJobTitle}, ` : " [Employee's Job Title], "}was employed 
                   with <span className="font-semibold text-blue-800">{subadmin?.registercompanyname || "[Your Company Name]"}</span> from 
-                  {formData.startDate ? ` ${new Date(formData.startDate).toLocaleDateString('en-US', {
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric'
-                  })}` : " [Start Date]"} to 
-                  {formData.endDate ? ` ${new Date(formData.endDate).toLocaleDateString('en-US', {
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric'
-                  })}` : " [End Date]"}.
+                  {formData.startDate ? ` ${formatDate(formData.startDate)}` : " [Start Date]"} to 
+                  {formData.endDate ? ` ${formatDate(formData.endDate)}` : " [End Date]"}.
                 </p>
 
                 <p className="text-justify">

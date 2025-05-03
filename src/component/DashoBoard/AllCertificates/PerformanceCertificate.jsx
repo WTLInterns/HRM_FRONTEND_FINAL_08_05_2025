@@ -152,9 +152,191 @@ const PerformanceCertificate = () => {
     });
   };
 
-  const handlePrint = useReactToPrint({
-    content: () => certificateRef.current,
-  });
+  const handlePrint = () => {
+    // Create a new window for printing
+    const printWindow = window.open('', '_blank');
+    
+    // Get the certificate content
+    const certificateContent = certificateRef.current.innerHTML;
+    
+    // Create the HTML content for the new window
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Performance Certificate</title>
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+            
+            * {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
+            }
+            
+            body {
+              margin: 0;
+              padding: 0;
+              width: 100%;
+              height: 100vh;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              background: white;
+              font-family: 'Roboto', sans-serif;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+            
+            .certificate-container {
+              width: 21cm;
+              min-height: 29.7cm;
+              padding: 1cm;
+              position: relative;
+              background: white;
+              margin: 0 auto;
+              box-shadow: 0 0 10px rgba(0,0,0,0.1);
+              background: linear-gradient(120deg, rgba(255,255,255,1) 0%, rgba(245,250,255,1) 100%);
+              overflow: hidden;
+            }
+            
+            .certificate-container * {
+              visibility: visible !important;
+              color: black !important;
+              background: transparent !important;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+            
+            .certificate-container img {
+              max-width: 100%;
+              height: auto;
+              display: inline-block !important;
+              visibility: visible !important;
+            }
+            
+            .certificate-container div {
+              position: relative !important;
+              z-index: 10 !important;
+            }
+            
+            .certificate-container div[style*="position: absolute"] {
+              position: absolute !important;
+            }
+            
+            .certificate-container div[style*="font-family"] {
+              font-family: inherit !important;
+            }
+            
+            .certificate-container div[style*="font-size"] {
+              font-size: inherit !important;
+            }
+            
+            .certificate-container div[style*="color"] {
+              color: inherit !important;
+            }
+            
+            .certificate-container div[style*="text-align"] {
+              text-align: inherit !important;
+            }
+            
+            .certificate-container div[style*="top"] {
+              top: inherit !important;
+            }
+            
+            .certificate-container div[style*="left"] {
+              left: inherit !important;
+            }
+            
+            .certificate-container div[style*="width"] {
+              width: inherit !important;
+            }
+            
+            .certificate-container div[style*="height"] {
+              height: inherit !important;
+            }
+            
+            .certificate-container div[style*="transform"] {
+              transform: inherit !important;
+            }
+            
+            .certificate-container div[style*="z-index"] {
+              z-index: inherit !important;
+            }
+            
+            .certificate-container div[style*="background"] {
+              background: transparent !important;
+            }
+            
+            .certificate-container div[style*="pointer-events"] {
+              pointer-events: none !important;
+            }
+            
+            .certificate-container div[style*="text-shadow"] {
+              text-shadow: inherit !important;
+            }
+            
+            .certificate-container div[style*="padding"] {
+              padding: inherit !important;
+            }
+            
+            .certificate-container div[style*="line-height"] {
+              line-height: inherit !important;
+            }
+            
+            .certificate-container div[style*="font-weight"] {
+              font-weight: inherit !important;
+            }
+            
+            @media print {
+              @page {
+                size: portrait;
+                margin: 0;
+              }
+              
+              body {
+                margin: 0;
+                padding: 0;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+              
+              .certificate-container {
+                width: 100% !important;
+                height: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                box-shadow: none !important;
+              }
+              
+              .certificate-container * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="certificate-container">
+            ${certificateContent}
+          </div>
+          <script>
+            window.onload = function() {
+              window.print();
+              window.onafterprint = function() {
+                window.close();
+              };
+            };
+          </script>
+        </body>
+      </html>
+    `;
+    
+    // Write the content to the new window
+    printWindow.document.open();
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+  };
 
   const handleDownloadPDF = async () => {
     if (!certificateRef.current) return;

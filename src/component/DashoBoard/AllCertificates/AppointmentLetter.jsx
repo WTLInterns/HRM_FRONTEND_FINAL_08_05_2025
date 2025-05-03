@@ -36,6 +36,16 @@ const AppointmentLetter = () => {
     signatoryTitle: ''
   });
 
+  // Add date formatting function
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+  };
+
   // Fetch subadmin data by email
   useEffect(() => {
     const fetchSubadminByEmail = async () => {
@@ -131,7 +141,67 @@ const AppointmentLetter = () => {
   };
 
   const handlePrint = () => {
+    // Add print-specific styles
+    const style = document.createElement('style');
+    style.innerHTML = `
+      @media print {
+        /* Hide everything except the letter content */
+        body * {
+          visibility: hidden;
+        }
+        
+        /* Show the letter content and all its children */
+        #letter-content, #letter-content * {
+          visibility: visible !important;
+          display: block !important;
+        }
+        
+        /* Position the letter content */
+        #letter-content {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+          height: auto;
+          margin: 0;
+          padding: 20mm;
+          box-sizing: border-box;
+        }
+        
+        /* Ensure all text is visible and properly formatted */
+        #letter-content p, #letter-content span, #letter-content div {
+          color: black !important;
+          font-size: 12pt !important;
+          line-height: 1.5 !important;
+        }
+        
+        /* Ensure images are visible */
+        #letter-content img {
+          visibility: visible !important;
+          display: inline-block !important;
+          max-width: 100% !important;
+          height: auto !important;
+        }
+        
+        /* Hide elements that shouldn't print */
+        .no-print {
+          display: none !important;
+        }
+        
+        /* Set page size to A4 */
+        @page {
+          size: A4;
+          margin: 0;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+
+    // Print the document
     window.print();
+
+    // Remove the print styles after printing
+    document.head.removeChild(style);
   };
 
   const handleDownloadPDF = () => {
@@ -612,12 +682,12 @@ const AppointmentLetter = () => {
 
           {/* Letter Preview Section */}
           <div className="lg:col-span-2">
-            <div ref={letterRef} className="bg-white text-black p-8 rounded-lg shadow-xl min-h-[29.7cm] max-w-[21cm] mx-auto relative border border-gray-200">
+            <div ref={letterRef} id="letter-content" className="bg-white text-black p-8 rounded-lg shadow-xl min-h-[29.7cm] max-w-[21cm] mx-auto relative border border-gray-200">
               {/* Decorative corner elements */}
-              <div className="absolute top-0 left-0 w-16 h-16 border-t-2 border-l-2 border-blue-600 rounded-tl-lg"></div>
-              <div className="absolute top-0 right-0 w-16 h-16 border-t-2 border-r-2 border-blue-600 rounded-tr-lg"></div>
-              <div className="absolute bottom-0 left-0 w-16 h-16 border-b-2 border-l-2 border-blue-600 rounded-bl-lg"></div>
-              <div className="absolute bottom-0 right-0 w-16 h-16 border-b-2 border-r-2 border-blue-600 rounded-br-lg"></div>
+              <div className="absolute top-0 left-0 w-16 h-16 border-t-2 border-l-2 border-gray-300 rounded-tl-lg"></div>
+              <div className="absolute top-0 right-0 w-16 h-16 border-t-2 border-r-2 border-gray-300 rounded-tr-lg"></div>
+              <div className="absolute bottom-0 left-0 w-16 h-16 border-b-2 border-l-2 border-gray-300 rounded-bl-lg"></div>
+              <div className="absolute bottom-0 right-0 w-16 h-16 border-b-2 border-r-2 border-gray-300 rounded-br-lg"></div>
               
               {/* Subtle watermark */}
               {subadmin && (
@@ -652,7 +722,7 @@ const AppointmentLetter = () => {
                   </div>
                 </div>
                 
-                <hr className="border-t-2 border-blue-600 my-3" />
+                <hr className="border-t-2 border-gray-300 my-3" />
               </div>
 
               {/* Date with elegant styling */}
@@ -681,7 +751,7 @@ const AppointmentLetter = () => {
                 <div className="space-y-4">
                   <p><strong>Position:</strong> {formData.employeeJobTitle}</p>
                   <p><strong>Department:</strong> {formData.department}</p>
-                  <p><strong>Start Date:</strong> {formData.startDate}</p>
+                  <p><strong>Start Date:</strong> {formatDate(formData.startDate)}</p>
                   <p><strong>Reporting To:</strong> {formData.reportingTo}</p>
                   <p><strong>Working Hours:</strong> {formData.workingHours}</p>
                   <p><strong>Salary:</strong> {formData.salary}</p>

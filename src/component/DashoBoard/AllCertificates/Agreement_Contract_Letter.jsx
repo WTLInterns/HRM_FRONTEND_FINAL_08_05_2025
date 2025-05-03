@@ -34,6 +34,16 @@ const Agreement_Contract_Letter = () => {
     agreementDate: new Date().toISOString().split('T')[0]
   });
 
+  // Add date formatting function
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+  };
+
   // Fetch subadmin data by email
   useEffect(() => {
     const fetchSubadminByEmail = async () => {
@@ -753,7 +763,7 @@ const Agreement_Contract_Letter = () => {
 
                 <p>
                   This EMPLOYMENT AGREEMENT (Hereinafter, the "Agreement") is entered into on this
-                  {formData.agreementDate ? ` ${new Date(formData.agreementDate).getDate()} day of ${new Date(formData.agreementDate).toLocaleString('default', { month: 'long' })}, ${new Date(formData.agreementDate).getFullYear()}` : " ___ day of ________, 20__"},
+                  {formData.agreementDate ? ` ${formatDate(formData.agreementDate)}` : " ___ day of ________, 20__"},
                 </p>
 
                 <div className="text-center font-bold my-4">BY AND BETWEEN</div>
@@ -878,7 +888,7 @@ const Agreement_Contract_Letter = () => {
                       </div>
                       <p className="font-bold mt-2">{formData.employeeName}</p>
                       <p>{formData.employeePosition}</p>
-                      <p>Date: {formData.agreementDate}</p>
+                      <p>Date: {formatDate(formData.agreementDate)}</p>
                     </div>
                   </div>
                 </div>

@@ -120,7 +120,7 @@ const SalarySheet = () => {
               <th className={`border ${isDarkMode ? 'border-slate-600' : 'border-gray-200'} px-4 py-2`}>Branch Name</th>
               <th className={`border ${isDarkMode ? 'border-slate-600' : 'border-gray-200'} px-4 py-2`}>Bank Name</th>
               <th className={`border ${isDarkMode ? 'border-slate-600' : 'border-gray-200'} px-4 py-2`}>IFSC Code</th>
-              <th className={`border ${isDarkMode ? 'border-slate-600' : 'border-gray-200'} px-4 py-2`}>Net Salary</th>
+              <th className={`border ${isDarkMode ? 'border-slate-600' : 'border-gray-200'} px-4 py-2`}>CTC</th>
             </tr>
           </thead>
           <tbody>

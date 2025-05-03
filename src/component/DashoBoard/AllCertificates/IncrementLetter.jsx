@@ -35,6 +35,16 @@ const IncrementLetter = () => {
     signatoryTitle: ''
   });
 
+  // Add date formatting function
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+  };
+
   // Fetch subadmin data by email
   useEffect(() => {
     const fetchSubadminByEmail = async () => {
@@ -136,7 +146,41 @@ const IncrementLetter = () => {
   };
 
   const handlePrint = () => {
+    // Add print-specific styles
+    const style = document.createElement('style');
+    style.innerHTML = `
+      @media print {
+        /* Hide everything except the letter content */
+        body * {
+          visibility: hidden;
+        }
+        
+        /* Show the letter content and all its children */
+        #letter-content, #letter-content * {
+          visibility: visible !important;
+        }
+        
+        /* Position the letter content */
+        #letter-content {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+        }
+        
+        /* Hide elements that shouldn't print */
+        .no-print {
+          display: none !important;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+
+    // Print the document
     window.print();
+
+    // Remove the print styles after printing
+    document.head.removeChild(style);
   };
 
   const handleDownloadPDF = () => {
@@ -621,12 +665,12 @@ const IncrementLetter = () => {
 
           {/* Letter Preview Section */}
           <div className="lg:col-span-2">
-            <div ref={letterRef} className="bg-white text-black p-8 rounded-lg shadow-xl min-h-[29.7cm] max-w-[21cm] mx-auto relative border border-gray-200">
+            <div ref={letterRef} id="letter-content" className="bg-white text-black p-8 rounded-lg shadow-xl min-h-[29.7cm] max-w-[21cm] mx-auto relative border border-gray-200">
               {/* Decorative corner elements */}
-              <div className="absolute top-0 left-0 w-16 h-16 border-t-2 border-l-2 border-green-600 rounded-tl-lg"></div>
-              <div className="absolute top-0 right-0 w-16 h-16 border-t-2 border-r-2 border-green-600 rounded-tr-lg"></div>
-              <div className="absolute bottom-0 left-0 w-16 h-16 border-b-2 border-l-2 border-green-600 rounded-bl-lg"></div>
-              <div className="absolute bottom-0 right-0 w-16 h-16 border-b-2 border-r-2 border-green-600 rounded-br-lg"></div>
+              <div className="absolute top-0 left-0 w-16 h-16 border-t-2 border-l-2 border-gray-300 rounded-tl-lg"></div>
+              <div className="absolute top-0 right-0 w-16 h-16 border-t-2 border-r-2 border-gray-300 rounded-tr-lg"></div>
+              <div className="absolute bottom-0 left-0 w-16 h-16 border-b-2 border-l-2 border-gray-300 rounded-bl-lg"></div>
+              <div className="absolute bottom-0 right-0 w-16 h-16 border-b-2 border-r-2 border-gray-300 rounded-br-lg"></div>
               
               {/* Subtle watermark */}
               {subadmin && (
@@ -654,18 +698,18 @@ const IncrementLetter = () => {
                   
                   {/* Company Details */}
                   <div className="flex flex-col items-end text-right">
-                    <h2 className="font-bold text-xl text-green-800">{subadmin?.registercompanyname || "Your Company Name"}</h2>
+                    <h2 className="font-bold text-xl text-gray-800">{subadmin?.registercompanyname || "Your Company Name"}</h2>
                     <p className="text-sm text-gray-600">{subadmin?.address || "Company Address"}</p>
                     <p className="text-sm text-gray-600">GST: {subadmin?.gstno || "GSTIN"}</p>
                   </div>
                 </div>
                 
-                <hr className="border-t-2 border-green-600 my-3" />
+                <hr className="border-t-2 border-gray-300 my-3" />
               </div>
 
               {/* Sample Letter Text */}
               <div className="text-center mb-8">
-                <h1 className="text-2xl font-bold text-green-800">Increment Letter To Employee</h1>
+                <h1 className="text-2xl font-bold text-gray-800">Increment Letter To Employee</h1>
                 <p className="text-gray-600 mt-2">Sample Letter</p>
               </div>
 
@@ -678,11 +722,7 @@ const IncrementLetter = () => {
                     <p>Employee Code: {formData.employeeCode || "_________"}</p>
                   </div>
                   <div>
-                    <p>Date: {formData.effectiveDate ? new Date(formData.effectiveDate).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    }) : "_________"}</p>
+                    <p>Date: {formData.effectiveDate ? formatDate(formData.effectiveDate) : "_________"}</p>
                   </div>
                 </div>
 

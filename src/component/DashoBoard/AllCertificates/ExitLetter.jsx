@@ -32,6 +32,16 @@ const ExitLetter = () => {
     signatoryTitle: ''
   });
 
+  // Add date formatting function
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+  };
+
   // Fetch subadmin data by email
   useEffect(() => {
     const fetchSubadminByEmail = async () => {
@@ -119,7 +129,67 @@ const ExitLetter = () => {
   };
 
   const handlePrint = () => {
+    // Add print-specific styles
+    const style = document.createElement('style');
+    style.innerHTML = `
+      @media print {
+        /* Hide everything except the letter content */
+        body * {
+          visibility: hidden;
+        }
+        
+        /* Show the letter content and all its children */
+        #letter-content, #letter-content * {
+          visibility: visible !important;
+          display: block !important;
+        }
+        
+        /* Position the letter content */
+        #letter-content {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+          height: auto;
+          margin: 0;
+          padding: 20mm;
+          box-sizing: border-box;
+        }
+        
+        /* Ensure all text is visible and properly formatted */
+        #letter-content p, #letter-content span, #letter-content div {
+          color: black !important;
+          font-size: 12pt !important;
+          line-height: 1.5 !important;
+        }
+        
+        /* Ensure images are visible */
+        #letter-content img {
+          visibility: visible !important;
+          display: inline-block !important;
+          max-width: 100% !important;
+          height: auto !important;
+        }
+        
+        /* Hide elements that shouldn't print */
+        .no-print {
+          display: none !important;
+        }
+        
+        /* Set page size to A4 */
+        @page {
+          size: A4;
+          margin: 0;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+
+    // Print the document
     window.print();
+
+    // Remove the print styles after printing
+    document.head.removeChild(style);
   };
 
   const handleDownloadPDF = () => {
@@ -598,11 +668,7 @@ const ExitLetter = () => {
               <div className="space-y-4">
                 <p className="font-bold">Subject: Exit Letter - Confirmation of Resignation</p>
 
-                <p>Date: {formData.exitDate ? new Date(formData.exitDate).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                }) : "[Insert Date]"}</p>
+                <p>Date: {formData.exitDate ? formatDate(formData.exitDate) : "[Insert Date]"}</p>
 
                 <p>Employee ID: {formData.employeeId || "[Employee ID]"}</p>
 
