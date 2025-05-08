@@ -29,7 +29,7 @@ const ViewCompany = () => {
         setLoading(true);
         
         // Fetch data from the API
-        const response = await fetch('https://api.aimdreamplanner.com/api/subadmin/all');
+        const response = await fetch('https://api.managifyhr.com/api/subadmin/all');
         
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
@@ -101,22 +101,19 @@ const ViewCompany = () => {
       // Normalize field names to ensure consistency with the form and API
       const normalizedCompany = {
         ...companyToEdit,
-        // Make sure the field names match what the edit form and API expect
-        stampImg: companyToEdit.stampImg || '', 
-        signature: companyToEdit.signature || '',
+        // EXCLUDE stamp and signature fields for edit mode
         companylogo: companyToEdit.companylogo || companyToEdit.logo || '', // Handle both field names
-        
-        // Ensure all required fields exist
         gstno: companyToEdit.gstno || '',
         cinNo: companyToEdit.cinNo || companyToEdit.cinno || '',  // Fix: support both cinNo and cinno
         companyUrl: companyToEdit.companyUrl || companyToEdit.companyurl || '', // Fix: support both companyUrl and companyurl
         address: companyToEdit.address || '',
         status: companyToEdit.status || 'Active',
-        
-        // Store original field names to verify everything is passed correctly
+        // Remove stampImg and signature from the object
+        signature: undefined,
+        stampImg: undefined,
+        hasSignature: false,
+        hasStamp: false,
         _original: {
-          stampImg: companyToEdit.stampImg,
-          signature: companyToEdit.signature,
           companylogo: companyToEdit.companylogo,
           logo: companyToEdit.logo
         }
@@ -127,7 +124,7 @@ const ViewCompany = () => {
       console.log('Normalized company data for edit:', normalizedCompany);
       
       // Store the normalized company to edit in localStorage
-      localStorage.setItem('companyToEdit', JSON.stringify(normalizedCompany));
+      localStorage.setItem('companyToEdit', JSON.stringify(normalizedCompany)); // stamp and signature intentionally removed for edit
       
       // Navigate to the register company page with edit mode
       navigate('/masteradmin/register-company?mode=edit');
@@ -147,7 +144,7 @@ const ViewCompany = () => {
     if (companyToDelete) {
       try {
         // Make an API call to delete the company
-        const response = await fetch(`https://api.aimdreamplanner.com/api/subadmin/delete/${companyToDelete.id}`, {
+        const response = await fetch(`https://api.managifyhr.com/api/subadmin/delete/${companyToDelete.id}`, {
           method: 'DELETE'
         });
         
@@ -195,7 +192,7 @@ const ViewCompany = () => {
       }
       
       // Call the API to send login details
-      const response = await fetch(`https://api.aimdreamplanner.com/api/subadmin/send-email/${company.email}`, {
+      const response = await fetch(`https://api.managifyhr.com/api/subadmin/send-email/${company.email}`, {
         method: 'POST'
       });
       
@@ -360,9 +357,9 @@ const ViewCompany = () => {
                   <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider w-1/5">
                     Contact Info
                   </th>
-                  <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider w-1/12">
+                  {/* <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider w-1/12">
                     Docs
-                  </th>
+                  </th> */}
                   <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider w-1/12">
                     Status
                   </th>
@@ -409,85 +406,7 @@ const ViewCompany = () => {
                         <div className="text-sm text-gray-100">{company.email}</div>
                         <div className="text-sm text-gray-400">{company.phoneno}</div>
                       </td>
-                      
-                      {/* Documents */}
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        <div className="flex flex-col space-y-1">
-                          {company.signature ? (
-                            <div className="flex items-center bg-green-900/50 text-green-400 border border-green-800 px-1 py-0.5 rounded-full">
-                              <FaSignature className="mr-1" /> 
-                              <span className="text-xs font-semibold">Yes</span>
-                              <button 
-                                onClick={() => window.open(`https://api.aimdreamplanner.com/images/profile/${company.signature}`, '_blank')}
-                                className="ml-1 hover:text-blue-300 transition-colors"
-                                title="View signature"
-                              >
-                                <img 
-                                  src={`https://api.aimdreamplanner.com/images/profile/${company.signature}`}
-                                  alt="Signature"
-                                  className="h-4 w-4 rounded-sm object-cover inline-block ml-1"
-                                  onError={(e) => {
-                                    console.log(`Error loading signature for ${company.name}`);
-                                    e.target.style.display = 'none';
-                                  }}
-                                />
-                              </button>
-                            </div>
-                          ) : (
-                            <span className="px-1 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-900/50 text-gray-400 border border-gray-800 shadow-sm">
-                              <FaSignature className="mr-1" /> No
-                            </span>
-                          )}
-                          
-                          {company.stampImg ? (
-                            <div className="flex items-center bg-green-900/50 text-green-400 border border-green-800 px-1 py-0.5 rounded-full">
-                              <FaStamp className="mr-1" /> 
-                              <span className="text-xs font-semibold">Yes</span>
-                              <button 
-                                onClick={() => window.open(`https://api.aimdreamplanner.com/images/profile/${company.stampImg}`, '_blank')}
-                                className="ml-1 hover:text-blue-300 transition-colors"
-                                title="View stamp"
-                              >
-                                <img 
-                                  src={`https://api.aimdreamplanner.com/images/profile/${company.stampImg}`}
-                                  alt="Stamp"
-                                  className="h-4 w-4 rounded-sm object-cover inline-block ml-1"
-                                  onError={(e) => {
-                                    console.log(`Error loading stamp for ${company.name}`);
-                                    e.target.style.display = 'none';
-                                  }}
-                                />
-                              </button>
-                            </div>
-                          ) : (
-                            <span className="px-1 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-900/50 text-gray-400 border border-gray-800 shadow-sm">
-                              <FaStamp className="mr-1" /> No
-                            </span>
-                          )}
-                          
-                          {company.companylogo ? (
-                            <div className="flex items-center bg-green-900/50 text-green-400 border border-green-800 px-1 py-0.5 rounded-full">
-                              <FaBuilding className="mr-1" /> 
-                              <span className="text-xs font-semibold">Logo</span>
-                              <button 
-                                onClick={() => window.open(`https://api.aimdreamplanner.com/images/profile/${company.companylogo}`, '_blank')}
-                                className="ml-1 hover:text-blue-300 transition-colors"
-                                title="View logo"
-                              >
-                                <img 
-                                  src={`https://api.aimdreamplanner.com/images/profile/${company.companylogo}`}
-                                  alt="Logo"
-                                  className="h-4 w-4 rounded-sm object-cover inline-block ml-1"
-                                  onError={(e) => {
-                                    console.error(`Error loading logo for ${company.name}:`, company.companylogo);
-                                    e.target.style.display = 'none';
-                                  }}
-                                />
-                              </button>
-                            </div>
-                          ) : null}
-                        </div>
-                      </td>
+
                       
                       {/* Status */}
                       <td className="px-3 py-2 whitespace-nowrap">

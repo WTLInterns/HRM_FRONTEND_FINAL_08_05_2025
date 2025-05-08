@@ -60,7 +60,7 @@ const JoiningLetter = () => {
         const email = user.email || "arbaj.shaikh2034@gmail.com";
         
         console.log("Fetching subadmin data for email:", email);
-        const response = await axios.get(`https://api.aimdreamplanner.com/api/subadmin/subadmin-by-email/${email}`);
+        const response = await axios.get(`https://api.managifyhr.com/api/subadmin/subadmin-by-email/${email}`);
         console.log("Subadmin API Response:", response.data);
         setSubadmin(response.data);
         fetchEmployees(response.data.id);
@@ -79,7 +79,7 @@ const JoiningLetter = () => {
   const fetchEmployees = async (subadminId) => {
     try {
       console.log(`Fetching employees for subadmin ID: ${subadminId}`);
-      const response = await axios.get(`https://api.aimdreamplanner.com/api/employee/${subadminId}/employee/all`);
+      const response = await axios.get(`https://api.managifyhr.com/api/employee/${subadminId}/employee/all`);
       console.log("Employees API Response:", response.data);
       setEmployees(response.data);
       setLoading(false);
@@ -208,7 +208,7 @@ const JoiningLetter = () => {
 
       // 3. Send to backend as multipart/form-data
       const documentType = 'joining';
-      const apiUrl = `https://api.aimdreamplanner.com/api/certificate/send/${subadmin.id}/${encodeURIComponent(formData.employeeName)}/${documentType}`;
+      const apiUrl = `https://api.managifyhr.com/api/certificate/send/${subadmin.id}/${encodeURIComponent(formData.employeeName)}/${documentType}`;
       const response = await axios.post(apiUrl, formDataToSend, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
@@ -253,7 +253,7 @@ const JoiningLetter = () => {
           <FaArrowLeft />
           <span>Back to Certificates</span>
         </button>
-        <div className="text-lg font-semibold">Joining Letter Generator</div>
+        <div className="text-lg font-semibold">Joining Letter </div>
         <div className="w-24"></div> {/* Empty div for flex spacing */}
       </div>
 
@@ -529,8 +529,9 @@ const JoiningLetter = () => {
           
           {/* Right column - Letter Preview */}
           <div className="md:col-span-2">
-            <div className={`p-6 rounded-lg shadow-md mb-4 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
-              <div className="flex justify-between items-center mb-4">
+            <div className={`p-6 rounded-lg shadow-md mb-4 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}
+  style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+  <div className="flex justify-between items-center mb-4">
                 <h2 className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
                   Letter Preview
                 </h2>
@@ -564,15 +565,15 @@ const JoiningLetter = () => {
               {/* Letter Content Preview */}
               <div 
                 ref={letterRef}
-                className="bg-white text-black p-8 rounded-md shadow"
-                style={{ minHeight: '297mm', maxWidth: '210mm', margin: '0 auto' }}
+                className="bg-white text-black p-8 rounded-md shadow joining-letter-certificate"
+                style={{ minHeight: '297mm', width: '800px', maxWidth: '100%', margin: '0 auto' }}
               >
                 {/* Company Header */}
                 <div className="flex justify-between items-center mb-8 border-b pb-4">
                   <div>
                     {subadmin && subadmin.companylogo ? (
                       <img
-                        src={`https://api.aimdreamplanner.com/images/profile/${subadmin.companylogo}`}
+                        src={`https://api.managifyhr.com/images/profile/${subadmin.companylogo}`}
                         alt="Company Logo"
                         className="h-16 object-contain"
                         onError={(e) => {
@@ -620,27 +621,52 @@ const JoiningLetter = () => {
                   <div className="no-break">
                     <p>We are pleased to formally offer you the position of <strong>{formData.employeeJobTitle || '[Job Title]'}</strong> with <strong>{subadmin?.registercompanyname || '[Company Name]'}</strong>, effective from <strong>{formData.joiningDate ? new Date(formData.joiningDate).toLocaleDateString('en-GB') : '[Joining Date]'}</strong>. We were impressed with your background, skills, and attitude, and we believe you will be a valuable asset to our growing team.</p>
                     <p>This letter outlines the terms and conditions of your employment with us.</p>
-                    <ol className="list-decimal pl-5">
-                      <li><strong>Position and Reporting</strong><br />You will be designated as <strong>{formData.employeeJobTitle || '[Job Title]'}</strong> <p>
-                    Your employment will commence on <strong>{new Date(formData.joiningDate).toLocaleDateString('en-GB') || '[Joining Date]'}</strong>.
-                    Please report to <strong>{formData.contactPerson || 'HR Department'}</strong> at 9:00 AM on your joining date.
-                  </p></li>
-                      <li><strong>Place of Posting</strong><br />Your primary location of work will be <strong>{subadmin?.address || '[City, Office Address]'}</strong>. However, the company may require you to work at any of its current or future branches, client sites, or locations, as per operational requirements.</li>
-                      <li><strong>Working Hours</strong><br />Your regular working hours will be {formData.workHours ? <strong>{formData.workHours}</strong> : '[Working Hours]'} per week. You may be required to work outside these hours depending on the business needs.</li>
-                      <li><strong>Compensation and Benefits</strong><br />
-                        <span>
-                          {formData.benefits && formData.benefits.trim() !== ''
-                            ? formData.benefits
-                            : '[Benefits details will appear here based on form input]'}
-                        </span>
-                      </li>
-                      <li><strong>Probation Period</strong><br />You will be on probation for a period of [3 months or as applicable] from your joining date. Your performance and conduct will be reviewed periodically. Upon successful completion, your employment may be confirmed in writing.</li>
-                      <li><strong>Confidentiality and Non-Disclosure</strong><br />You are expected to maintain the confidentiality of company data, projects, client information, and all proprietary materials. You will be required to sign a Non-Disclosure Agreement (NDA) and comply with our IT and Security Policy.</li>
-                      <li><strong>Termination Clause</strong><br />Either party may terminate this employment by providing [30 days / 1 month] written notice or salary in lieu thereof.<br />The company reserves the right to terminate employment without notice in case of misconduct, breach of policy, or under disciplinary action.</li>
-                      <li><strong>Code of Conduct</strong><br />All employees must adhere to the company’s code of conduct and maintain the highest standards of professionalism, ethics, and integrity in their work.</li>
-                      <li><strong>Acceptance of Offer</strong><br />We request you to sign and return a copy of this letter to indicate your acceptance. A detailed onboarding schedule and documentation checklist will be shared shortly after your confirmation.</li>
-                      <li><strong>Welcome Aboard</strong><br />We look forward to having you on our team and are confident that you will play a key role in our ongoing success. Your experience and enthusiasm will be instrumental in driving our mission forward.<br />Should you have any queries or require any clarification, please feel free to contact our HR team <br />Once again, congratulations and welcome to <strong>{subadmin?.registercompanyname || '[Company Name]'}</strong>!<br /><br /><br /></li>
-                    </ol>
+                    <div style={{ marginBottom: '1.5rem' }}>
+  <strong>Position and Reporting</strong><br />
+  You will be designated as <strong>{formData.employeeJobTitle || '[Job Title]'}</strong> <br />
+  Your employment will commence on <strong>{new Date(formData.joiningDate).toLocaleDateString('en-GB') || '[Joining Date]'}</strong>.<br />
+  Please report to <strong>{formData.contactPerson || 'HR Department'}</strong> at 9:00 AM on your joining date.
+</div>
+<div style={{ marginBottom: '1.5rem' }}>
+  <strong>Place of Posting</strong><br />
+  Your primary location of work will be <strong>{subadmin?.address || '[City, Office Address]'}</strong>. However, the company may require you to work at any of its current or future branches, client sites, or locations, as per operational requirements.
+</div>
+<div style={{ marginBottom: '1.5rem' }}>
+  <strong>Working Hours</strong><br />
+  Your regular working hours will be {formData.workHours ? <strong>{formData.workHours}</strong> : '[Working Hours]'} per week. You may be required to work outside these hours depending on the business needs.
+</div>
+<div style={{ marginBottom: '1.5rem' }}>
+  <strong>Compensation and Benefits</strong><br />
+  <span>
+    {formData.benefits && formData.benefits.trim() !== ''
+      ? formData.benefits
+      : '[Benefits details will appear here based on form input]'}
+  </span>
+</div>
+<div style={{ marginBottom: '1.5rem' }}>
+  <strong>Probation Period</strong><br />
+  You will be on probation for a period of [3 months or as applicable] from your joining date. Your performance and conduct will be reviewed periodically. Upon successful completion, your employment may be confirmed in writing.
+</div>
+<div style={{ marginBottom: '1.5rem' }}>
+  <strong>Confidentiality and Non-Disclosure</strong><br />
+  You are expected to maintain the confidentiality of company data, projects, client information, and all proprietary materials. You will be required to sign a Non-Disclosure Agreement (NDA) and comply with our IT and Security Policy.
+</div>
+<div style={{ marginBottom: '1.5rem' }}>
+  <strong>Termination Clause</strong><br />
+  Either party may terminate this employment by providing [30 days / 1 month] written notice or salary in lieu thereof.<br />The company reserves the right to terminate employment without notice in case of misconduct, breach of policy, or under disciplinary action.
+</div>
+<div style={{ marginBottom: '1.5rem' }}>
+  <strong>Code of Conduct</strong><br />
+  All employees must adhere to the company’s code of conduct and maintain the highest standards of professionalism, ethics, and integrity in their work.
+</div>
+<div style={{ marginBottom: '1.5rem' }}>
+  <strong>Acceptance of Offer</strong><br />
+  We request you to sign and return a copy of this letter to indicate your acceptance. A detailed onboarding schedule and documentation checklist will be shared shortly after your confirmation.
+</div>
+<div style={{ marginBottom: '1.5rem' }}>
+  <strong>Welcome Aboard</strong><br />
+  We look forward to having you on our team and are confident that you will play a key role in our ongoing success. Your experience and enthusiasm will be instrumental in driving our mission forward.<br />Should you have any queries or require any clarification, please feel free to contact our HR team <br />Once again, congratulations and welcome to <strong>{subadmin?.registercompanyname || '[Company Name]'}</strong>!
+</div>
                     <hr style={{ margin: '16px 0' }} />
                     <h4 className="font-bold">Privacy & Confidentiality Policy</h4>
                     <p>This Privacy & Confidentiality Policy outlines the standards and expectations of <strong>{subadmin?.registercompanyname || '[Company Name]'}</strong> regarding the protection of sensitive company and customer data. All employees must follow these policies to safeguard business integrity, data privacy, and intellectual property.</p>
@@ -663,14 +689,11 @@ const JoiningLetter = () => {
                       <thead>
                         <tr className="bg-gray-100">
                           <th className="border border-gray-400 px-2 py-1">Component</th>
-                          <th className="border border-gray-400 px-2 py-1">Amount/Percentage</th>
+                          <th className="border border-gray-400 px-2 py-1">Percentage</th>
                         </tr>
                       </thead>
                       <tbody>
-                        <tr>
-                          <td className="border border-gray-400 px-2 py-1">Basic Salary</td>
-                          <td className="border border-gray-400 px-2 py-1">{formData.salary || '[Amount]'}</td>
-                        </tr>
+                       
                         <tr>
                           <td className="border border-gray-400 px-2 py-1">House Rent Allowance (HRA)</td>
                           <td className="border border-gray-400 px-2 py-1">10%</td>
@@ -683,10 +706,7 @@ const JoiningLetter = () => {
                           <td className="border border-gray-400 px-2 py-1">Special Allowance</td>
                           <td className="border border-gray-400 px-2 py-1">37%</td>
                         </tr>
-                        <tr>
-                          <td className="border border-gray-400 px-2 py-1 font-bold">Total (Gross Salary)</td>
-                          <td className="border border-gray-400 px-2 py-1 font-bold">100%</td>
-                        </tr>
+                        
                       </tbody>
                     </table> <br /><br />
                     {/* Acceptance Letter and Checklist Section */}
@@ -712,7 +732,8 @@ const JoiningLetter = () => {
                       <p>Sincerely,<br /><strong>{formData.employeeName || '[Employee Full Name]'}</strong><br />Signature: ____________________<br />Date: ________________________<br />Place: _______________________</p>
                     </div>
                     
-                  </div> <br />
+                  </div>
+<div className="page-break"></div>
 
                   
                   
@@ -755,7 +776,7 @@ const JoiningLetter = () => {
                     <p className="font-semibold mb-1">For <strong>{subadmin?.registercompanyname || 'Company Name'}</strong></p>
                     {subadmin && subadmin.signature ? (
                       <img
-                        src={`https://api.aimdreamplanner.com/images/profile/${subadmin.signature}`}
+                        src={`https://api.managifyhr.com/images/profile/${subadmin.signature}`}
                         alt="Authorized Signature"
                         className="h-16 object-contain ml-auto mb-2"
                         onError={(e) => {

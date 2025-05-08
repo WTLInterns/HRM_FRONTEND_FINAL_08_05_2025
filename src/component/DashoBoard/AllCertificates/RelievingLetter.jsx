@@ -55,7 +55,7 @@ const RelievingLetter = () => {
         const email = user.email || "arbaj.shaikh2034@gmail.com";
         
         console.log("Fetching subadmin data for email:", email);
-        const response = await axios.get(`https://api.aimdreamplanner.com/api/subadmin/subadmin-by-email/${email}`);
+        const response = await axios.get(`https://api.managifyhr.com/api/subadmin/subadmin-by-email/${email}`);
         console.log("Subadmin API Response:", response.data);
         setSubadmin(response.data);
         fetchEmployees(response.data.id);
@@ -74,7 +74,7 @@ const RelievingLetter = () => {
   const fetchEmployees = async (subadminId) => {
     try {
       console.log(`Fetching employees for subadmin ID: ${subadminId}`);
-      const response = await axios.get(`https://api.aimdreamplanner.com/api/employee/${subadminId}/employee/all`);
+      const response = await axios.get(`https://api.managifyhr.com/api/employee/${subadminId}/employee/all`);
       console.log("Employees API Response:", response.data);
       setEmployees(response.data);
       setLoading(false);
@@ -658,7 +658,7 @@ const RelievingLetter = () => {
       
       // Send the document using the backend API
       const response = await axios.post(
-        `https://api.aimdreamplanner.com/api/certificate/send/${subadmin.id}/${encodeURIComponent(employeeFullName)}/relieving`,
+        `https://api.managifyhr.com/api/certificate/send/${subadmin.id}/${encodeURIComponent(employeeFullName)}/relieving`,
         formData,
         {
           headers: {
@@ -1063,7 +1063,7 @@ const RelievingLetter = () => {
 
           {/* Letter Preview Section */}
           <div className="lg:col-span-2">
-            <div ref={letterRef} className="bg-white text-black p-8 rounded-lg shadow-xl min-h-[29.7cm] max-w-[21cm] mx-auto relative border border-gray-200 overflow-hidden">
+            <div ref={letterRef} className="bg-white text-black p-8 rounded-lg shadow-xl min-h-[29.7cm] w-[21cm] mx-auto relative border border-gray-200" style={{overflow: 'hidden'}}>
               {/* Decorative elements */}
               <div className="absolute top-0 right-0 w-32 h-32 bg-green-50 rounded-bl-full opacity-50 -z-1"></div>
               <div className="absolute bottom-0 left-0 w-32 h-32 bg-green-50 rounded-tr-full opacity-50 -z-1"></div>
@@ -1080,7 +1080,7 @@ const RelievingLetter = () => {
                   <div className="flex-shrink-0 mr-4">
                     {subadmin && subadmin.companylogo ? (
                       <img 
-                        src={`https://api.aimdreamplanner.com/images/profile/${subadmin.companylogo}`} 
+                        src={`https://api.managifyhr.com/images/profile/${subadmin.companylogo}`} 
                         alt="Company Logo" 
                         className="h-20 object-contain" 
                         onError={(e) => {
@@ -1160,7 +1160,7 @@ const RelievingLetter = () => {
                     {subadmin && subadmin.signature ? (
                       <div className="border-b border-gray-300 pb-0 w-48">
                         <img 
-                          src={`https://api.aimdreamplanner.com/images/profile/${subadmin.signature}`} 
+                          src={`https://api.managifyhr.com/images/profile/${subadmin.signature}`} 
                           alt="Signature" 
                           className="h-16 mb-0 object-contain" 
                           onError={(e) => {
@@ -1178,48 +1178,48 @@ const RelievingLetter = () => {
 
                   {/* Stamp if available */}
                   {subadmin && subadmin.stampImg && (
-                    <div className="flex flex-col items-center">
-                      <div className="text-center mb-1">
-                        <p className="font-bold text-blue-600 text-sm">{subadmin.registercompanyname}</p>
-                      </div>
-                      <img 
-                        src={`https://api.aimdreamplanner.com/images/profile/${subadmin.stampImg}`} 
-                        alt="Company Stamp" 
-                        className="h-28 w-28 object-contain transform scale-100 shadow-md bg-white p-1" 
-                        style={{ 
-                          imageRendering: 'high-quality',
-                          opacity: 0.9
-                        }}
-                        onError={(e) => {
-                          console.error('Error loading stamp:', e);
-                          e.target.style.display = 'none';
-                          e.target.parentNode.innerHTML = `
-                            <div class="p-4 flex items-center justify-center h-28 w-28 shadow-md bg-white/90">
-                              <div class="text-center">
-                                <p class="font-bold text-black">${subadmin.registercompanyname || "COMPANY"}</p>
-                                <p class="font-bold text-black">OFFICIAL</p>
-                              </div>
-                            </div>
-                          `;
-                        }}
-                      />
-                    </div>
-                  )}
+  <div className="flex flex-col items-center">
+    <img 
+      src={`https://api.managifyhr.com/images/profile/${subadmin.stampImg}`} 
+      alt="Company Stamp" 
+      className="h-28 w-28 object-contain transform scale-100 shadow-md bg-white p-1" 
+      style={{ 
+        imageRendering: 'high-quality',
+        opacity: 0.9
+      }}
+      onError={(e) => {
+        console.error('Error loading stamp:', e);
+        e.target.style.display = 'none';
+        e.target.parentNode.innerHTML = `
+          <div class=\"p-4 flex items-center justify-center h-28 w-28 shadow-md bg-white/90\">
+            <div class=\"text-center\">
+              <p class=\"font-bold text-black\">${subadmin.registercompanyname || "COMPANY"}</p>
+              <p class=\"font-bold text-black\">OFFICIAL</p>
+            </div>
+          </div>
+        `;
+      }}
+    />
+    <div className="text-center mt-2">
+      <p className="font-bold text-black text-base" style={{letterSpacing: '0.5px'}}>{subadmin.registercompanyname}</p>
+    </div>
+  </div>
+)}
 
                   {/* Text-based stamp alternative */}
                   {subadmin && !subadmin.stampImg && (
-                    <div className="flex flex-col items-center">
-                      <div className="text-center mb-1">
-                        <p className="font-bold text-blue-600 text-sm">{subadmin.registercompanyname}</p>
-                      </div>
-                      <div className="p-4 flex items-center justify-center h-28 w-28 shadow-lg bg-white/90">
-                        <div className="text-center">
-                          <p className="font-bold text-blue-600 text-lg">{subadmin.registercompanyname}</p>
-                          <p className="font-bold text-blue-600">OFFICIAL</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+  <div className="flex flex-col items-center">
+    <div className="p-4 flex items-center justify-center h-28 w-28 shadow-lg bg-white/90">
+      <div className="text-center">
+        <p className="font-bold text-blue-600 text-lg">{subadmin.registercompanyname}</p>
+        <p className="font-bold text-blue-600">OFFICIAL</p>
+      </div>
+    </div>
+    <div className="text-center mt-2">
+      <p className="font-bold text-black text-base" style={{letterSpacing: '0.5px'}}>{subadmin.registercompanyname}</p>
+    </div>
+  </div>
+)}
                 </div>
               </div>
             </div>

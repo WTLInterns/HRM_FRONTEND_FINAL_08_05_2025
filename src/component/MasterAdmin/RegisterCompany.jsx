@@ -140,7 +140,7 @@ const RegisterCompany = () => {
     try {
       if (isEditMode) {
         // Update existing company using the API
-        const apiUrl = `https://api.aimdreamplanner.com/api/subadmin/update-fields/${formData.id}`;
+        const apiUrl = `https://api.managifyhr.com/api/subadmin/update-fields/${formData.id}`;
         
         // Create FormData and append text fields and file fields
         const formDataToSend = new FormData();
@@ -200,7 +200,7 @@ const RegisterCompany = () => {
       } else {
         // Add new company using the API with multipart/form-data
         // Use the correct Master Admin ID (1) in the URL
-        const apiUrl = `https://api.aimdreamplanner.com/masteradmin/addSubAdmin/1`;
+        const apiUrl = `https://api.managifyhr.com/masteradmin/addSubAdmin/1`;
         
         // Create FormData and append text fields and file fields
         const formDataToSend = new FormData();
@@ -236,7 +236,13 @@ const RegisterCompany = () => {
         if (!response.ok) {
           throw new Error("Failed to register company");
         }
-        setSuccessMessage("Company registered successfully!");
+        // Send registration email to the company
+try {
+  await fetch(`https://api.managifyhr.com/api/subadmin/send-email/${formData.email}`, { method: 'POST' });
+} catch (emailErr) {
+  console.error('Failed to send registration email:', emailErr);
+}
+setSuccessMessage("Company registered successfully! Please send  Login Details through this  email - " + formData.email);
       }
       
       // Show success message
@@ -259,7 +265,7 @@ const RegisterCompany = () => {
         if (isEditMode) {
           navigate('/masteradmin/view-company');
         }
-      }, 3000);
+      }, 5000);
     } catch (error) {
       console.error("Error saving company data:", error);
       alert("Failed to save company data. Please try again.");
@@ -389,7 +395,7 @@ const RegisterCompany = () => {
             
             <div className="space-y-2">
               <label htmlFor="gstno" className="block text-sm font-medium">
-                GST Number <span className="text-red-400">*</span>
+                GST Number
               </label>
               <div className="relative rounded-md shadow-sm">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -401,7 +407,6 @@ const RegisterCompany = () => {
                   name="gstno"
                   value={formData.gstno}
                   onChange={handleChange}
-                  required
                   className="block w-full pl-10 pr-3 py-2 bg-slate-700 border border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 text-gray-100"
                   placeholder="22AAAAA0000A1Z5"
                 />
@@ -535,134 +540,150 @@ const RegisterCompany = () => {
         </div>
         
         {/* File Uploads Section */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-          {/* Company Logo */}
-          <div className="bg-slate-900/30 p-4 rounded-lg border border-slate-700 shadow-sm">
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Company Logo <span className="text-red-400">*</span>
-            </label>
-            <div className="flex flex-col items-center space-y-2">
-              <div className="w-full h-32 border-2 border-dashed border-blue-700/50 rounded-lg flex flex-col justify-center items-center p-2 hover:border-blue-500 transition-all duration-300 relative overflow-hidden bg-slate-800/50 shadow-sm">
-                {logoPreview ? (
-                  <div className="w-full h-full flex justify-center items-center">
-                    <img 
-                      src={typeof formData.logo === 'string' ? `https://api.aimdreamplanner.com/images/profile/${formData.logo}` : logoPreview}
-                      alt="Company Logo" 
-                      className="max-h-full max-w-full object-contain" 
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setLogoPreview(null);
-                        setFormData({...formData, logo: null});
-                      }}
-                      className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 hover:bg-red-700 transition-all duration-300 shadow-md"
-                    >
-                      <FaTimes size={12} />
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <FaUpload className="text-blue-500 text-xl mb-2" />
-                    <p className="text-xs text-gray-400 text-center">Click to upload logo</p>
-                  </>
-                )}
-                <input
-                  type="file"
-                  name="logo"
-                  accept="image/*"
-                  onChange={(e) => handleFileChange(e, 'logo')}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  required={!logoPreview && !isEditMode}
-                />
-              </div>
-            </div>
+        {!isEditMode && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+  {/* Company Logo */}
+  <div className="bg-slate-900/30 p-4 rounded-lg border border-slate-700 shadow-sm">
+    <label className="block text-sm font-medium text-gray-300 mb-2">
+      Company Logo <span className="text-red-400">*</span>
+    </label>
+    <div className="flex flex-col items-center space-y-2">
+      <div className="w-full h-32 border-2 border-dashed border-blue-700/50 rounded-lg flex flex-col justify-center items-center p-2 hover:border-blue-500 transition-all duration-300 relative overflow-hidden bg-slate-800/50 shadow-sm">
+  {logoPreview ? (
+    <>
+      <div className="w-full h-full flex justify-center items-center">
+        <img
+          src={typeof formData.logo === 'string' ? `https://api.managifyhr.com/images/profile/${formData.logo}` : logoPreview}
+          alt="Company Logo"
+          className="max-h-full max-w-full object-contain"
+        />
+      </div>
+      <button
+        type="button"
+        tabIndex={-1}
+        onPointerDown={e => {
+          e.stopPropagation();
+          e.preventDefault();
+        }}
+        onClick={e => {
+          e.stopPropagation();
+          e.preventDefault();
+          setLogoPreview(null);
+          setFormData({...formData, logo: null});
+        }}
+        className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 hover:bg-red-700 transition-all duration-300 shadow-md z-10"
+        style={{ pointerEvents: 'auto' }}
+      >
+        <FaTimes size={12} />
+      </button>
+    </>
+  ) : (
+    <>
+      <FaUpload className="text-blue-500 text-xl mb-2" />
+      <p className="text-xs text-gray-400 text-center">Click to upload logo</p>
+    </>
+  )}
+  {!logoPreview && (
+    <input
+      type="file"
+      name="logo"
+      accept="image/*"
+      onChange={e => handleFileChange(e, 'logo')}
+      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+      required={!logoPreview && !isEditMode}
+    />
+  )}
+</div>
+    </div>
+  </div>
+  {/* Signature */}
+  <div className="bg-slate-900/30 p-4 rounded-lg border border-slate-700 shadow-sm">
+    <label className="block text-sm font-medium text-gray-300 mb-2">
+      Signature
+    </label>
+    <div className="flex flex-col items-center space-y-2">
+      <div className="w-full h-32 border-2 border-dashed border-blue-700/50 rounded-lg flex flex-col justify-center items-center p-2 hover:border-blue-500 transition-all duration-300 relative overflow-hidden bg-slate-800/50 shadow-sm">
+        {signaturePreview ? (
+          <div className="w-full h-full flex justify-center items-center">
+            <img
+              src={typeof formData.signature === 'string' ? `https://api.managifyhr.com/images/profile/${formData.signature}` : signaturePreview}
+              alt="Signature"
+              className="max-h-full max-w-full object-contain"
+            />
+            <button
+              type="button"
+              onClick={e => {
+                e.stopPropagation();
+                e.preventDefault();
+                setSignaturePreview(null);
+                setFormData({...formData, signature: null, hasSignature: false});
+              }}
+              className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 hover:bg-red-700 transition-all duration-300 shadow-md"
+            >
+              <FaTimes size={12} />
+            </button>
           </div>
-          
-          {/* Signature */}
-          <div className="bg-slate-900/30 p-4 rounded-lg border border-slate-700 shadow-sm">
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Signature
-            </label>
-            <div className="flex flex-col items-center space-y-2">
-              <div className="w-full h-32 border-2 border-dashed border-blue-700/50 rounded-lg flex flex-col justify-center items-center p-2 hover:border-blue-500 transition-all duration-300 relative overflow-hidden bg-slate-800/50 shadow-sm">
-                {signaturePreview ? (
-                  <div className="w-full h-full flex justify-center items-center">
-                    <img 
-                      src={typeof formData.signature === 'string' ? `https://api.aimdreamplanner.com/images/profile/${formData.signature}` : signaturePreview}
-                      alt="Signature" 
-                      className="max-h-full max-w-full object-contain" 
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSignaturePreview(null);
-                        setFormData({...formData, signature: null, hasSignature: false});
-                      }}
-                      className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 hover:bg-red-700 transition-all duration-300 shadow-md"
-                    >
-                      <FaTimes size={12} />
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <FaFileSignature className="text-blue-500 text-xl mb-2" />
-                    <p className="text-xs text-gray-400 text-center">Click to upload signature</p>
-                  </>
-                )}
-                <input
-                  type="file"
-                  name="signature"
-                  accept="image/*"
-                  onChange={(e) => handleFileChange(e, 'signature')}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                />
-              </div>
-            </div>
+        ) : (
+          <>
+            <FaFileSignature className="text-blue-500 text-xl mb-2" />
+            <p className="text-xs text-gray-400 text-center">Click to upload signature</p>
+          </>
+        )}
+        <input
+          type="file"
+          name="signature"
+          accept="image/*"
+          onChange={(e) => handleFileChange(e, 'signature')}
+          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+        />
+      </div>
+    </div>
+  </div>
+  {/* Company Stamp */}
+  <div className="bg-slate-900/30 p-4 rounded-lg border border-slate-700 shadow-sm">
+    <label className="block text-sm font-medium text-gray-300 mb-2">
+      Company Stamp
+    </label>
+    <div className="flex flex-col items-center space-y-2">
+      <div className="w-full h-32 border-2 border-dashed border-blue-700/50 rounded-lg flex flex-col justify-center items-center p-2 hover:border-blue-500 transition-all duration-300 relative overflow-hidden bg-slate-800/50 shadow-sm">
+        {stampPreview ? (
+          <div className="w-full h-full flex justify-center items-center">
+            <img
+              src={typeof formData.stampImage === 'string' ? `https://api.managifyhr.com/images/profile/${formData.stampImage}` : stampPreview}
+              alt="Company Stamp"
+              className="max-h-full max-w-full object-contain"
+            />
+            <button
+              type="button"
+              onClick={e => {
+                e.stopPropagation();
+                e.preventDefault();
+                setStampPreview(null);
+                setFormData({...formData, stampImage: null, hasStamp: false});
+              }}
+              className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 hover:bg-red-700 transition-all duration-300 shadow-md"
+            >
+              <FaTimes size={12} />
+            </button>
           </div>
-          
-          {/* Company Stamp */}
-          <div className="bg-slate-900/30 p-4 rounded-lg border border-slate-700 shadow-sm">
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Company Stamp
-            </label>
-            <div className="flex flex-col items-center space-y-2">
-              <div className="w-full h-32 border-2 border-dashed border-blue-700/50 rounded-lg flex flex-col justify-center items-center p-2 hover:border-blue-500 transition-all duration-300 relative overflow-hidden bg-slate-800/50 shadow-sm">
-                {stampPreview ? (
-                  <div className="w-full h-full flex justify-center items-center">
-                    <img 
-                      src={typeof formData.stampImage === 'string' ? `https://api.aimdreamplanner.com/images/profile/${formData.stampImage}` : stampPreview}
-                      alt="Company Stamp" 
-                      className="max-h-full max-w-full object-contain" 
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setStampPreview(null);
-                        setFormData({...formData, stampImage: null, hasStamp: false});
-                      }}
-                      className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 hover:bg-red-700 transition-all duration-300 shadow-md"
-                    >
-                      <FaTimes size={12} />
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <FaStamp className="text-blue-500 text-xl mb-2" />
-                    <p className="text-xs text-gray-400 text-center">Click to upload company stamp</p>
-                  </>
-                )}
-                <input
-                  type="file"
-                  name="stampImage"
-                  accept="image/*"
-                  onChange={(e) => handleFileChange(e, 'stampImage')}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
+        ) : (
+          <>
+            <FaStamp className="text-blue-500 text-xl mb-2" />
+            <p className="text-xs text-gray-400 text-center">Click to upload company stamp</p>
+          </>
+        )}
+        <input
+          type="file"
+          name="stampImage"
+          accept="image/*"
+          onChange={(e) => handleFileChange(e, 'stampImage')}
+          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+        />
+      </div>
+    </div>
+  </div>
+</div>
+        )}
         
         {/* Success Message (above buttons) */}
         {showSuccessPopup && (

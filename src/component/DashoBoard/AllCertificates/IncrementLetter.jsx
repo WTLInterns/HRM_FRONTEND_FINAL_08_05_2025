@@ -53,7 +53,7 @@ const IncrementLetter = () => {
         const user = JSON.parse(localStorage.getItem("user")) || {};
         const email = user.email || "arbaj.shaikh2034@gmail.com";
         
-        const response = await axios.get(`https://api.aimdreamplanner.com/api/subadmin/subadmin-by-email/${email}`);
+        const response = await axios.get(`https://api.managifyhr.com/api/subadmin/subadmin-by-email/${email}`);
         setSubadmin(response.data);
         fetchEmployees(response.data.id);
       } catch (error) {
@@ -70,7 +70,7 @@ const IncrementLetter = () => {
   // Fetch employees for this subadmin
   const fetchEmployees = async (subadminId) => {
     try {
-      const response = await axios.get(`https://api.aimdreamplanner.com/api/employee/${subadminId}/employee/all`);
+      const response = await axios.get(`https://api.managifyhr.com/api/employee/${subadminId}/employee/all`);
       setEmployees(response.data);
       setLoading(false);
     } catch (error) {
@@ -399,7 +399,7 @@ const IncrementLetter = () => {
       
       // Send to API
       const response = await axios.post(
-        `https://api.aimdreamplanner.com/api/certificate/send/${subadmin.id}/${encodeURIComponent(selectedEmployee.firstName + ' ' + selectedEmployee.lastName)}/increment`,
+        `https://api.managifyhr.com/api/certificate/send/${subadmin.id}/${encodeURIComponent(selectedEmployee.firstName + ' ' + selectedEmployee.lastName)}/increment`,
         formData,
         {
           headers: {
@@ -665,7 +665,7 @@ const IncrementLetter = () => {
 
           {/* Letter Preview Section */}
           <div className="lg:col-span-2">
-            <div ref={letterRef} id="letter-content" className="bg-white text-black p-8 rounded-lg shadow-xl min-h-[29.7cm] max-w-[21cm] mx-auto relative border border-gray-200">
+            <div ref={letterRef} className="bg-white text-black p-8 rounded-lg shadow-xl min-h-[29.7cm] w-[21cm] mx-auto relative border border-gray-200" style={{overflow: 'hidden'}}>
               {/* Decorative corner elements */}
               <div className="absolute top-0 left-0 w-16 h-16 border-t-2 border-l-2 border-gray-300 rounded-tl-lg"></div>
               <div className="absolute top-0 right-0 w-16 h-16 border-t-2 border-r-2 border-gray-300 rounded-tr-lg"></div>
@@ -686,7 +686,7 @@ const IncrementLetter = () => {
                   <div className="flex-shrink-0 mr-4">
                     {subadmin && subadmin.companylogo ? (
                       <img 
-                        src={`https://api.aimdreamplanner.com/images/profile/${subadmin.companylogo}`} 
+                        src={`https://api.managifyhr.com/images/profile/${subadmin.companylogo}`} 
                         alt="Company Logo" 
                         className="h-20 object-contain" 
                         onError={(e) => {
@@ -759,7 +759,7 @@ const IncrementLetter = () => {
                       {subadmin && subadmin.signature ? (
                         <div className="border-b border-gray-300 pb-1 w-48">
                           <img 
-                            src={`https://api.aimdreamplanner.com/images/profile/${subadmin.signature}`} 
+                            src={`https://api.managifyhr.com/images/profile/${subadmin.signature}`} 
                             alt="Signature" 
                             className="h-16 mb-2 object-contain" 
                             onError={(e) => {
@@ -780,7 +780,7 @@ const IncrementLetter = () => {
                     {subadmin && subadmin.stampImg && (
                       <div>
                         <img 
-                          src={`https://api.aimdreamplanner.com/images/profile/${subadmin.stampImg}`} 
+                          src={`https://api.managifyhr.com/images/profile/${subadmin.stampImg}`} 
                           alt="Company Stamp" 
                           className="h-28 w-auto object-contain opacity-90" 
                           onError={(e) => {

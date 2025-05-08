@@ -44,7 +44,7 @@ const CompanyLetterhead = () => {
         const email = user.email || "arbaj.shaikh2034@gmail.com";
         
         console.log("Fetching subadmin data for email:", email);
-        const response = await axios.get(`https://api.aimdreamplanner.com/api/subadmin/subadmin-by-email/${email}`);
+        const response = await axios.get(`https://api.managifyhr.com/api/subadmin/subadmin-by-email/${email}`);
         console.log("Subadmin API Response:", response.data);
         setSubadmin(response.data);
         setLoading(false);
@@ -84,6 +84,25 @@ const CompanyLetterhead = () => {
     if (!letterElement) return;
     
     toast.info('Preparing PDF download...');
+
+    // --- Force A4 size for PDF capture ---
+    const a4WidthPx = 794;
+    const a4HeightPx = 1100; // slightly less than A4 to guarantee fit
+    const originalStyle = {
+      width: letterElement.style.width,
+      height: letterElement.style.height,
+      maxWidth: letterElement.style.maxWidth,
+      minHeight: letterElement.style.minHeight,
+      padding: letterElement.style.padding,
+      overflow: letterElement.style.overflow
+    };
+    letterElement.style.width = a4WidthPx + 'px';
+    letterElement.style.height = a4HeightPx + 'px';
+    letterElement.style.maxWidth = a4WidthPx + 'px';
+    letterElement.style.minHeight = a4HeightPx + 'px';
+    letterElement.style.padding = '32px 24px'; // reduce padding for fit
+    letterElement.style.overflow = 'visible';
+    // --- End force A4 size ---
     
     try {
       // First check and fix any image with missing dimensions
@@ -192,6 +211,15 @@ const CompanyLetterhead = () => {
       };
       
       const canvas = await html2canvas(letterElement, options);
+
+      // --- Restore original style ---
+      letterElement.style.width = originalStyle.width;
+      letterElement.style.height = originalStyle.height;
+      letterElement.style.maxWidth = originalStyle.maxWidth;
+      letterElement.style.minHeight = originalStyle.minHeight;
+      letterElement.style.padding = originalStyle.padding;
+      letterElement.style.overflow = originalStyle.overflow;
+      // --- End restore ---
       
       // Check if canvas has valid dimensions
       if (canvas.width === 0 || canvas.height === 0) {
@@ -325,15 +353,18 @@ const CompanyLetterhead = () => {
               
               <div 
                 ref={letterRef}
-                className="bg-white shadow-lg"
+                className="bg-white shadow-lg w-full max-w-[900px] mx-auto rounded-lg sm:p-8 p-2"
                 style={{ 
                   minHeight: '29.7cm', 
-                  width: '21cm', 
+                  width: '100%', 
+                  maxWidth: '900px', 
                   margin: '0 auto',
                   fontFamily: letterheadConfig.fontFamily,
                   border: letterheadConfig.borderStyle !== 'none' ? `1px ${letterheadConfig.borderStyle} ${letterheadConfig.secondaryColor}` : 'none',
-                  padding: '2cm 1.5cm',
-                  position: 'relative'
+                  padding: window.innerWidth < 640 ? '16px' : '2cm 1.5cm',
+                  position: 'relative',
+                  boxSizing: 'border-box',
+                  overflowX: 'auto'
                 }}
               >
                 {/* Decorative Elements */}
@@ -359,7 +390,7 @@ const CompanyLetterhead = () => {
                     {letterheadConfig.showLogo && subadmin && subadmin.companylogo && (
                       <div className="mb-4">
                         <img 
-                          src={`https://api.aimdreamplanner.com/images/profile/${subadmin.companylogo}`} 
+                          src={`https://api.managifyhr.com/images/profile/${subadmin.companylogo}`} 
                           alt="Company Logo" 
                           className="h-20 object-contain" 
                           onError={(e) => {

@@ -102,7 +102,11 @@ const calculateSalaryComponents = (yearlyCTC) => {
 
 export default function SalaryReport() {
   const { isDarkMode } = useApp();
-  const [employeeName, setEmployeeName] = useState("")
+  const { emp } = useApp();
+  const [employeeName, setEmployeeName] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [filteredSuggestions, setFilteredSuggestions] = useState([]);
+  const [validation, setValidation] = useState({ employeeName: '', startDate: '', endDate: '' });
   // Company details will be retrieved from local storage
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
@@ -177,7 +181,27 @@ export default function SalaryReport() {
     setGenerating(false);
   };
 
+  const validateFields = () => {
+    let valid = true;
+    let v = { employeeName: '', startDate: '', endDate: '' };
+    if (!employeeName.trim()) {
+      v.employeeName = 'Employee name is required';
+      valid = false;
+    }
+    if (!startDate) {
+      v.startDate = 'Start date is required';
+      valid = false;
+    }
+    if (!endDate) {
+      v.endDate = 'End date is required';
+      valid = false;
+    }
+    setValidation(v);
+    return valid;
+  };
+
   const handleSubmit = async () => {
+    if (!validateFields()) return;
     setLoading(true)
     setError(null)
     try {
@@ -186,7 +210,7 @@ export default function SalaryReport() {
       
       // Using the new API endpoint format
       const response = await axios.get(
-        `https://api.aimdreamplanner.com/api/employee/employee/${encodeURIComponent(user.registercompanyname)}/${encodeURIComponent(employeeName)}/attendance/report?startDate=${startDate}&endDate=${endDate}`
+        `https://api.managifyhr.com/api/employee/employee/${encodeURIComponent(user.registercompanyname)}/${encodeURIComponent(employeeName)}/attendance/report?startDate=${startDate}&endDate=${endDate}`
       )
       
       // Fetch the complete employee details to ensure we have department and bank details
@@ -194,7 +218,7 @@ export default function SalaryReport() {
       try {
         // Get employee by name - this should return the full employee entity
         // const empResponse = await axios.get(
-        //   `https://api.aimdreamplanner.com/api/employee/${user.id}/employee/by-name/${encodeURIComponent(employeeName)}`
+        //   `https://api.managifyhr.com/api/employee/${user.id}/employee/by-name/${encodeURIComponent(employeeName)}`
         // )
         if (empResponse.status === 200) {
           employeeDetails = empResponse.data
@@ -503,7 +527,7 @@ export default function SalaryReport() {
           "center",
           true,
           faintGreen
-        )
+        );
         createCell(
           margin + colWidth * 2,
           yPos,
@@ -514,7 +538,7 @@ export default function SalaryReport() {
           "center",
           true,
           faintGreen
-        )
+        );
         yPos += rowHeight
 
         // Row 1
@@ -748,7 +772,7 @@ export default function SalaryReport() {
         createCell(margin + sigColumnWidth, yPos, sigColumnWidth, signatureRowHeight, "", 10, "left")
 
         // Left column: Signature image'
-        const signature = `https://api.aimdreamplanner.com/images/profile/${user.signature}`
+        const signature = `https://api.managifyhr.com/images/profile/${user.signature}`
         try {
           doc.addImage(
             signature,
@@ -772,7 +796,7 @@ export default function SalaryReport() {
         }
 
         // Right column: Company logo
-        const logo = `https://api.aimdreamplanner.com/images/profile/${user.companylogo}`
+        const logo = `https://api.managifyhr.com/images/profile/${user.companylogo}`
         try {
           doc.addImage(
            logo,
@@ -828,15 +852,71 @@ export default function SalaryReport() {
             <label htmlFor="employeeName" className={`block mb-2 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
               Employee Full Name
             </label>
-            <input
-              type="text"
-              id="employeeName"
-              className={`w-full p-2.5 rounded-md ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} border focus:ring-blue-500 focus:border-blue-500`}
-              placeholder="Enter Full Name (e.g. Rohit More)"
-              value={employeeName}
-              onChange={(e) => setEmployeeName(e.target.value)}
-              required
-            />
+            <div className="relative">
+  <input
+    type="text"
+    id="employeeName"
+    autoComplete="off"
+    className={`w-full p-2.5 rounded-md ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} border focus:ring-blue-500 focus:border-blue-500`}
+    placeholder="Enter Employee Name"
+    value={employeeName}
+    onChange={async (e) => {
+      const value = e.target.value;
+      setEmployeeName(value);
+      if (value.trim().length > 0 && user && user.id) {
+        try {
+          // Fetch employee list from backend for autocomplete (like ViewAttendance)
+          const res = await axios.get(`https://api.managifyhr.com/api/employee/${user.id}/employee/all`);
+          const employeeList = res.data || [];
+          const query = value.trim().toLowerCase();
+          const list = employeeList.map(emp => ({
+            empId: emp.empId,
+            fullName: `${emp.firstName} ${emp.lastName}`
+          }));
+          const startsWith = [];
+          const endsWith = [];
+          const includes = [];
+          list.forEach(item => {
+            const name = item.fullName.toLowerCase();
+            if (name.startsWith(query)) startsWith.push(item);
+            else if (name.endsWith(query)) endsWith.push(item);
+            else if (name.includes(query)) includes.push(item);
+          });
+          setFilteredSuggestions([...startsWith, ...endsWith, ...includes]);
+          setShowSuggestions(true);
+        } catch (err) {
+          setFilteredSuggestions([]);
+          setShowSuggestions(false);
+        }
+      } else {
+        setShowSuggestions(false);
+      }
+    }}
+    onFocus={() => {
+      if (employeeName.trim().length > 0 && filteredSuggestions.length > 0) setShowSuggestions(true);
+    }}
+    onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+    required
+  />
+  {showSuggestions && filteredSuggestions.length > 0 && (
+    <ul className={`absolute z-10 w-full bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded shadow max-h-40 overflow-y-auto mt-1`}>
+      {filteredSuggestions.map((emp, idx) => (
+        <li
+          key={emp.empId || idx}
+          className="px-4 py-2 cursor-pointer hover:bg-blue-100 dark:hover:bg-slate-600"
+          onMouseDown={() => {
+            setEmployeeName(emp.fullName);
+            setFilteredSuggestions([]);
+            setShowSuggestions(false);
+          }}
+        >
+          {emp.fullName}
+        </li>
+      ))}
+    </ul>
+  )}
+</div>
+            {validation.employeeName && <p className="text-red-500 text-xs mt-1">{validation.employeeName}</p>}
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -852,6 +932,7 @@ export default function SalaryReport() {
               onChange={(e) => setStartDate(e.target.value)}
               required
             />
+            {validation.startDate && <p className="text-red-500 text-xs mt-1">{validation.startDate}</p>}
           </div>
           <div>
             <label htmlFor="endDate" className={`block mb-2 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
@@ -865,6 +946,7 @@ export default function SalaryReport() {
               onChange={(e) => setEndDate(e.target.value)}
               required
             />
+            {validation.endDate && <p className="text-red-500 text-xs mt-1">{validation.endDate}</p>}
           </div>
         </div>
         
@@ -890,19 +972,37 @@ export default function SalaryReport() {
         <div className="flex flex-wrap gap-3 mt-4">
           <button
             onClick={handleSubmit}
-            disabled={loading || !employeeName || !startDate || !endDate}
+            // disabled={loading || !employeeName || !startDate || !endDate}
             className={`px-4 py-2 text-white rounded-md transition-colors ${isDarkMode ? 'bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:text-gray-300' : 'bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 disabled:text-gray-100'} disabled:cursor-not-allowed`}
           >
             {loading ? "Processing..." : "Generate Report"}
           </button>
           
           {salaryReport && (
-            <button
-              onClick={generateSalarySlipPDF}
-              className={`px-4 py-2 text-white rounded-md transition-colors ${isDarkMode ? 'bg-green-600 hover:bg-green-700' : 'bg-green-500 hover:bg-green-600'}`}
-            >
-              Download PDF
-            </button>
+            <>
+              <button
+                onClick={generateSalarySlipPDF}
+                className={`px-4 py-2 text-white rounded-md transition-colors ${isDarkMode ? 'bg-green-600 hover:bg-green-700' : 'bg-green-500 hover:bg-green-600'}`}
+              >
+                Download PDF
+              </button>
+              <button
+                onClick={() => {
+                  setEmployeeName("");
+                  setStartDate("");
+                  setEndDate("");
+                  setIncentiveAmount(0);
+                  setValidation({ employeeName: '', startDate: '', endDate: '' });
+                  setError(null);
+                  setSalaryReport(null);
+                  setShowReport(false);
+                  setFilteredSuggestions([]);
+                }}
+                className={`px-4 py-2 text-white rounded-md transition-colors ${isDarkMode ? 'bg-red-600 hover:bg-red-700' : 'bg-red-500 hover:bg-red-600'}`}
+              >
+                Clear
+              </button>
+            </>
           )}
         </div>
         {error && <div className="mt-3 text-red-500">{error}</div>}
@@ -1061,10 +1161,10 @@ export default function SalaryReport() {
                   <p className="text-sm text-gray-400">Net Payable Salary</p>
                   <p className="font-medium text-xl text-green-400">₹{(salaryReport?.netPayable || 0) + (salaryReport?.incentiveAmount || 0)}</p>
                 </div>
-                <div>
+                {/* <div>
                   <p className="text-sm text-gray-400">Amount in Words</p>
                   <p className="font-medium italic">{numberToWords((salaryReport?.netPayable || 0) + (salaryReport?.incentiveAmount || 0))} Rupees Only</p>
-                </div>
+                </div> */}
               </div>
             </div>
           </div>

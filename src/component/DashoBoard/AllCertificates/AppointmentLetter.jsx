@@ -36,7 +36,10 @@ const AppointmentLetter = () => {
     signatoryTitle: ''
   });
 
-  // Add date formatting function
+  const [pdfGenerating, setPdfGenerating] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
+
+  // Format date for display
   const formatDate = (dateString) => {
     if (!dateString) return '';
     const date = new Date(dateString);
@@ -51,14 +54,10 @@ const AppointmentLetter = () => {
     const fetchSubadminByEmail = async () => {
       try {
         setLoading(true);
-        console.log("Fetching subadmin data...");
-        
         const user = JSON.parse(localStorage.getItem("user")) || {};
         const email = user.email || "arbaj.shaikh2034@gmail.com";
         
-        console.log("Fetching subadmin data for email:", email);
-        const response = await axios.get(`https://api.aimdreamplanner.com/api/subadmin/subadmin-by-email/${email}`);
-        console.log("Subadmin API Response:", response.data);
+        const response = await axios.get(`https://api.managifyhr.com/api/subadmin/subadmin-by-email/${email}`);
         setSubadmin(response.data);
         fetchEmployees(response.data.id);
       } catch (error) {
@@ -75,9 +74,7 @@ const AppointmentLetter = () => {
   // Fetch employees for this subadmin
   const fetchEmployees = async (subadminId) => {
     try {
-      console.log(`Fetching employees for subadmin ID: ${subadminId}`);
-      const response = await axios.get(`https://api.aimdreamplanner.com/api/employee/${subadminId}/employee/all`);
-      console.log("Employees API Response:", response.data);
+      const response = await axios.get(`https://api.managifyhr.com/api/employee/${subadminId}/employee/all`);
       setEmployees(response.data);
       setLoading(false);
     } catch (error) {
@@ -141,22 +138,16 @@ const AppointmentLetter = () => {
   };
 
   const handlePrint = () => {
-    // Add print-specific styles
     const style = document.createElement('style');
     style.innerHTML = `
       @media print {
-        /* Hide everything except the letter content */
         body * {
           visibility: hidden;
         }
-        
-        /* Show the letter content and all its children */
         #letter-content, #letter-content * {
           visibility: visible !important;
           display: block !important;
         }
-        
-        /* Position the letter content */
         #letter-content {
           position: absolute;
           left: 0;
@@ -167,28 +158,20 @@ const AppointmentLetter = () => {
           padding: 20mm;
           box-sizing: border-box;
         }
-        
-        /* Ensure all text is visible and properly formatted */
         #letter-content p, #letter-content span, #letter-content div {
           color: black !important;
           font-size: 12pt !important;
           line-height: 1.5 !important;
         }
-        
-        /* Ensure images are visible */
         #letter-content img {
           visibility: visible !important;
           display: inline-block !important;
           max-width: 100% !important;
           height: auto !important;
         }
-        
-        /* Hide elements that shouldn't print */
         .no-print {
           display: none !important;
         }
-        
-        /* Set page size to A4 */
         @page {
           size: A4;
           margin: 0;
@@ -196,205 +179,78 @@ const AppointmentLetter = () => {
       }
     `;
     document.head.appendChild(style);
-
-    // Print the document
     window.print();
-
-    // Remove the print styles after printing
     document.head.removeChild(style);
   };
 
-  const handleDownloadPDF = () => {
-    const letterElement = letterRef.current;
-    
-    if (!letterElement) return;
-    
-    toast.info('Preparing PDF download...');
-    
-    const options = {
-      scale: 2,
-      useCORS: true,
-      allowTaint: true,
-      scrollX: 0,
-      scrollY: 0,
-    };
-    
-    html2canvas(letterElement, options).then(canvas => {
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const width = pdf.internal.pageSize.getWidth();
-      const height = (canvas.height * width) / canvas.width;
-      
-      pdf.addImage(imgData, 'PNG', 0, 0, width, height);
-      pdf.save('appointment_letter.pdf');
-      toast.success('PDF downloaded successfully!');
-    }).catch(error => {
-      console.error('Error generating PDF:', error);
-      toast.error('Failed to download PDF');
-    });
-  };
-
-  const handleSendEmail = async () => {
+  const handleDownloadPDF = async () => {
     if (!letterRef.current) return;
     
-    // Check if we have a valid employee selected
-    if (!selectedEmployee) {
-      toast.error('Please select an employee first');
-      return;
-    }
-    
-    if (!subadmin) {
-      toast.error('Company information not loaded');
-      return;
-    }
-    
-    toast.info(`Preparing to send email to ${selectedEmployee.email}...`);
+    setPdfGenerating(true);
+    toast.info('Preparing PDF download...');
     
     try {
-      // Store original styles to restore later
+      // Store original styles
       const letterContainer = letterRef.current;
       const originalStyle = letterContainer.style.cssText;
       
-      // Temporarily adjust the container to optimize for PDF generation - CRITICAL FOR EMAIL
+      // Temporarily adjust styles for PDF generation
       letterContainer.style.width = '210mm';
       letterContainer.style.height = 'auto';
-      letterContainer.style.fontSize = '9pt'; // Slightly smaller font for email to ensure fit on one page
-      letterContainer.style.lineHeight = '1.2'; // Tighter line height for email
+      letterContainer.style.fontSize = '10pt';
+      letterContainer.style.lineHeight = '1.3';
+      letterContainer.style.padding = '20px';
       
-      // Optimize spacing for paragraphs to fit on one page
+      // Reduce margins and padding for mobile optimization
       const paragraphs = letterContainer.querySelectorAll('p');
       paragraphs.forEach(p => {
-        p.style.marginBottom = '0.5em';
-        p.style.marginTop = '0.5em';
+        p.style.marginBottom = '0.6em';
+        p.style.marginTop = '0.6em';
       });
-      
-      // Adjust the spacing of elements to ensure everything fits properly
-      const contentDivs = letterContainer.querySelectorAll('div');
-      contentDivs.forEach(div => {
-        if (div.classList.contains('mt-16') || div.classList.contains('mt-12') || div.classList.contains('mt-10') || div.classList.contains('mt-6')) {
-          div.style.marginTop = '0.75rem';
-        }
-        if (div.classList.contains('mt-8')) {
-          div.style.marginTop = '0.5rem';
-        }
-        // Reduce height of spacer divs
-        if (div.classList.contains('h-28')) {
-          div.style.height = '1rem';
-        }
-      });
-      
-      // First check and fix any image with missing dimensions
-      const images = letterRef.current.querySelectorAll('img');
-      console.log(`Found ${images.length} images in the letter for email`);
-      
-      // Create array of promises to ensure all images are loaded properly
+
+      // Handle images
+      const images = letterContainer.querySelectorAll('img');
       const imagePromises = Array.from(images).map(img => {
         return new Promise((resolve) => {
-          // Skip if image is already loaded with valid dimensions
           if (img.complete && img.naturalWidth > 0) {
             img.crossOrigin = 'Anonymous';
-            console.log(`Image already loaded: ${img.src}`);
             return resolve();
           }
           
-          // Set crossOrigin before setting src
           img.crossOrigin = 'Anonymous';
-          
-          // Add event listeners for load and error
-          img.onload = () => {
-            console.log(`Image loaded: ${img.src}, dimensions: ${img.naturalWidth}x${img.naturalHeight}`);
-            resolve();
-          };
-          
-          img.onerror = (err) => {
-            console.error(`Error loading image: ${img.src}`, err);
-            // Try to set a placeholder instead of failing
+          img.onload = () => resolve();
+          img.onerror = () => {
             img.src = 'https://via.placeholder.com/150x50?text=Image+Error';
-            // Still resolve to not block the PDF generation
             resolve();
           };
           
-          // If image src is relative path to profile image, convert to absolute URL
           if (img.src.includes('/images/profile/') && !img.src.startsWith('http')) {
-            const newSrc = `https://aimdreamplanner.com${img.src.startsWith('/') ? '' : '/'}${img.src}`;
-            console.log(`Converting relative URL to absolute: ${img.src} -> ${newSrc}`);
-            img.src = newSrc;
-          } else {
-            // Force reload by setting the same src
-            const currentSrc = img.src;
-            img.src = currentSrc;
+            img.src = `https://api.managifyhr.com${img.src.startsWith('/') ? '' : '/'}${img.src}`;
           }
         });
       });
       
-      // Wait for all images to be properly loaded
       await Promise.all(imagePromises);
-      console.log('All images loaded successfully for email');
-      
-      // Wait additional time to ensure everything is rendered
       await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Set proper constraints on images - optimized for email
-      letterRef.current.querySelectorAll('img').forEach(img => {
-        if (img.classList.contains('h-20') || img.classList.contains('h-24')) {
-          img.style.maxHeight = '70px';
-          img.style.height = 'auto';
-          img.style.width = 'auto';
-          img.style.maxWidth = '180px';
-          img.style.objectFit = 'contain';
-        } else if (img.classList.contains('h-16') || img.classList.contains('h-12')) {
-          img.style.maxHeight = '50px';
-          img.style.height = 'auto';
-          img.style.width = 'auto';
-          img.style.maxWidth = '150px';
-          img.style.objectFit = 'contain';
-        } else if (img.src.includes('stampImg')) {
-          img.style.maxHeight = '90px';
-          img.style.maxWidth = '90px';
-          img.style.height = 'auto';
-          img.style.width = 'auto';
-          img.style.objectFit = 'contain';
-        }
-      });
-      
-      // Generate PDF with html2canvas - optimized settings for email
+
+      // Generate PDF with html2canvas
       const canvas = await html2canvas(letterRef.current, {
-        scale: 1.3, // Lower scale for better text/image ratio and to fit on one page
+        scale: 2,
         useCORS: true,
         allowTaint: true,
         logging: false,
-        imageTimeout: 15000,
         letterRendering: true,
-        foreignObjectRendering: false,
         onclone: (clonedDoc) => {
-          // Process all images in the cloned document to ensure proper sizing
-          const clonedImages = clonedDoc.querySelectorAll('img');
-          clonedImages.forEach(img => {
-            img.crossOrigin = 'Anonymous';
-            
-            // Make sure the cloned document has the same image size constraints
-            if (img.classList.contains('h-20') || img.classList.contains('h-24')) {
-              img.style.maxHeight = '70px';
-              img.style.height = 'auto';
-              img.style.width = 'auto';
-              img.style.maxWidth = '180px';
-            } else if (img.classList.contains('h-16') || img.classList.contains('h-12')) {
-              img.style.maxHeight = '50px';
-              img.style.height = 'auto';
-              img.style.width = 'auto';
-              img.style.maxWidth = '150px';
-            } else if (img.src.includes('stampImg')) {
-              img.style.maxHeight = '90px';
-              img.style.maxWidth = '90px';
-              img.style.height = 'auto';
-              img.style.width = 'auto';
-            }
-          });
+          const clonedElement = clonedDoc.getElementById('letter-content');
+          if (clonedElement) {
+            clonedElement.style.width = '210mm';
+            clonedElement.style.height = 'auto';
+            clonedElement.style.overflow = 'visible';
+          }
         }
       });
       
-      // Create PDF from canvas
-      const imgData = canvas.toDataURL('image/png');
+      // Create PDF
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
@@ -409,18 +265,120 @@ const AppointmentLetter = () => {
       const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
       
       const imgX = (pdfWidth - imgWidth * ratio) / 2;
-      pdf.addImage(imgData, 'PNG', imgX, 0, imgWidth * ratio, imgHeight * ratio);
+      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', imgX, 0, imgWidth * ratio, imgHeight * ratio);
       
-      // Convert PDF to blob for upload
+      // Restore original styles
+      letterContainer.style.cssText = originalStyle;
+      
+      // Save PDF with appropriate filename
+      const fileName = selectedEmployee 
+        ? `Appointment_Letter_${selectedEmployee.firstName}_${selectedEmployee.lastName}.pdf`
+        : `Appointment_Letter_${formData.employeeName.replace(/\s+/g, '_') || 'Employee'}.pdf`;
+      
+      pdf.save(fileName);
+      toast.success('PDF downloaded successfully!');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Failed to download PDF');
+    } finally {
+      setPdfGenerating(false);
+    }
+  };
+
+  const handleSendEmail = async () => {
+    if (!letterRef.current) return;
+    
+    if (!selectedEmployee) {
+      toast.error('Please select an employee first');
+      return;
+    }
+    
+    if (!subadmin) {
+      toast.error('Company information not loaded');
+      return;
+    }
+    
+    setSendingEmail(true);
+    toast.info(`Preparing to send email to ${selectedEmployee.email}...`);
+    
+    try {
+      // Store original styles
+      const letterContainer = letterRef.current;
+      const originalStyle = letterContainer.style.cssText;
+      
+      // Temporarily adjust styles for PDF generation
+      letterContainer.style.width = '210mm';
+      letterContainer.style.height = 'auto';
+      letterContainer.style.fontSize = '9pt';
+      letterContainer.style.lineHeight = '1.2';
+      
+      // Optimize spacing for mobile
+      const paragraphs = letterContainer.querySelectorAll('p');
+      paragraphs.forEach(p => {
+        p.style.marginBottom = '0.5em';
+        p.style.marginTop = '0.5em';
+      });
+
+      // Handle images
+      const images = letterContainer.querySelectorAll('img');
+      const imagePromises = Array.from(images).map(img => {
+        return new Promise((resolve) => {
+          if (img.complete && img.naturalWidth > 0) {
+            img.crossOrigin = 'Anonymous';
+            return resolve();
+          }
+          
+          img.crossOrigin = 'Anonymous';
+          img.onload = () => resolve();
+          img.onerror = () => {
+            img.src = 'https://via.placeholder.com/150x50?text=Image+Error';
+            resolve();
+          };
+          
+          if (img.src.includes('/images/profile/') && !img.src.startsWith('http')) {
+            img.src = `https://api.managifyhr.com${img.src.startsWith('/') ? '' : '/'}${img.src}`;
+          }
+        });
+      });
+      
+      await Promise.all(imagePromises);
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Generate PDF with html2canvas
+      const canvas = await html2canvas(letterRef.current, {
+        scale: 1.5,
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
+        letterRendering: true
+      });
+      
+      // Create PDF
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+        compress: true
+      });
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+      
+      const imgX = (pdfWidth - imgWidth * ratio) / 2;
+      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', imgX, 0, imgWidth * ratio, imgHeight * ratio);
+      
+      // Convert PDF to blob
       const pdfBlob = pdf.output('blob');
       
-      // Create FormData for API request
+      // Send to API
       const formData = new FormData();
       formData.append('file', new File([pdfBlob], `${selectedEmployee.firstName}_${selectedEmployee.lastName}_Appointment.pdf`, { type: 'application/pdf' }));
       
-      // Send to API
       const response = await axios.post(
-        `https://api.aimdreamplanner.com/api/certificate/send/${subadmin.id}/${encodeURIComponent(selectedEmployee.firstName + ' ' + selectedEmployee.lastName)}/appointment`,
+        `https://api.managifyhr.com/api/certificate/send/${subadmin.id}/${encodeURIComponent(selectedEmployee.firstName + ' ' + selectedEmployee.lastName)}/appointment`,
         formData,
         {
           headers: {
@@ -430,38 +388,20 @@ const AppointmentLetter = () => {
       );
       
       // Restore original styles
-      letterRef.current.style.cssText = originalStyle;
-      
-      // Reset styles on paragraphs
-      paragraphs.forEach(p => {
-        p.style.marginBottom = '';
-        p.style.marginTop = '';
-      });
-      
-      // Reset styles on divs
-      contentDivs.forEach(div => {
-        if (div.classList.contains('mt-16') || div.classList.contains('mt-12') || div.classList.contains('mt-10') || div.classList.contains('mt-6')) {
-          div.style.marginTop = '';
-        }
-        if (div.classList.contains('mt-8')) {
-          div.style.marginTop = '';
-        }
-        if (div.classList.contains('h-28')) {
-          div.style.height = '';
-        }
-      });
+      letterContainer.style.cssText = originalStyle;
       
       console.log('Email API Response:', response.data);
       toast.success(`Appointment letter sent to ${selectedEmployee.email} successfully!`);
     } catch (error) {
       console.error('Error sending email:', error);
       toast.error(`Failed to send email: ${error.message || 'Unknown error'}`);
+    } finally {
+      setSendingEmail(false);
     }
   };
 
   const handleBackClick = () => {
     navigate('/dashboard/certificates');
-    console.log("Navigating back to certificates page");
   };
 
   if (loading) {
@@ -480,368 +420,327 @@ const AppointmentLetter = () => {
       className={`p-4 ${isDarkMode ? 'bg-slate-800 text-white' : 'bg-gray-100 text-gray-800'}`}
     >
       <div className="container mx-auto">
-        <div className="flex justify-between items-center mb-6">
+        {/* Responsive header section */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3">
           <button 
             onClick={handleBackClick}
-            className="flex items-center text-blue-500 hover:text-blue-700 transition duration-300"
+            className="flex items-center text-blue-500 hover:text-blue-700 transition duration-300 text-sm sm:text-base"
           >
             <FaArrowLeft className="mr-2" /> Back to Certificates
           </button>
           
-          <div className="flex space-x-3">
-            {/* <button 
+          <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto justify-end">
+            <button 
               onClick={handlePrint}
-              className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition duration-300 flex items-center"
+              className="px-3 py-1.5 sm:px-4 sm:py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition duration-300 flex items-center text-xs sm:text-sm"
             >
-              <FaPrint className="mr-2" /> Print
-            </button> */}
+              <FaPrint className="mr-1 sm:mr-2" /> Print
+            </button>
             <button 
               onClick={handleDownloadPDF}
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition duration-300 flex items-center"
+              disabled={pdfGenerating}
+              className="px-3 py-1.5 sm:px-4 sm:py-2 bg-green-600 text-white rounded hover:bg-green-700 transition duration-300 flex items-center text-xs sm:text-sm"
             >
-              <FaDownload className="mr-2" /> Download
+              <FaDownload className="mr-1 sm:mr-2" /> {pdfGenerating ? 'Generating...' : 'Download'}
             </button>
             <button 
               onClick={handleSendEmail}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition duration-300 flex items-center"
+              disabled={sendingEmail || !selectedEmployee}
+              className="px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition duration-300 flex items-center text-xs sm:text-sm"
             >
-              <FaEnvelope className="mr-2" /> Email
+              <FaEnvelope className="mr-1 sm:mr-2" /> {sendingEmail ? 'Sending...' : 'Email'}
             </button>
           </div>
         </div>
 
         {apiError && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 mb-6 rounded">
+          <div className={`p-3 rounded mb-4 sm:mb-6 ${isDarkMode ? 'bg-red-900/50 text-red-200' : 'bg-red-100 text-red-700'}`}>
             <p>Failed to connect to the API. Some features might be limited.</p>
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Form Section */}
-          <div className="lg:col-span-1">
-            <div className={`p-6 rounded-lg shadow-lg ${isDarkMode ? 'bg-slate-700' : 'bg-white'}`}>
-              <h2 className="text-xl font-bold mb-4 text-center">Appointment Letter Details</h2>
+        {/* Main content with responsive layout */}
+        <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
+          {/* Form section - full width on mobile, 1/3 on desktop */}
+          <div className="w-full lg:w-1/3">
+            <div className={`p-4 sm:p-6 rounded-lg shadow ${isDarkMode ? 'bg-slate-700' : 'bg-white'}`}>
+              <h2 className="text-lg sm:text-xl font-bold mb-4 text-center">Appointment Details</h2>
               
               {subadmin && (
                 <div className="mb-4">
-                  <h3 className="text-md font-medium mb-2">Company Information</h3>
-                  <div className="p-3 rounded border bg-opacity-50 bg-blue-50 border-blue-200">
-                    <p className="font-semibold">{subadmin.registercompanyname}</p>
-                    <p className="text-sm">{subadmin.address}</p>
-                    <p className="text-sm">GST: {subadmin.gstno}</p>
+                  <h3 className={`text-sm sm:text-base font-medium mb-2 flex items-center ${isDarkMode ? 'text-blue-300' : 'text-blue-700'}`}>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm3 1h6v4H7V5zm8 8v2H5v-2h10zM5 8h10v2H5V8z" clipRule="evenodd" />
+                    </svg>
+                    Company Information
+                  </h3>
+                  <div className={`p-3 rounded border ${isDarkMode ? 'bg-slate-800/50 border-slate-600' : 'bg-blue-50/50 border-blue-200'}`}>
+                    <p className="font-semibold text-sm sm:text-base">{subadmin.registercompanyname}</p>
+                    <p className="text-xs sm:text-sm mt-1">{subadmin.address}</p>
+                    <p className="text-xs sm:text-sm mt-1">GST: {subadmin.gstno}</p>
                   </div>
                 </div>
               )}
-
-              <div className="mb-4" ref={autocompleteRef}>
-                <label className="block text-sm font-medium mb-1">Search Employee</label>
+              
+              <div className="mb-4 relative" ref={autocompleteRef}>
+                <label className={`block text-xs sm:text-sm font-medium mb-1 ${isDarkMode ? 'text-blue-300' : 'text-blue-700'} flex items-center`}>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                  </svg>
+                  Search Employee
+                </label>
                 <div className="relative">
-                  <div className="flex items-center border rounded">
-                    <input
-                      type="text"
-                      value={searchTerm}
-                      onChange={handleSearchChange}
-                      className={`w-full p-2 rounded ${isDarkMode ? 'bg-slate-600' : 'bg-white'}`}
-                      placeholder="Search by name, email, or role"
-                    />
-                    <FaSearch className="mr-2 text-gray-400" />
-                  </div>
-                  
-                  {showDropdown && filteredEmployees.length > 0 && (
-                    <div className={`absolute z-10 w-full mt-1 rounded-md shadow-lg ${isDarkMode ? 'bg-slate-700' : 'bg-white'} border`}>
-                      {filteredEmployees.map((emp) => (
-                        <div
-                          key={emp.id}
-                          className={`p-2 cursor-pointer ${isDarkMode ? 'hover:bg-slate-600' : 'hover:bg-gray-100'}`}
-                          onClick={() => handleSelectEmployee(emp)}
-                        >
-                          <div className="font-medium">{`${emp.firstName} ${emp.lastName}`}</div>
-                          <div className="text-sm text-gray-500">{emp.email}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  <input 
+                    type="text" 
+                    value={searchTerm}
+                    onChange={handleSearchChange}
+                    className={`w-full p-2 pl-8 text-xs sm:text-sm border rounded focus:ring-2 ${
+                      isDarkMode 
+                        ? 'bg-slate-600 border-slate-500 focus:border-blue-500 focus:ring-blue-500/30' 
+                        : 'bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500/30'
+                    }`}
+                    placeholder="Name, email or role"
+                  />
+                  <FaSearch className="absolute left-2.5 top-2.5 text-gray-400" />
                 </div>
+                
+                {showDropdown && filteredEmployees.length > 0 && (
+                  <div className={`absolute z-10 w-full mt-1 max-h-60 overflow-auto rounded-md shadow-lg ${isDarkMode ? 'bg-slate-800 border-slate-600' : 'bg-white border-gray-300'} border`}>
+                    {filteredEmployees.map(emp => (
+                      <div 
+                        key={emp.empId} 
+                        className={`p-2 cursor-pointer border-b last:border-b-0 ${isDarkMode ? 'border-slate-700 hover:bg-slate-700' : 'border-gray-100 hover:bg-blue-50'} transition-colors duration-200`}
+                        onClick={() => handleSelectEmployee(emp)}
+                      >
+                        <div className="font-medium text-xs sm:text-sm">{emp.firstName} {emp.lastName}</div>
+                        <div className="text-xs flex justify-between mt-1">
+                          <span>{emp.jobRole}</span>
+                          <span className={`px-1.5 py-0.5 rounded-full text-xxs sm:text-xs ${emp.status === 'Active' || emp.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                            {emp.status}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Employee Name</label>
-                  <input
-                    type="text"
-                    name="employeeName"
-                    value={formData.employeeName}
-                    onChange={handleInputChange}
-                    className={`w-full p-2 rounded border ${isDarkMode ? 'bg-slate-600' : 'bg-white'}`}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-1">Job Title</label>
-                  <input
-                    type="text"
-                    name="employeeJobTitle"
-                    value={formData.employeeJobTitle}
-                    onChange={handleInputChange}
-                    className={`w-full p-2 rounded border ${isDarkMode ? 'bg-slate-600' : 'bg-white'}`}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-1">Start Date</label>
-                  <input
-                    type="date"
-                    name="startDate"
-                    value={formData.startDate}
-                    onChange={handleInputChange}
-                    className={`w-full p-2 rounded border ${isDarkMode ? 'bg-slate-600' : 'bg-white'}`}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-1">Salary</label>
-                  <input
-                    type="text"
-                    name="salary"
-                    value={formData.salary}
-                    onChange={handleInputChange}
-                    className={`w-full p-2 rounded border ${isDarkMode ? 'bg-slate-600' : 'bg-white'}`}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-1">Department</label>
-                  <input
-                    type="text"
-                    name="department"
-                    value={formData.department}
-                    onChange={handleInputChange}
-                    className={`w-full p-2 rounded border ${isDarkMode ? 'bg-slate-600' : 'bg-white'}`}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-1">Reporting To</label>
-                  <input
-                    type="text"
-                    name="reportingTo"
-                    value={formData.reportingTo}
-                    onChange={handleInputChange}
-                    className={`w-full p-2 rounded border ${isDarkMode ? 'bg-slate-600' : 'bg-white'}`}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-1">Working Hours</label>
-                  <input
-                    type="text"
-                    name="workingHours"
-                    value={formData.workingHours}
-                    onChange={handleInputChange}
-                    className={`w-full p-2 rounded border ${isDarkMode ? 'bg-slate-600' : 'bg-white'}`}
-                    placeholder="e.g., 9:00 AM - 6:00 PM"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-1">Probation Period</label>
-                  <input
-                    type="text"
-                    name="probationPeriod"
-                    value={formData.probationPeriod}
-                    onChange={handleInputChange}
-                    className={`w-full p-2 rounded border ${isDarkMode ? 'bg-slate-600' : 'bg-white'}`}
-                    placeholder="e.g., 3 months"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-1">Signatory Name</label>
-                  <input
-                    type="text"
-                    name="signatoryName"
-                    value={formData.signatoryName}
-                    onChange={handleInputChange}
-                    className={`w-full p-2 rounded border ${isDarkMode ? 'bg-slate-600' : 'bg-white'}`}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-1">Signatory Title</label>
-                  <input
-                    type="text"
-                    name="signatoryTitle"
-                    value={formData.signatoryTitle}
-                    onChange={handleInputChange}
-                    className={`w-full p-2 rounded border ${isDarkMode ? 'bg-slate-600' : 'bg-white'}`}
-                  />
-                </div>
+              <div className="space-y-3 sm:space-y-4">
+                {Object.entries({
+                  employeeName: 'Employee Name',
+                  employeeJobTitle: 'Job Title',
+                  startDate: 'Start Date',
+                  salary: 'Salary',
+                  department: 'Department',
+                  reportingTo: 'Reporting To',
+                  workingHours: 'Working Hours',
+                  probationPeriod: 'Probation Period',
+                  signatoryName: 'Signatory Name',
+                  signatoryTitle: 'Signatory Title'
+                }).map(([field, label]) => (
+                  <div key={field}>
+                    <label className={`block text-xs sm:text-sm font-medium mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>{label}</label>
+                    {field === 'startDate' ? (
+                      <input
+                        type="date"
+                        name={field}
+                        value={formData[field]}
+                        onChange={handleInputChange}
+                        className={`w-full p-2 text-xs sm:text-sm border rounded focus:ring-2 ${
+                          isDarkMode 
+                            ? 'bg-slate-600 border-slate-500 focus:border-blue-500 focus:ring-blue-500/30' 
+                            : 'bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500/30'
+                        }`}
+                      />
+                    ) : (
+                      <input
+                        type="text"
+                        name={field}
+                        value={formData[field]}
+                        onChange={handleInputChange}
+                        className={`w-full p-2 text-xs sm:text-sm border rounded focus:ring-2 ${
+                          isDarkMode 
+                            ? 'bg-slate-600 border-slate-500 focus:border-blue-500 focus:ring-blue-500/30' 
+                            : 'bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500/30'
+                        }`}
+                        placeholder={
+                          field === 'workingHours' ? "e.g., 9:00 AM - 6:00 PM" : 
+                          field === 'probationPeriod' ? "e.g., 3 months" : 
+                          field === 'salary' ? "e.g., ₹50,000 per month" : ""
+                        }
+                      />
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           </div>
 
-          {/* Letter Preview Section */}
-          <div className="lg:col-span-2">
-            <div ref={letterRef} id="letter-content" className="bg-white text-black p-8 rounded-lg shadow-xl min-h-[29.7cm] max-w-[21cm] mx-auto relative border border-gray-200">
-              {/* Decorative corner elements */}
-              <div className="absolute top-0 left-0 w-16 h-16 border-t-2 border-l-2 border-gray-300 rounded-tl-lg"></div>
-              <div className="absolute top-0 right-0 w-16 h-16 border-t-2 border-r-2 border-gray-300 rounded-tr-lg"></div>
-              <div className="absolute bottom-0 left-0 w-16 h-16 border-b-2 border-l-2 border-gray-300 rounded-bl-lg"></div>
-              <div className="absolute bottom-0 right-0 w-16 h-16 border-b-2 border-r-2 border-gray-300 rounded-br-lg"></div>
-              
-              {/* Subtle watermark */}
-              {subadmin && (
-                <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none">
-                  <h1 className="text-9xl font-bold text-center transform rotate-12 text-gray-500">{subadmin.registercompanyname}</h1>
-                </div>
-              )}
-              
-              {/* Company Letterhead - Updated with elegant design */}
-              <div className="mb-10">
-                <div className="flex justify-between items-start mb-4">
-                  {/* Company Logo */}
-                  <div className="flex-shrink-0 mr-4">
-                    {subadmin && subadmin.companylogo ? (
-                      <img 
-                        src={`https://api.aimdreamplanner.com/images/profile/${subadmin.companylogo}`} 
-                        alt="Company Logo" 
-                        className="h-20 object-contain" 
-                        onError={(e) => {
-                          console.error('Error loading logo:', e);
-                          e.target.src = 'https://via.placeholder.com/150x50?text=Company+Logo';
-                        }}
-                      />
-                    ) : null}
+          {/* Letter preview section - full width on mobile, 2/3 on desktop */}
+          <div className="w-full lg:w-2/3">
+            <div className="overflow-x-auto pb-4">
+              <div 
+                ref={letterRef} 
+                id="letter-content"
+                className={`bg-white text-black p-4 sm:p-6 md:p-8 rounded-lg shadow-xl min-h-[29.7cm] w-full max-w-[21cm] mx-auto relative border ${isDarkMode ? 'border-slate-600' : 'border-gray-200'}`}
+              >
+                {/* Decorative elements */}
+                <div className="absolute top-0 left-0 w-12 h-12 border-t-2 border-l-2 border-gray-300 rounded-tl-lg"></div>
+                <div className="absolute top-0 right-0 w-12 h-12 border-t-2 border-r-2 border-gray-300 rounded-tr-lg"></div>
+                <div className="absolute bottom-0 left-0 w-12 h-12 border-b-2 border-l-2 border-gray-300 rounded-bl-lg"></div>
+                <div className="absolute bottom-0 right-0 w-12 h-12 border-b-2 border-r-2 border-gray-300 rounded-br-lg"></div>
+                
+                {/* Company Letterhead */}
+                <div className="mb-6 sm:mb-8">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2 sm:gap-0">
+                    {/* Company Logo */}
+                    <div className="flex-shrink-0">
+                      {subadmin && subadmin.companylogo ? (
+                        <img 
+                          src={`https://api.managifyhr.com/images/profile/${subadmin.companylogo}`} 
+                          alt="Company Logo" 
+                          className="h-12 sm:h-16 md:h-20 object-contain" 
+                          onError={(e) => {
+                            e.target.src = 'https://via.placeholder.com/150x50?text=Company+Logo';
+                          }}
+                        />
+                      ) : (
+                        <div className="h-12 sm:h-16 md:h-20 flex items-center">
+                          <p className="text-gray-500 border border-gray-200 rounded px-2 py-1 text-xs sm:text-sm">[Company Logo]</p>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Company Details */}
+                    <div className="flex flex-col items-end text-right">
+                      <h2 className="font-bold text-lg sm:text-xl md:text-2xl text-blue-800">
+                        {subadmin?.registercompanyname || "Company Name"}
+                      </h2>
+                      <p className="text-xs sm:text-sm text-gray-600">
+                        {subadmin?.address || "Company Address"}
+                      </p>
+                      <p className="text-xs sm:text-sm text-gray-600">
+                        GST: {subadmin?.gstno || "GST Number"}
+                      </p>
+                    </div>
                   </div>
                   
-                  {/* Company Details aligned to the right */}
-                  <div className="flex flex-col items-end text-right">
-                    <h2 className="font-bold text-xl text-blue-800">{subadmin?.registercompanyname || "Your Company Name"}</h2>
-                    <p className="text-sm text-gray-600">{subadmin?.address || "Company Address"}</p>
-                    <p className="text-sm text-gray-600">GST: {subadmin?.gstno || "GSTIN"}</p>
+                  <hr className="border-t-2 border-gray-300 my-3 sm:my-4" />
+                </div>
+
+                {/* Date */}
+                <div className="mb-6 sm:mb-8">
+                  <p className="text-gray-700 font-semibold text-sm sm:text-base">
+                    {new Date().toLocaleDateString('en-US', { 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })}
+                  </p>
+                </div>
+
+                {/* Subject Line */}
+                <div className="mb-6 sm:mb-8 text-center">
+                  <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-blue-800 mb-2">
+                    APPOINTMENT LETTER
+                  </h1>
+                  <div className="border-b-2 border-yellow-500 w-1/3 mx-auto"></div>
+                </div>
+
+                {/* Letter Content */}
+                <div className="mb-4 sm:mb-6">
+                  <p className="mb-3 sm:mb-4 text-sm sm:text-base">
+                    Dear <span className="font-semibold">{formData.employeeName || "[Employee Name]"}</span>,
+                  </p>
+                  
+                  <p className="mb-3 sm:mb-4 text-sm sm:text-base">
+                    We are pleased to offer you the position of <span className="font-semibold">{formData.employeeJobTitle || "[Job Title]"}</span> at <span className="font-semibold">{subadmin?.registercompanyname || "[Company Name]"}</span>. This letter confirms your appointment and outlines the terms and conditions of your employment.
+                  </p>
+
+                  <div className="space-y-2 sm:space-y-3 mb-4 sm:mb-6 text-sm sm:text-base">
+                    <p><strong>Position:</strong> {formData.employeeJobTitle || "[Job Title]"}</p>
+                    <p><strong>Department:</strong> {formData.department || "[Department]"}</p>
+                    <p><strong>Start Date:</strong> {formatDate(formData.startDate) || "[Start Date]"}</p>
+                    <p><strong>Reporting To:</strong> {formData.reportingTo || "[Manager Name]"}</p>
+                    <p><strong>Working Hours:</strong> {formData.workingHours || "[Working Hours]"}</p>
+                    <p><strong>Salary:</strong> {formData.salary || "[Salary]"}</p>
+                    <p><strong>Probation Period:</strong> {formData.probationPeriod || "[Probation Period]"}</p>
                   </div>
-                </div>
-                
-                <hr className="border-t-2 border-gray-300 my-3" />
-              </div>
 
-              {/* Date with elegant styling */}
-              <div className="mb-10">
-                <p className="text-gray-700 font-semibold">{new Date().toLocaleDateString('en-US', { 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
-                })}</p>
-              </div>
+                  <p className="mb-3 sm:mb-4 text-sm sm:text-base">
+                    Your employment with us will be governed by our company policies, procedures, and regulations, which may be amended from time to time. Please note that this offer is contingent upon the successful completion of your probation period.
+                  </p>
 
-              {/* Subject Line with enhanced design */}
-              <div className="mb-10 text-center">
-                <h1 className="text-2xl font-bold text-blue-800 mb-2">APPOINTMENT LETTER</h1>
-                <div className="border-b-2 border-yellow-500 w-1/3 mx-auto"></div>
-              </div>
+                  <p className="mb-3 sm:mb-4 text-sm sm:text-base">
+                    We look forward to welcoming you to our team and wish you a successful career with us.
+                  </p>
 
-              <div className="mb-6">
-                <p className="mb-4">Dear {formData.employeeName},</p>
-                
-                <p className="mb-4">
-                  We are pleased to offer you the position of {formData.employeeJobTitle} at {subadmin?.registercompanyname}.
-                  This letter confirms your appointment and outlines the terms and conditions of your employment.
-                </p>
+                  <p className="mb-3 sm:mb-4 text-sm sm:text-base">
+                    Sincerely,
+                  </p>
 
-                <div className="space-y-4">
-                  <p><strong>Position:</strong> {formData.employeeJobTitle}</p>
-                  <p><strong>Department:</strong> {formData.department}</p>
-                  <p><strong>Start Date:</strong> {formatDate(formData.startDate)}</p>
-                  <p><strong>Reporting To:</strong> {formData.reportingTo}</p>
-                  <p><strong>Working Hours:</strong> {formData.workingHours}</p>
-                  <p><strong>Salary:</strong> {formData.salary}</p>
-                  <p><strong>Probation Period:</strong> {formData.probationPeriod}</p>
-                </div>
-
-                <p className="mt-6">
-                  Your employment with us will be governed by our company policies, procedures, and regulations, 
-                  which may be amended from time to time. Please note that this offer is contingent upon the 
-                  successful completion of your probation period.
-                </p>
-
-                <p className="mt-4">
-                  We look forward to welcoming you to our team and wish you a successful career with us.
-                </p>
-
-                <div className="mt-8">
-                  <p>Your Sincerely,</p>
-                  <div className="mt-8">
+                  {/* Signature Section */}
+                  <div className="mt-8 sm:mt-48">
                     {subadmin && subadmin.signature ? (
-                      <div className="border-b border-gray-300 pb-1 w-48">
+                      <div className="border-b border-gray-300 pb-1 w-32 sm:w-40">
                         <img 
-                          src={`https://api.aimdreamplanner.com/images/profile/${subadmin.signature}`} 
+                          src={`https://api.managifyhr.com/images/profile/${subadmin.signature}`} 
                           alt="Signature" 
-                          className="h-16 mb-2 object-contain" 
+                          className="h-12 sm:h-16 object-contain" 
                           onError={(e) => {
-                            console.error('Error loading signature:', e);
                             e.target.src = 'https://via.placeholder.com/150x50?text=Signature';
                           }}
                         />
                       </div>
                     ) : (
-                      <div className="h-12 w-32 bg-gray-200 flex items-center justify-center mb-1">
-                        <span className="text-gray-500">Signature</span>
-                      </div>
+                      <div className="border-b border-gray-300 pb-1 w-32 sm:w-40 h-12 sm:h-16"></div>
                     )}
-                    <p className="font-bold text-blue-800 mt-2">{formData.signatoryName}</p>
-                    <p className="text-gray-700">{formData.signatoryTitle}</p>
-                    <p className="text-gray-700">{subadmin?.registercompanyname}</p>
+                    <p className="font-bold text-blue-800 mt-1 text-sm sm:text-base">
+                      {formData.signatoryName || (subadmin ? `${subadmin.name || ''} ${subadmin.lastname || ''}` : "[Signatory Name]")}
+                    </p>
+                    <p className="text-gray-700 text-xs sm:text-sm">
+                      {formData.signatoryTitle || (subadmin?.designation || "[Signatory Title]")}
+                    </p>
+                    <p className="text-gray-700 text-xs sm:text-sm">
+                      {subadmin?.registercompanyname || "[Company Name]"}
+                    </p>
                   </div>
                 </div>
-              </div>
 
-              {/* Stamp if available - with text label above it */}
-              {subadmin && subadmin.stampImg && (
-                <div className="absolute bottom-24 right-8 flex flex-col items-center">
-                  {/* Text label above stamp */}
-                  <div className="text-center mb-1">
-                    {/* <span className="font-bold text-red-600 text-xs uppercase">Stamp</span> */}
-                  </div>
-                  
-                  <img 
-                    src={`https://api.aimdreamplanner.com/images/profile/${subadmin.stampImg}`} 
-                    alt="Company Stamp" 
-                    className="h-28 w-auto object-cover transform scale-100 shadow-sm" 
-                    style={{
-                      imageRendering: 'crisp-edges',
-                      opacity: 0.9
-                    }}
-                    onError={(e) => {
-                      console.error('Error loading stamp:', e);
-                      // Instead of hiding, show a text-based stamp as fallback
-                      e.target.style.display = 'none';
-                      e.target.parentNode.innerHTML = `
-                        <div class="border-2 border-red-500 rounded-full p-4 flex items-center justify-center h-28 w-28">
-                          <div class="text-center">
-                            <p class="font-bold text-red-600">COMPANY</p>
-                            <p class="font-bold text-red-600">STAMP</p>
+                {/* Stamp Section */}
+                {subadmin && subadmin.stampImg && (
+                  <div className="absolute bottom-8 sm:bottom-28 right-4 sm:right-8">
+                    <img 
+                      src={`https://api.managifyhr.com/images/profile/${subadmin.stampImg}`} 
+                      alt="Company Stamp" 
+                      className="h-16 sm:h-20 w-auto object-contain" 
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.parentNode.innerHTML = `
+                          <div class="border-2 border-red-500 rounded-full p-2 flex items-center justify-center h-16 sm:h-20 w-16 sm:w-20">
+                            <div class="text-center">
+                              <p class="font-bold text-red-600 text-xs sm:text-sm">COMPANY</p>
+                              <p class="font-bold text-red-600 text-xs sm:text-sm">STAMP</p>
+                            </div>
                           </div>
-                        </div>
-                      `;
-                    }}
-                  />
-                </div>
-              )}
-
-              {/* Text-based stamp alternative - Show this if you prefer text over image */}
-              {subadmin && !subadmin.stampImg && (
-                <div className="absolute bottom-24 right-8">
-                  <div className="text-center mb-1">
-                    <span className="font-bold text-red-600 text-xs uppercase">Stamp</span>
+                        `;
+                      }}
+                    />
                   </div>
-                  <div className="border-2 border-red-500 rounded-full p-4 flex items-center justify-center h-28 w-28 rotate-12">
-                    <div className="text-center">
-                      <p className="font-bold text-red-600 text-lg">{subadmin.registercompanyname}</p>
-                      <p className="font-bold text-red-600">VERIFIED</p>
+                )}
+
+                {/* Fallback stamp if no image */}
+                {subadmin && !subadmin.stampImg && (
+                  <div className="absolute bottom-8 sm:bottom-12 right-4 sm:right-8">
+                    <div className="border-2 border-red-500 rounded-full p-2 flex items-center justify-center h-16 sm:h-20 w-16 sm:w-20">
+                      <div className="text-center">
+                        <p className="font-bold text-red-600 text-xs sm:text-sm">COMPANY</p>
+                        <p className="font-bold text-red-600 text-xs sm:text-sm">STAMP</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>

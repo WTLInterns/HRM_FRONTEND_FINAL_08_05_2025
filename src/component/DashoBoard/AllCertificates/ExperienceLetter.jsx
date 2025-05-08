@@ -8,6 +8,8 @@ import { motion } from 'framer-motion';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
+import "./Experience.css";
+
 const ExperienceLetter = () => {
   const { isDarkMode } = useApp();
   const navigate = useNavigate();
@@ -19,7 +21,7 @@ const ExperienceLetter = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
-  const letterRef = useRef(null);
+  const letterRef = useRef(null); // Used for PDF and scrollable preview
   const autocompleteRef = useRef(null);
   
   // Additional states for PDF and email functionality
@@ -61,7 +63,7 @@ const ExperienceLetter = () => {
         const email = user.email || "arbaj.shaikh2034@gmail.com";
         
         console.log("Fetching subadmin data for email:", email);
-        const response = await axios.get(`https://api.aimdreamplanner.com/api/subadmin/subadmin-by-email/${email}`);
+        const response = await axios.get(`https://api.managifyhr.com/api/subadmin/subadmin-by-email/${email}`);
         console.log("Subadmin API Response:", response.data);
         setSubadmin(response.data);
         fetchEmployees(response.data.id);
@@ -80,7 +82,7 @@ const ExperienceLetter = () => {
   const fetchEmployees = async (subadminId) => {
     try {
       console.log(`Fetching employees for subadmin ID: ${subadminId}`);
-      const response = await axios.get(`https://api.aimdreamplanner.com/api/employee/${subadminId}/employee/all`);
+      const response = await axios.get(`https://api.managifyhr.com/api/employee/${subadminId}/employee/all`);
       console.log("Employees API Response:", response.data);
       setEmployees(response.data);
       setLoading(false);
@@ -152,17 +154,47 @@ const ExperienceLetter = () => {
   };
 
   const handleDownloadPDF = async () => {
-    if (!letterRef.current) return;
-    
-    setPdfGenerating(true);
-    
-    // Store original styles to restore later
-    const letterContainer = letterRef.current;
-    const originalStyle = letterContainer.style.cssText;
-    
-    // Temporarily adjust the container to optimize for PDF generation
-    letterContainer.style.width = '210mm';
-    letterContainer.style.height = 'auto';
+    if (!selectedEmployee) {
+      toast.error("Please select an employee first");
+      return;
+    }
+
+    try {
+      setPdfGenerating(true);
+      const element = letterRef.current;
+      if (!element) {
+        throw new Error("Letter content not found");
+      }
+
+      const fileName = `${formData.employeeName}_Experience_Letter.pdf`;
+      toast.info('Preparing PDF download...');
+      
+      const options = { scale: 2, useCORS: true, allowTaint: true, scrollX: 0, scrollY: 0 };
+      const canvas = await html2canvas(element, options);
+      const imgData = canvas.toDataURL('image/png');
+      
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const width = pdf.internal.pageSize.getWidth();
+      const height = pdf.internal.pageSize.getHeight();
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, width, height);
+      pdf.save(fileName);
+      
+      toast.success("PDF successfully downloaded!");
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      toast.error("Failed to download PDF: " + error.message);
+    } finally {
+      setPdfGenerating(false);
+    }
+  };
+
+  const handleDownloadPDFWithImages = async () => {
+    if (!selectedEmployee) {
+      toast.error("Please select an employee first");
+      return;
+    }
+
     letterContainer.style.fontSize = '10pt';
     letterContainer.style.lineHeight = '1.3';
     
@@ -648,7 +680,7 @@ const ExperienceLetter = () => {
       
       // Send the document using the backend API
       const response = await axios.post(
-        `https://api.aimdreamplanner.com/api/certificate/send/${subadmin.id}/${encodeURIComponent(employeeFullName)}/experience`,
+        `https://api.managifyhr.com/api/certificate/send/${subadmin.id}/${encodeURIComponent(employeeFullName)}/experience`,
         formData,
         {
           headers: {
@@ -889,8 +921,8 @@ const ExperienceLetter = () => {
           </div>
 
           {/* Letter Preview Section - Enhanced with beautiful design */}
-          <div className="lg:col-span-2">
-            <div ref={letterRef} className="bg-white text-black p-8 rounded-lg shadow-xl min-h-[29.7cm] max-w-[21cm] mx-auto relative border border-gray-200">
+          <div className="lg:col-span-2 overflow-x-auto">
+            <div ref={letterRef} className="bg-white text-black p-8 rounded-lg shadow-xl min-h-[29.7cm] w-[21cm] mx-auto relative border border-gray-200">
               {/* Decorative corner elements */}
               <div className="absolute top-0 left-0 w-16 h-16 border-t-2 border-l-2 border-blue-600 rounded-tl-lg"></div>
               <div className="absolute top-0 right-0 w-16 h-16 border-t-2 border-r-2 border-blue-600 rounded-tr-lg"></div>
@@ -911,7 +943,7 @@ const ExperienceLetter = () => {
                   <div className="flex-shrink-0 mr-4">
                     {subadmin && subadmin.companylogo ? (
                       <img 
-                        src={`https://api.aimdreamplanner.com/images/profile/${subadmin.companylogo}`} 
+                        src={`https://api.managifyhr.com/images/profile/${subadmin.companylogo}`} 
                         alt="Company Logo" 
                         className="h-20 object-contain" 
                         onError={(e) => {
@@ -989,7 +1021,7 @@ const ExperienceLetter = () => {
                     {subadmin && subadmin.signature ? (
                       <div className="border-b border-gray-300 pb-1 w-48">
                         <img 
-                          src={`https://api.aimdreamplanner.com/images/profile/${subadmin.signature}`} 
+                          src={`https://api.managifyhr.com/images/profile/${subadmin.signature}`} 
                           alt="Signature" 
                           className="h-16 mb-2 object-contain" 
                           onError={(e) => {
@@ -1017,7 +1049,7 @@ const ExperienceLetter = () => {
                       </div>
                       
                       <img 
-                        src={`https://api.aimdreamplanner.com/images/profile/${subadmin.stampImg}`} 
+                        src={`https://api.managifyhr.com/images/profile/${subadmin.stampImg}`} 
                         alt="Company Stamp" 
                         className="h-28 w-auto object-cover transform scale-100 shadow-sm" 
                         style={{
@@ -1065,4 +1097,4 @@ const ExperienceLetter = () => {
   );
 };
 
-export default ExperienceLetter; 
+export default ExperienceLetter;

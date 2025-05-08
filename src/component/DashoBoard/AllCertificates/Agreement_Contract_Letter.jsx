@@ -55,7 +55,7 @@ const Agreement_Contract_Letter = () => {
         const email = user.email || "arbaj.shaikh2034@gmail.com";
         
         console.log("Fetching subadmin data for email:", email);
-        const response = await axios.get(`https://api.aimdreamplanner.com/api/subadmin/subadmin-by-email/${email}`);
+        const response = await axios.get(`https://api.managifyhr.com/api/subadmin/subadmin-by-email/${email}`);
         console.log("Subadmin API Response:", response.data);
         setSubadmin(response.data);
         fetchEmployees(response.data.id);
@@ -74,7 +74,7 @@ const Agreement_Contract_Letter = () => {
   const fetchEmployees = async (subadminId) => {
     try {
       console.log(`Fetching employees for subadmin ID: ${subadminId}`);
-      const response = await axios.get(`https://api.aimdreamplanner.com/api/employee/${subadminId}/employee/all`);
+      const response = await axios.get(`https://api.managifyhr.com/api/employee/${subadminId}/employee/all`);
       console.log("Employees API Response:", response.data);
       setEmployees(response.data);
       setLoading(false);
@@ -141,138 +141,110 @@ const Agreement_Contract_Letter = () => {
     window.print();
   };
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
     const letterElement = letterRef.current;
-  
+    
     if (!letterElement) return;
-  
+    
     toast.info('Preparing PDF download...');
-
+    
     try {
+      // Create a new PDF with A4 dimensions (210mm x 297mm)
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      
       // Store original styles to restore later
       const originalStyle = letterElement.style.cssText;
       
       // Temporarily adjust the container to optimize for PDF generation
-      letterElement.style.width = '210mm';
+      letterElement.style.width = `${pageWidth}mm`;
       letterElement.style.height = 'auto';
-      letterElement.style.fontSize = '10pt';
-      letterElement.style.lineHeight = '1.3';
+      letterElement.style.overflow = 'visible';
+      letterElement.style.padding = '20mm';
       
-      // Optimize spacing for paragraphs
-      const paragraphs = letterElement.querySelectorAll('p');
-      paragraphs.forEach(p => {
-        p.style.marginBottom = '0.5em';
-        p.style.marginTop = '0.5em';
-      });
+      // Wait for the DOM to update
+      await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Adjust spacing of elements
-      const contentDivs = letterElement.querySelectorAll('div');
-      contentDivs.forEach(div => {
-        if (div.classList.contains('mt-16')) {
-          div.style.marginTop = '1.5rem';
+      // Configure html2canvas with improved settings
+      const canvas = await html2canvas(letterElement, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        scrollX: 0,
+        scrollY: 0,
+        logging: false,
+        letterRendering: true,
+        windowHeight: letterElement.scrollHeight,
+        onclone: (clonedDoc) => {
+          const clonedElement = clonedDoc.getElementById('letter-content');
+          if (clonedElement) {
+            clonedElement.style.width = `${pageWidth}mm`;
+            clonedElement.style.height = 'auto';
+            clonedElement.style.overflow = 'visible';
+            clonedElement.style.padding = '20mm';
+          }
         }
       });
       
-      // Ensure images are properly loaded
-      const images = letterElement.querySelectorAll('img');
-      const imagePromises = Array.from(images).map(img => {
-        return new Promise((resolve) => {
-          if (img.complete && img.naturalWidth > 0) {
-            img.crossOrigin = 'Anonymous';
-            return resolve();
-          }
-          
-          img.crossOrigin = 'Anonymous';
-          img.onload = () => resolve();
-          img.onerror = () => {
-            img.src = 'https://via.placeholder.com/150x50?text=Image+Error';
-            resolve();
-          };
-          
-          // Ensure absolute URL for images
-          if (img.src.includes('/images/profile/') && !img.src.startsWith('http')) {
-            img.src = `https://aimdreamplanner.com${img.src.startsWith('/') ? '' : '/'}${img.src}`;
-          }
-        });
-      });
+      // Calculate image dimensions to fit the page width
+      const imgWidth = pageWidth - 40; // Subtract left and right margins
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
-      // Wait for all images to load
-      Promise.all(imagePromises).then(() => {
-        // Set proper constraints on images
-        letterElement.querySelectorAll('img').forEach(img => {
-          if (img.classList.contains('h-16') || img.classList.contains('h-12')) {
-            img.style.maxHeight = '60px';
-            img.style.height = 'auto';
-            img.style.width = 'auto';
-            img.style.maxWidth = '160px';
-            img.style.objectFit = 'contain';
-          }
-        });
+      // Split content into multiple pages if needed
+      let position = 0;
+      const pageHeightWithMargin = pageHeight - 40; // Subtract top and bottom margins
+      
+      while (position < imgHeight) {
+        if (position > 0) {
+          pdf.addPage(); // Add a new page if we're not on the first page
+        }
         
-        // Set up PDF options
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
+        // Calculate the portion of the image to show on this page
+        const cropHeight = Math.min(pageHeightWithMargin, imgHeight - position);
         
-        const options = {
-          scale: 1.5,
-          useCORS: true,
-          allowTaint: true,
-          scrollY: 0,
-          logging: false,
-          letterRendering: true,
-        };
+        // Create a temporary canvas for the current page
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = (cropHeight * canvas.width) / imgWidth;
         
-        html2canvas(letterElement, options).then(canvas => {
-          // Calculate dimensions
-          const imgWidth = pdfWidth - 20; // 10mm margin on each side
-          const imgHeight = (canvas.height * imgWidth) / canvas.width;
-          
-          // Add image to PDF
-          pdf.addImage(
-            canvas.toDataURL('image/png'),
-            'PNG',
-            10, // x - 10mm margin
-            10, // y - 10mm margin
-            imgWidth,
-            imgHeight
-          );
-          
-          pdf.save('employment_agreement.pdf');
-          toast.success('PDF downloaded successfully!');
-          
-          // Restore original styles
-          letterElement.style.cssText = originalStyle;
-          paragraphs.forEach(p => {
-            p.style.marginBottom = '';
-            p.style.marginTop = '';
-          });
-          contentDivs.forEach(div => {
-            div.style.marginTop = '';
-          });
-          letterElement.querySelectorAll('img').forEach(img => {
-            img.style.maxHeight = '';
-            img.style.height = '';
-            img.style.width = '';
-            img.style.maxWidth = '';
-            img.style.objectFit = '';
-          });
-        }).catch(error => {
-          console.error('Error generating PDF:', error);
-          toast.error('Failed to download PDF');
-          letterElement.style.cssText = originalStyle;
-        });
-      });
+        const ctx = pageCanvas.getContext('2d');
+        ctx.drawImage(
+          canvas,
+          0, position * (canvas.height / imgHeight),
+          canvas.width, cropHeight * (canvas.height / imgHeight),
+          0, 0,
+          pageCanvas.width, pageCanvas.height
+        );
+        
+        // Add the image to the PDF
+        pdf.addImage(
+          pageCanvas.toDataURL('image/png'),
+          'PNG',
+          20, // Left margin
+          20, // Top margin
+          imgWidth,
+          cropHeight
+        );
+        
+        position += pageHeightWithMargin;
+      }
+      
+      // Save PDF
+      pdf.save('employment_agreement.pdf');
+      toast.success('PDF downloaded successfully!');
+      
+      // Restore original styles
+      letterElement.style.cssText = originalStyle;
     } catch (error) {
-      console.error('Error preparing PDF:', error);
-      toast.error('Failed to prepare PDF');
+      console.error('Error generating PDF:', error);
+      toast.error('Failed to download PDF');
     }
   };
 
   const handleSendEmail = async () => {
     if (!letterRef.current) return;
     
-    // Check if we have a valid employee selected
     if (!selectedEmployee) {
       toast.error('Please select an employee first');
       return;
@@ -286,171 +258,87 @@ const Agreement_Contract_Letter = () => {
     toast.info(`Preparing to send email to ${selectedEmployee.email}...`);
     
     try {
+      // Create a new PDF with A4 dimensions (210mm x 297mm)
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      
       // Store original styles to restore later
       const letterContainer = letterRef.current;
       const originalStyle = letterContainer.style.cssText;
       
-      // Temporarily adjust the container to optimize for PDF generation - CRITICAL FOR EMAIL
-      letterContainer.style.width = '210mm';
+      // Temporarily adjust the container to optimize for PDF generation
+      letterContainer.style.width = `${pageWidth}mm`;
       letterContainer.style.height = 'auto';
-      letterContainer.style.fontSize = '9pt'; // Slightly smaller font for email to ensure fit on one page
-      letterContainer.style.lineHeight = '1.2'; // Tighter line height for email
+      letterContainer.style.overflow = 'visible';
+      letterContainer.style.padding = '20mm';
       
-      // Optimize spacing for paragraphs to fit on one page
-      const paragraphs = letterContainer.querySelectorAll('p');
-      paragraphs.forEach(p => {
-        p.style.marginBottom = '0.5em';
-        p.style.marginTop = '0.5em';
-      });
-      
-      // Adjust the spacing of elements to ensure everything fits properly
-      const contentDivs = letterContainer.querySelectorAll('div');
-      contentDivs.forEach(div => {
-        if (div.classList.contains('mt-16') || div.classList.contains('mt-12') || div.classList.contains('mt-10') || div.classList.contains('mt-6')) {
-          div.style.marginTop = '0.75rem';
-        }
-        if (div.classList.contains('mt-8')) {
-          div.style.marginTop = '0.5rem';
-        }
-        // Reduce height of spacer divs
-        if (div.classList.contains('h-28')) {
-          div.style.height = '1rem';
-        }
-      });
-      
-      // First check and fix any image with missing dimensions
-      const images = letterRef.current.querySelectorAll('img');
-      console.log(`Found ${images.length} images in the letter for email`);
-      
-      // Create array of promises to ensure all images are loaded properly
-      const imagePromises = Array.from(images).map(img => {
-        return new Promise((resolve) => {
-          // Skip if image is already loaded with valid dimensions
-          if (img.complete && img.naturalWidth > 0) {
-            img.crossOrigin = 'Anonymous';
-            console.log(`Image already loaded: ${img.src}`);
-            return resolve();
-          }
-          
-          // Set crossOrigin before setting src
-          img.crossOrigin = 'Anonymous';
-          
-          // Add event listeners for load and error
-          img.onload = () => {
-            console.log(`Image loaded: ${img.src}, dimensions: ${img.naturalWidth}x${img.naturalHeight}`);
-            resolve();
-          };
-          
-          img.onerror = (err) => {
-            console.error(`Error loading image: ${img.src}`, err);
-            // Try to set a placeholder instead of failing
-            img.src = 'https://via.placeholder.com/150x50?text=Image+Error';
-            // Still resolve to not block the PDF generation
-            resolve();
-          };
-          
-          // If image src is relative path to profile image, convert to absolute URL
-          if (img.src.includes('/images/profile/') && !img.src.startsWith('http')) {
-            const newSrc = `https://aimdreamplanner.com${img.src.startsWith('/') ? '' : '/'}${img.src}`;
-            console.log(`Converting relative URL to absolute: ${img.src} -> ${newSrc}`);
-            img.src = newSrc;
-          } else {
-            // Force reload by setting the same src
-            const currentSrc = img.src;
-            img.src = currentSrc;
-          }
-        });
-      });
-      
-      // Wait for all images to be properly loaded
-      await Promise.all(imagePromises);
-      console.log('All images loaded successfully for email');
-      
-      // Wait additional time to ensure everything is rendered
+      // Wait for the DOM to update
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Set proper constraints on images - optimized for email
-      letterRef.current.querySelectorAll('img').forEach(img => {
-        if (img.classList.contains('h-20') || img.classList.contains('h-24')) {
-          img.style.maxHeight = '70px';
-          img.style.height = 'auto';
-          img.style.width = 'auto';
-          img.style.maxWidth = '180px';
-          img.style.objectFit = 'contain';
-        } else if (img.classList.contains('h-16') || img.classList.contains('h-12')) {
-          img.style.maxHeight = '50px';
-          img.style.height = 'auto';
-          img.style.width = 'auto';
-          img.style.maxWidth = '150px';
-          img.style.objectFit = 'contain';
-        } else if (img.src.includes('stampImg')) {
-          img.style.maxHeight = '90px';
-          img.style.maxWidth = '90px';
-          img.style.height = 'auto';
-          img.style.width = 'auto';
-          img.style.objectFit = 'contain';
-        }
-      });
-      
-      // Fix employee signature position for email PDF
-      const employeeSignature = letterRef.current.querySelector('.flex.justify-end');
-      if (employeeSignature) {
-        employeeSignature.style.marginTop = '1rem';
-      }
-      
-      // Generate PDF with html2canvas - optimized settings for email
+      // Configure html2canvas with improved settings
       const canvas = await html2canvas(letterRef.current, {
-        scale: 1.3, // Lower scale for better text/image ratio and to fit on one page
+        scale: 2,
         useCORS: true,
         allowTaint: true,
+        scrollX: 0,
+        scrollY: 0,
         logging: false,
-        imageTimeout: 15000,
         letterRendering: true,
-        foreignObjectRendering: false,
+        windowHeight: letterContainer.scrollHeight,
         onclone: (clonedDoc) => {
-          // Process all images in the cloned document to ensure proper sizing
-          const clonedImages = clonedDoc.querySelectorAll('img');
-          clonedImages.forEach(img => {
-            img.crossOrigin = 'Anonymous';
-            
-            // Make sure the cloned document has the same image size constraints
-            if (img.classList.contains('h-20') || img.classList.contains('h-24')) {
-              img.style.maxHeight = '70px';
-              img.style.height = 'auto';
-              img.style.width = 'auto';
-              img.style.maxWidth = '180px';
-            } else if (img.classList.contains('h-16') || img.classList.contains('h-12')) {
-              img.style.maxHeight = '50px';
-              img.style.height = 'auto';
-              img.style.width = 'auto';
-              img.style.maxWidth = '150px';
-            } else if (img.src.includes('stampImg')) {
-              img.style.maxHeight = '90px';
-              img.style.maxWidth = '90px';
-              img.style.height = 'auto';
-              img.style.width = 'auto';
-            }
-          });
+          const clonedElement = clonedDoc.getElementById('letter-content');
+          if (clonedElement) {
+            clonedElement.style.width = `${pageWidth}mm`;
+            clonedElement.style.height = 'auto';
+            clonedElement.style.overflow = 'visible';
+            clonedElement.style.padding = '20mm';
+          }
         }
       });
       
-      // Create PDF from canvas
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-        compress: true
-      });
+      // Calculate image dimensions to fit the page width
+      const imgWidth = pageWidth - 40; // Subtract left and right margins
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+      // Split content into multiple pages if needed
+      let position = 0;
+      const pageHeightWithMargin = pageHeight - 40; // Subtract top and bottom margins
       
-      const imgX = (pdfWidth - imgWidth * ratio) / 2;
-      pdf.addImage(imgData, 'PNG', imgX, 0, imgWidth * ratio, imgHeight * ratio);
+      while (position < imgHeight) {
+        if (position > 0) {
+          pdf.addPage(); // Add a new page if we're not on the first page
+        }
+        
+        // Calculate the portion of the image to show on this page
+        const cropHeight = Math.min(pageHeightWithMargin, imgHeight - position);
+        
+        // Create a temporary canvas for the current page
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = (cropHeight * canvas.width) / imgWidth;
+        
+        const ctx = pageCanvas.getContext('2d');
+        ctx.drawImage(
+          canvas,
+          0, position * (canvas.height / imgHeight),
+          canvas.width, cropHeight * (canvas.height / imgHeight),
+          0, 0,
+          pageCanvas.width, pageCanvas.height
+        );
+        
+        // Add the image to the PDF
+        pdf.addImage(
+          pageCanvas.toDataURL('image/png'),
+          'PNG',
+          20, // Left margin
+          20, // Top margin
+          imgWidth,
+          cropHeight
+        );
+        
+        position += pageHeightWithMargin;
+      }
       
       // Convert PDF to blob for upload
       const pdfBlob = pdf.output('blob');
@@ -461,7 +349,7 @@ const Agreement_Contract_Letter = () => {
       
       // Send to API
       const response = await axios.post(
-        `https://api.aimdreamplanner.com/api/certificate/send/${subadmin.id}/${encodeURIComponent(selectedEmployee.firstName + ' ' + selectedEmployee.lastName)}/agreement`,
+        `https://api.managifyhr.com/api/certificate/send/${subadmin.id}/${encodeURIComponent(selectedEmployee.firstName + ' ' + selectedEmployee.lastName)}/agreement`,
         formData,
         {
           headers: {
@@ -472,35 +360,6 @@ const Agreement_Contract_Letter = () => {
       
       // Restore original styles
       letterRef.current.style.cssText = originalStyle;
-      
-      // Reset styles on paragraphs
-      paragraphs.forEach(p => {
-        p.style.marginBottom = '';
-        p.style.marginTop = '';
-      });
-      
-      // Reset styles on divs
-      contentDivs.forEach(div => {
-        if (div.classList.contains('mt-16') || div.classList.contains('mt-12') || div.classList.contains('mt-10') || div.classList.contains('mt-8') || div.classList.contains('mt-6')) {
-          div.style.marginTop = '';
-        }
-        if (div.classList.contains('h-28')) {
-          div.style.height = '';
-        }
-        // Reset employee signature position
-        if (div.classList.contains('flex') && div.classList.contains('justify-end')) {
-          div.style.marginTop = '';
-        }
-      });
-      
-      // Reset styles on images
-      letterRef.current.querySelectorAll('img').forEach(img => {
-        img.style.maxHeight = '';
-        img.style.height = '';
-        img.style.width = '';
-        img.style.maxWidth = '';
-        img.style.objectFit = '';
-      });
       
       console.log('Email API Response:', response.data);
       toast.success(`Agreement letter sent to ${selectedEmployee.email} successfully!`);
@@ -540,12 +399,6 @@ const Agreement_Contract_Letter = () => {
           </button>
           
           <div className="flex space-x-3">
-            {/* <button 
-              onClick={handlePrint}
-              className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition duration-300 flex items-center"
-            >
-              <FaPrint className="mr-2" /> Print
-            </button> */}
             <button 
               onClick={handleDownloadPDF}
               className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition duration-300 flex items-center"
@@ -718,15 +571,20 @@ const Agreement_Contract_Letter = () => {
           </div>
 
           {/* Letter Preview Section */}
-          <div className="lg:col-span-2">
-            <div ref={letterRef} className="bg-white text-black p-8 rounded-lg shadow-xl min-h-[29.7cm] max-w-[21cm] mx-auto relative border border-gray-200">
+          <div className="lg:col-span-2 w-full" style={{overflowX: 'auto', WebkitOverflowScrolling: 'touch'}}>
+  <div
+    ref={letterRef}
+    id="letter-content"
+    className="bg-white text-black p-8 rounded-lg shadow-xl min-h-[29.7cm] w-[900px] mx-auto relative border border-gray-200"
+    style={{ overflowX: 'auto', overflowY: 'visible' }}
+  >
               {/* Company Letterhead */}
               <div className="mb-10">
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex-shrink-0 mr-4">
                     {subadmin && subadmin.companylogo ? (
                       <img 
-                        src={`https://api.aimdreamplanner.com/images/profile/${subadmin.companylogo}`} 
+                        src={`https://api.managifyhr.com/images/profile/${subadmin.companylogo}`} 
                         alt="Company Logo" 
                         className="h-20 object-contain" 
                         onError={(e) => {
@@ -861,7 +719,7 @@ const Agreement_Contract_Letter = () => {
                       {subadmin && subadmin.signature ? (
                         <div className="border-b border-gray-300 pb-1 w-48">
                           <img 
-                            src={`https://api.aimdreamplanner.com/images/profile/${subadmin.signature}`} 
+                            src={`https://api.managifyhr.com/images/profile/${subadmin.signature}`} 
                             alt="Signature" 
                             className="h-16 mb-2 object-contain" 
                             onError={(e) => {
@@ -901,4 +759,4 @@ const Agreement_Contract_Letter = () => {
   );
 };
 
-export default Agreement_Contract_Letter; 
+export default Agreement_Contract_Letter;

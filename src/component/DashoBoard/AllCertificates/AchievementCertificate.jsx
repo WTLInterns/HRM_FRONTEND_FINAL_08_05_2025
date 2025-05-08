@@ -1,146 +1,203 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { FaArrowLeft, FaPrint, FaDownload, FaEnvelope } from 'react-icons/fa';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
+import { FaArrowLeft, FaDownload, FaEnvelope, FaStar, FaMedal, FaTrophy } from 'react-icons/fa';
 import axios from 'axios';
 import { useApp } from '../../../context/AppContext';
-const IMAGE_BASE_URL = 'https://api.aimdreamplanner.com/images/profile/';
-
-const getImageUrl = (filename) => {
-  if (!filename) return null;
-  if (filename.startsWith('http://') || filename.startsWith('https://')) return filename;
-  return `${IMAGE_BASE_URL}${filename}`;
-};
+import { toast } from 'react-toastify';
+import { motion } from 'framer-motion';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+import "./Experience.css";
+import { useReactToPrint } from "react-to-print";
+import '../../../assets/css/certificate.css';
+import '../../../assets/css/sideBar.css';
+import { BsSearch } from "react-icons/bs";
+import Loading from "../../../component/Loading";
 
 const AchievementCertificate = () => {
   const { isDarkMode } = useApp();
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState(false);
+  const [subadmin, setSubadmin] = useState(null);
+  const [employees, setEmployees] = useState([]);
+  const [filteredEmployees, setFilteredEmployees] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
   const certificateRef = useRef(null);
+  const autocompleteRef = useRef(null);
+
+  // Certificate state
   const [formData, setFormData] = useState({
-    recipientName: '',
-    achievement: '',
-    date: '',
+    employeeName: '',
+    employeeJobTitle: '',
+    employeeDepartment: '',
+    achievementTitle: '',
+    achievementDate: '',
+    achievementDescription: '',
+    signatoryName: '',
+    signatoryTitle: '',
+    employeeId: '',
+    designation: '',
+    joiningDate: '',
+    contactPerson: '',
+    contactEmail: '',
+    signatoryDesignation: '',
   });
 
-  // Company logo and signature state
-  const [companyLogo, setCompanyLogo] = useState('');
-  const [signature, setSignature] = useState('');
-  const [profileData, setProfileData] = useState({});
-
-  // Employee autocomplete state
-  const [employeeOptions, setEmployeeOptions] = useState([]);
-  const [employeeLoading, setEmployeeLoading] = useState(false);
-
-  // Add HOD sign state
-  const [hodSign, setHodSign] = useState(null);
+  const [showEmployeeList, setShowEmployeeList] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [pdfGenerating, setPdfGenerating] = useState(false);
 
   useEffect(() => {
-    // Get user profile from localStorage
-    const user = JSON.parse(localStorage.getItem('user'));
-    if (user) {
-      setCompanyLogo(user.companylogo || '');
-      setSignature(user.signature || '');
-      setProfileData(user);
-    }
-  }, []);
-
-  // Fetch employees for autocomplete
-  useEffect(() => {
-    const fetchEmployees = async () => {
+    const fetchSubadminByEmail = async () => {
       try {
-        setEmployeeLoading(true);
-        const user = JSON.parse(localStorage.getItem('user'));
-        if (!user || !user.id) return;
-        const res = await axios.get(`https://api.aimdreamplanner.com/api/employee/${user.id}/employee/all`);
-        if (Array.isArray(res.data)) {
-          setEmployeeOptions(res.data);
-        }
-      } catch (err) {
-        setEmployeeOptions([]);
-      } finally {
-        setEmployeeLoading(false);
+        setLoading(true);
+        const user = JSON.parse(localStorage.getItem("user")) || {};
+        const email = user.email || "arbaj.shaikh2034@gmail.com";
+        const response = await axios.get(`https://api.managifyhr.com/api/subadmin/subadmin-by-email/${email}`);
+        setSubadmin(response.data);
+        fetchEmployees(response.data.id);
+      } catch (error) {
+        setApiError(true);
+        toast.error('Failed to fetch company details. Please check API connection.');
+        setLoading(false);
       }
     };
-    fetchEmployees();
+    fetchSubadminByEmail();
   }, []);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
-
-  // Add handler for HOD sign upload
-  const handleHodSignChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (ev) => setHodSign(ev.target.result);
-      reader.readAsDataURL(file);
+  const fetchEmployees = async (subadminId) => {
+    try {
+      const response = await axios.get(`https://api.managifyhr.com/api/employee/${subadminId}/employee/all`);
+      setEmployees(response.data);
+      setLoading(false);
+    } catch (error) {
+      toast.error('Failed to fetch employees');
+      setLoading(false);
     }
   };
 
-  const handlePrint = () => {
-    window.print();
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (autocompleteRef.current && !autocompleteRef.current.contains(event.target)) {
+        setShowDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    setShowDropdown(true);
+    if (value.length > 0) {
+      const filtered = employees.filter(emp => 
+        `${emp.firstName} ${emp.lastName}`.toLowerCase().includes(value.toLowerCase()) ||
+        emp.email.toLowerCase().includes(value.toLowerCase()) ||
+        emp.jobRole.toLowerCase().includes(value.toLowerCase())
+      );
+      setFilteredEmployees(filtered);
+      setShowEmployeeList(true);
+    } else {
+      setFilteredEmployees([]);
+      setShowEmployeeList(false);
+    }
   };
 
-  const handleDownloadPDF = () => {
-    const certElement = certificateRef.current;
-    if (!certElement) return;
-    toast.info('Preparing PDF download...');
-    const options = { scale: 2, useCORS: true, allowTaint: true, scrollX: 0, scrollY: 0, backgroundColor: null };
-    window.scrollTo(0, 0); // ensure no scroll offset
-    import('html2canvas').then(({ default: html2canvas }) => {
-      html2canvas(certElement, options).then(canvas => {
-        const imgData = canvas.toDataURL('image/png');
-        import('jspdf').then(({ default: jsPDF }) => {
-          // Set PDF size to match canvas size (landscape)
-          const pdf = new jsPDF({
-            orientation: 'landscape',
-            unit: 'px',
-            format: [canvas.width, canvas.height]
-          });
-          pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
-          pdf.save('achievement_certificate.pdf');
-          toast.success('PDF downloaded successfully!');
-        });
-      }).catch(error => {
-        console.error('Error generating PDF:', error);
-        toast.error('Failed to download PDF');
-      });
+  const handleSelectEmployee = (emp) => {
+    setSelectedEmployee(emp);
+    setSearchTerm(`${emp.firstName} ${emp.lastName}`);
+    setShowDropdown(false);
+    setFormData({
+      ...formData,
+      employeeName: `${emp.firstName} ${emp.lastName}`,
+      employeeJobTitle: emp.jobRole,
+      employeeDepartment: emp.department || 'N/A',
+      employeeId: emp.empId,
+      designation: emp.designation,
+      joiningDate: emp.joiningDate ? new Date(emp.joiningDate).toISOString().split('T')[0] : "",
     });
   };
 
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!certificateRef.current) return;
+    setPdfGenerating(true);
+    try {
+      const a4WidthPx = 794;
+      const a4HeightPx = 1123;
+      const certificateContainer = certificateRef.current;
+      const contentHeight = certificateContainer.scrollHeight;
+      const scale = Math.min(1, a4HeightPx / contentHeight);
+      const originalStyle = {
+        width: certificateContainer.style.width,
+        height: certificateContainer.style.height,
+        transform: certificateContainer.style.transform,
+        transformOrigin: certificateContainer.style.transformOrigin,
+        overflow: certificateContainer.style.overflow,
+      };
+      certificateContainer.style.width = `${a4WidthPx}px`;
+      certificateContainer.style.height = 'auto';
+      certificateContainer.style.transform = `scale(${scale})`;
+      certificateContainer.style.transformOrigin = 'top left';
+      certificateContainer.style.overflow = 'visible';
+      await new Promise(resolve => setTimeout(resolve, 800));
+      const canvas = await html2canvas(certificateContainer, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#fff'
+      });
+      certificateContainer.style.width = originalStyle.width;
+      certificateContainer.style.height = originalStyle.height;
+      certificateContainer.style.transform = originalStyle.transform;
+      certificateContainer.style.transformOrigin = originalStyle.transformOrigin;
+      certificateContainer.style.overflow = originalStyle.overflow;
+      const imgData = canvas.toDataURL('image/jpeg', 1.0);
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [a4WidthPx, a4HeightPx] });
+      pdf.addImage(imgData, 'JPEG', 0, 0, a4WidthPx, a4HeightPx);
+      pdf.save('Achievement_Certificate.pdf');
+      toast.success('PDF downloaded successfully!');
+    } catch (error) {
+      toast.error('Failed to generate PDF. Please try again.');
+    } finally {
+      setPdfGenerating(false);
+    }
+  };
+
   const handleSendEmail = async () => {
-    if (!certificateRef.current || !profileData || !formData.recipientName) {
+    if (!certificateRef.current || !selectedEmployee || !subadmin) {
       toast.error('Missing required data.');
       return;
     }
-    setEmployeeLoading(true);
+    setSendingEmail(true);
     try {
-      // Generate PDF as Blob
-      const html2canvas = (await import('html2canvas')).default;
-      const jsPDF = (await import('jspdf')).default;
       const canvas = await html2canvas(certificateRef.current, { scale: 2, useCORS: true, backgroundColor: '#fff' });
-      const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [canvas.width, canvas.height] });
-      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, canvas.width, canvas.height);
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [794, 1123] });
+      pdf.addImage(canvas.toDataURL('image/jpeg', 1.0), 'JPEG', 0, 0, 794, 1123);
       const pdfBlob = pdf.output('blob');
-
-      // Prepare FormData
       const formDataToSend = new FormData();
       formDataToSend.append('file', pdfBlob, 'AchievementCertificate.pdf');
       Object.entries(formData).forEach(([key, value]) => formDataToSend.append(key, value));
-
-      // Compose API endpoint
-      const employeeFullName = formData.recipientName;
-      const apiUrl = `https://api.aimdreamplanner.com/api/certificate/send/${profileData.id}/${encodeURIComponent(employeeFullName)}/achievement`;
-
-      // Send to backend
+      const employeeFullName = `${selectedEmployee.firstName} ${selectedEmployee.lastName}`;
+      const apiUrl = `https://api.managifyhr.com/api/certificate/send/${subadmin.id}/${encodeURIComponent(employeeFullName)}/achievement`;
       await axios.post(apiUrl, formDataToSend, { headers: { 'Content-Type': 'multipart/form-data' } });
       toast.success('Certificate sent successfully!');
     } catch (error) {
       toast.error('Failed to send certificate.');
     } finally {
-      setEmployeeLoading(false);
+      setSendingEmail(false);
     }
   };
 
@@ -148,201 +205,349 @@ const AchievementCertificate = () => {
     navigate('/dashboard/certificates');
   };
 
+  if (loading) {
+    return <Loading />;
+  }
+
   return (
-    <div className={`p-4 min-h-screen ${isDarkMode ? 'bg-slate-800 text-white' : 'bg-gray-100 text-gray-800'}`}>
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+      className={`p-4 ${isDarkMode ? 'bg-slate-800 text-white' : 'bg-gray-100 text-gray-800'}`}
+    >
       <div className="container mx-auto">
         <div className="flex justify-between items-center mb-6">
-          <button onClick={handleBackClick} className="flex items-center text-blue-500 hover:text-blue-700 transition duration-300">
+          <button 
+            onClick={handleBackClick}
+            className="flex items-center text-blue-500 hover:text-blue-700 transition duration-300"
+          >
             <FaArrowLeft className="mr-2" /> Back to Certificates
           </button>
           <div className="flex space-x-3">
-            {/*<button onClick={handlePrint} className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 flex items-center">
-              <FaPrint className="mr-2" /> Print
-            </button>*/}
-            <button onClick={handleDownloadPDF} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center">
+            <button 
+              onClick={handleDownloadPDF}
+              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition duration-300 flex items-center"
+            >
               <FaDownload className="mr-2" /> Download
             </button>
-            <button onClick={handleSendEmail} disabled={employeeLoading} style={{ marginLeft: '12px', background: '#2563eb', color: '#fff', padding: '8px 16px', borderRadius: '6px', border: 'none', cursor: employeeLoading ? 'not-allowed' : 'pointer' }}>
-              {employeeLoading ? 'Sending...' : (<><FaEnvelope style={{ marginRight: 6, verticalAlign: 'middle' }}/>Send Email</>)}
+            <button 
+              onClick={handleSendEmail}
+              disabled={sendingEmail}
+              style={{ marginLeft: '12px', background: '#2563eb', color: '#fff', padding: '8px 16px', borderRadius: '6px', border: 'none', cursor: sendingEmail ? 'not-allowed' : 'pointer' }}
+            >
+              {sendingEmail ? 'Sending...' : (<><FaEnvelope style={{ marginRight: 6, verticalAlign: 'middle' }}/>Send Email</>)}
             </button>
           </div>
         </div>
+        {apiError && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 mb-6 rounded">
+            <p>Failed to connect to the API. Some features might be limited.</p>
+          </div>
+        )}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Form Section */}
           <div className="lg:col-span-1">
-            <div className={`p-6 rounded-lg shadow-lg ${isDarkMode ? 'bg-slate-700' : 'bg-white'}`}> 
+            <div className={`p-6 rounded-lg shadow-lg ${isDarkMode ? 'bg-slate-700' : 'bg-white'}`}>
               <h2 className="text-xl font-bold mb-4 text-center">Achievement Certificate Details</h2>
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-1">Recipient Name</label>
-                <input
-                  type="text"
-                  name="recipientName"
-                  value={formData.recipientName}
-                  onChange={handleInputChange}
-                  autoComplete="off"
-                  className={`w-full p-2 border rounded ${isDarkMode ? 'bg-slate-600 border-slate-500 text-white' : 'bg-white border-gray-300'}`}
-                  placeholder="Full name"
-                  list="employee-autocomplete"
-                />
-                <datalist id="employee-autocomplete">
-                  {employeeOptions.map(emp => (
-                    <option
-                      key={emp.empId}
-                      value={((emp.firstName || '') + ' ' + (emp.lastName || '')).trim()}
-                    />
-                  ))}
-                </datalist>
-                {employeeLoading && <span className="text-xs text-gray-400 ml-2">Loading...</span>}
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-1">Achievement</label>
-                <input type="text" name="achievement" value={formData.achievement} onChange={handleInputChange} className={`w-full p-2 border rounded ${isDarkMode ? 'bg-slate-600 border-slate-500 text-white' : 'bg-white border-gray-300'}`} placeholder="Achievement details" />
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-1">Date</label>
-                <input type="date" name="date" value={formData.date} onChange={handleInputChange} className={`w-full p-2 border rounded ${isDarkMode ? 'bg-slate-600 border-slate-500 text-white' : 'bg-white border-gray-300'}`} />
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-1">HOD Signature</label>
-                <input type="file" accept="image/*" onChange={handleHodSignChange} className="w-full p-2 border rounded" />
-                {hodSign && (
-                  <img src={hodSign} alt="HOD Signature Preview" className="mt-2 h-12 object-contain" />
+              {subadmin && (
+                <div className="mb-4">
+                  <h3 className="text-md font-medium mb-2">Company Information</h3>
+                  <div className="p-3 rounded border bg-opacity-50 bg-blue-50 border-blue-200">
+                    <p className="font-semibold">{subadmin.registercompanyname}</p>
+                    <p className="text-sm">{subadmin.address}</p>
+                    <p className="text-sm">GST: {subadmin.gstno}</p>
+                  </div>
+                </div>
+              )}
+              <div className="mb-4 relative" ref={autocompleteRef}>
+                <label className="block text-sm font-medium mb-1">Search Employee</label>
+                <div className="relative">
+                  <input 
+                    type="text" 
+                    value={searchTerm}
+                    onChange={handleSearchChange}
+                    className={`w-full p-2 pr-10 border rounded ${isDarkMode ? 'bg-slate-600 border-slate-500' : 'bg-white border-gray-300'}`}
+                    placeholder="Search by name, email or job role"
+                  />
+                  <BsSearch className="absolute right-3 top-3 text-gray-400" />
+                </div>
+                {showEmployeeList && filteredEmployees.length > 0 && (
+                  <div className={`absolute z-10 w-full mt-1 max-h-60 overflow-auto rounded-md shadow-lg ${isDarkMode ? 'bg-slate-800 border-slate-600' : 'bg-white border-gray-300'} border`}>
+                    {filteredEmployees.map(emp => (
+                      <div 
+                        key={emp.empId} 
+                        className={`p-2 cursor-pointer hover:bg-blue-100 hover:text-blue-800 ${isDarkMode ? 'hover:bg-slate-600' : 'hover:bg-blue-50'}`}
+                        onClick={() => handleSelectEmployee(emp)}
+                      >
+                        <div className="font-medium">{emp.firstName} {emp.lastName}</div>
+                        <div className="text-xs flex justify-between">
+                          <span>{emp.jobRole}</span>
+                          <span className={`px-2 rounded-full text-xs ${emp.status === 'Active' || emp.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                            {emp.status}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 )}
+                {showEmployeeList && searchTerm && filteredEmployees.length === 0 && (
+                  <div className={`absolute z-10 w-full mt-1 p-2 rounded-md shadow-lg ${isDarkMode ? 'bg-slate-800 border-slate-600' : 'bg-white border-gray-300'} border`}>
+                    No employees found
+                  </div>
+                )}
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1">Employee Name</label>
+                <input 
+                  type="text" 
+                  name="employeeName"
+                  value={formData.employeeName}
+                  onChange={handleInputChange}
+                  className={`w-full p-2 border rounded ${isDarkMode ? 'bg-slate-600 border-slate-500' : 'bg-white border-gray-300'}`}
+                  placeholder="Full name"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Job Title</label>
+                  <input 
+                    type="text" 
+                    name="employeeJobTitle"
+                    value={formData.employeeJobTitle}
+                    onChange={handleInputChange}
+                    className={`w-full p-2 border rounded ${isDarkMode ? 'bg-slate-600 border-slate-500' : 'bg-white border-gray-300'}`}
+                    placeholder="Position/Title"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Department</label>
+                  <input 
+                    type="text" 
+                    name="employeeDepartment"
+                    value={formData.employeeDepartment}
+                    onChange={handleInputChange}
+                    className={`w-full p-2 border rounded ${isDarkMode ? 'bg-slate-600 border-slate-500' : 'bg-white border-gray-300'}`}
+                    placeholder="Department"
+                  />
+                </div>
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1">Achievement Title</label>
+                <input 
+                  type="text" 
+                  name="achievementTitle"
+                  value={formData.achievementTitle}
+                  onChange={handleInputChange}
+                  className={`w-full p-2 border rounded ${isDarkMode ? 'bg-slate-600 border-slate-500' : 'bg-white border-gray-300'}`}
+                  placeholder="e.g. Employee of the Month"
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1">Achievement Date</label>
+                <input 
+                  type="date" 
+                  name="achievementDate"
+                  value={formData.achievementDate}
+                  onChange={handleInputChange}
+                  className={`w-full p-2 border rounded ${isDarkMode ? 'bg-slate-600 border-slate-500' : 'bg-white border-gray-300'}`}
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1">Achievement Description</label>
+                <textarea 
+                  name="achievementDescription"
+                  value={formData.achievementDescription}
+                  onChange={handleInputChange}
+                  className={`w-full p-2 border rounded ${isDarkMode ? 'bg-slate-600 border-slate-500' : 'bg-white border-gray-300'}`}
+                  placeholder="Describe the achievement and its significance"
+                  rows="3"
+                ></textarea>
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1">Signatory Name</label>
+                <input 
+                  type="text" 
+                  name="signatoryName"
+                  value={formData.signatoryName || (subadmin ? `${subadmin.name} ${subadmin.lastname}` : "")}
+                  onChange={handleInputChange}
+                  className={`w-full p-2 border rounded ${isDarkMode ? 'bg-slate-600 border-slate-500' : 'bg-white border-gray-300'}`}
+                  placeholder="Your Name"
+                />
               </div>
             </div>
           </div>
-          {/* Certificate Preview Section */}
-          <div className="lg:col-span-2 flex justify-center items-center">
-            <div ref={certificateRef} className="rounded-lg shadow-lg w-full max-w-2xl overflow-hidden" style={{ background: 'transparent', boxShadow: isDarkMode ? '0 0 16px #222' : '0 0 16px #bbb', position: 'relative' }}>
-              <div style={{ position: 'relative', width: '100%', height: '600px', background: 'transparent' }}>
-                {/* Certificate background image */}
-                <img
-                  src="/image/AchievementTemplate.png"
-                  alt="Certificate Background"
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    zIndex: 1,
-                    pointerEvents: 'none',
-                  }}
-                />
-                {/* Gold medal image at top right */}
-                <img
-                  src="/image/gold-medal.png"
-                  alt="Gold Medal"
-                  style={{
-                    position: 'absolute',
-                    top: '20px',
-                    right: '10px',
-                    width: '190px',
-                    height: '110px',
-                    objectFit: 'contain',
-                    zIndex: 5,
-                    pointerEvents: 'none',
-                  }}
-                />
-                {/* Overlay recipient name in cursive font above the line */}
-                {formData.recipientName && (
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: '260px',
-                      left: 0,
-                      width: '100%',
-                      textAlign: 'center',
-                      fontFamily: 'Brush Script MT, cursive',
-                      fontSize: '2.5rem',
-                      color: '#222',
-                      zIndex: 10,
-                      pointerEvents: 'none',
-                      textShadow: '0 2px 6px rgba(0,0,0,0.08)',
-                    }}
-                  >
-                    {formData.recipientName}
-                  </div>
-                )}
-                {/* Custom message below the line - always visible with placeholders */}
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: '340px',
-                    left: '10%',
-                    width: '80%',
-                    textAlign: 'center',
-                    fontFamily: 'serif',
-                    fontSize: '0.7rem',
-                    color: '#444',
-                    zIndex: 10,
-                    pointerEvents: 'none',
-                    padding: '0 16px',
+          {/* Certificate Preview */}
+          <div className="lg:col-span-2">
+            <div className={`p-6 rounded-lg shadow-lg ${isDarkMode ? 'bg-slate-700' : 'bg-white'} mb-4`}>
+              <h2 className="text-xl font-bold mb-4">Certificate Preview</h2>
+              {/* Mobile horizontal scroll wrapper */}
+              <div style={{ overflowX: 'auto', maxWidth: '100vw', WebkitOverflowScrolling: 'touch' }}>
+                <div 
+                  ref={certificateRef}
+                  className="bg-white text-black relative"
+                  style={{ 
+                    width: '21cm', 
+                    minHeight: '29.7cm',
+                    margin: '0 auto',
+                    padding: '1cm',
+                    position: 'relative',
+                    boxShadow: '0 0 10px rgba(0,0,0,0.1)',
+                    background: 'linear-gradient(135deg, #e0e0e0 0%, #f5f6fa 30%, #b0b3b8 100%)', // deeper grey and silver gradient
+                    overflow: 'hidden'
                   }}
                 >
-                  {`“This certificate is presented to ${formData.recipientName || '[Name]'} in recognition of their exceptional performance and outstanding achievements in ${formData.achievement || '[Achievement]'} on ${formData.date ? (() => { const d = new Date(formData.date); return `${d.getDate().toString().padStart(2, '0')}-${(d.getMonth()+1).toString().padStart(2, '0')}-${d.getFullYear()}`; })() : '[Date]'}. Your hard work, dedication, and perseverance have been instrumental in your success, and we are honored to recognize your accomplishments.”`}
+                  {/* Decorative Elements */}
+                  <div className="absolute top-0 left-0 w-full h-40 overflow-hidden opacity-10 z-0">
+                    <div className="flex">
+                      {[...Array(20)].map((_, i) => (
+                        <FaStar key={i} className="text-blue-500 text-6xl mx-8 transform rotate-45" />
+                      ))}
+                    </div>
+                  </div>
+                  <div className="absolute bottom-0 right-0 w-full h-40 overflow-hidden opacity-10 z-0">
+                    <div className="flex">
+                      {[...Array(20)].map((_, i) => (
+                        <FaStar key={i} className="text-blue-500 text-6xl mx-8 transform rotate-45" />
+                      ))}
+                    </div>
+                  </div>
+                  {/* Decorative Border */}
+                  <div className="absolute inset-0 border-[20px] border-double border-blue-100 pointer-events-none"></div>
+                  {/* Certificate Content */}
+                  <div className="relative z-10 mt-6">
+                    {/* Company Header */}
+                    <div className="flex justify-center mb-4">
+                      {subadmin && subadmin.companylogo && (
+                        <img 
+                          src={`https://api.managifyhr.com/images/profile/${subadmin.companylogo}`} 
+                          alt="Company Logo" 
+                          className="h-20 object-contain" 
+                          onError={(e) => {
+                            e.target.src = 'https://via.placeholder.com/200x80?text=Company+Logo';
+                          }}
+                        />
+                      )}
+                    </div>
+                    <div className="text-center mb-6">
+                      <h1 className="text-3xl font-bold text-blue-800">
+                        {subadmin?.registercompanyname || "Your Company Name"}
+                      </h1>
+                      <p className="text-sm text-gray-600">{subadmin?.address || "Company Address"}</p>
+                    </div>
+                    {/* Certificate Title */}
+                    <div className="text-center mb-8">
+                      <div className="inline-block border-b-2 border-t-2 border-blue-800 px-6 py-2">
+                        <h2 className="text-3xl font-bold uppercase tracking-wider text-blue-800">Achievement Certificate</h2>
+                      </div>
+                    </div>
+                    {/* Decorative Elements - Medals and Icons */}
+                    <div className="flex justify-between mb-6">
+                      <FaMedal style={{ color: '#FFD700', fontSize: '2.25rem', opacity: 1 }} />
+                      <FaTrophy style={{ color: '#FFD700', fontSize: '2.25rem', opacity: 1 }} />
+                    </div>
+                    {/* Certificate Body */}
+                    <div className="mb-8 px-8 text-center">
+                      <p className="text-lg mb-4 font-serif leading-relaxed">
+                        This is to certify that
+                      </p>
+                      <h2 className="text-3xl font-bold mb-2 text-blue-800 font-serif">{formData.employeeName || "[Employee Name]"}</h2>
+                      <p className="mb-3 text-gray-600 font-serif italic">
+                        {formData.employeeJobTitle || "[Job Title]"} • {formData.employeeDepartment || "[Department]"}
+                      </p>
+                      <p className="mb-6 text-lg font-serif leading-relaxed">
+                        has achieved <span className="font-bold">{formData.achievementTitle || "[Achievement Title]"}</span> on <span className="font-bold">{formData.achievementDate ? new Date(formData.achievementDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : "[Achievement Date]"}</span> at <span className="font-bold">{subadmin?.registercompanyname || "[Company Name]"}</span>.
+                      </p>
+                      <div
+                        style={{
+                          background: '#f0f4fa',
+                          borderRadius: '16px',
+                          padding: '24px',
+                          marginBottom: '24px',
+                          color: '#222',
+                          opacity: 1,
+                          zIndex: 10,
+                          position: 'relative',
+                          boxSizing: 'border-box',
+                          width: '100%'
+                        }}
+                      >
+                        <h3 style={{ fontSize: '2rem', fontWeight: 600, color: '#2056b3', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '12px' }}>
+                          Achievement Description
+                        </h3>
+                        <p style={{ fontStyle: 'italic', fontSize: '1.1rem', textAlign: 'center', margin: 0 }}>
+                          {formData.achievementDescription || "Recognized for outstanding performance and dedication."}
+                        </p>
+                      </div>
+                      <p className="mb-2 text-lg font-serif">
+                        We appreciate your valuable contributions to the organization and wish you continued success.
+                      </p>
+                    </div>
+                    {/* Date and Signature */}
+                    <div className="flex justify-between items-start px-8 mb-4">
+                      <div>
+                        <p className="font-semibold">Date of Issue:</p>
+                        <p>{new Date().toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })}</p>
+                      </div>
+                      <div className="text-right">
+                        {subadmin && subadmin.signature ? (
+                          <div className="flex flex-col items-end">
+                            <img 
+                              src={`https://api.managifyhr.com/images/profile/${subadmin.signature}`} 
+                              alt="Signature" 
+                              className="h-16 object-contain ml-auto mb-2" 
+                              onError={(e) => {
+                                e.target.src = 'https://via.placeholder.com/150x50?text=Signature';
+                              }}
+                            />
+                            <div className="border-b border-gray-400 w-48 mb-2 ml-auto"></div>
+                            <p className="font-semibold text-gray-800 mt-2">{formData.signatoryName || (subadmin ? `${subadmin.name} ${subadmin.lastname}` : "[Signatory Name]")}</p>
+                            <p className="font-semibold text-gray-800 mb-2">Authorized Signatory:</p>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-end">
+                            <div className="h-16 mb-2"></div>
+                            <div className="border-b border-gray-400 w-48 mb-2 ml-auto"></div>
+                            <p className="font-semibold text-gray-800 mt-2">{formData.signatoryName || (subadmin ? `${subadmin.name} ${subadmin.lastname}` : "[Signatory Name]")}</p>
+                            <p className="font-semibold text-gray-800 mb-2">Authorized Signatory:</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    {/* Company Stamp */}
+                    {subadmin && subadmin.stampImg && (
+                      <div className="absolute bottom-24 left-1/2 transform -translate-x-1/2 flex flex-col items-center">
+                        <div className="p-1 rounded-lg bg-white/90 border border-gray-200 shadow-sm">
+                          <img 
+                            src={`https://api.managifyhr.com/images/profile/${subadmin.stampImg}`} 
+                            alt="Company Stamp" 
+                            className="h-32 w-32 object-contain" 
+                            style={{ imageRendering: 'crisp-edges', filter: 'contrast(1.05)' }}
+                            onError={(e) => { e.target.style.display = 'none'; }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                    {/* Certificate Footer */}
+                    <div className="mt-12 text-center">
+                      <div className="mb-2">
+                        <div className="border-t border-blue-300 w-1/2 mx-auto mb-2"></div>
+                        <p className="text-sm text-gray-600">This certificate is computer generated and does not require a physical signature.</p>
+                      </div>
+                      <p className="text-xs text-gray-500">Certificate ID: {Date.now().toString(36) + Math.random().toString(36).substr(2, 5).toUpperCase()}</p>
+                    </div>
+                  </div>
                 </div>
-                {/* Signature above HR Manager */}
-                {signature && (
-                  <img
-                    src={getImageUrl(signature)}
-                    alt="HR Manager Signature"
-                    style={{
-                      position: 'absolute',
-                      left: '22%',
-                      top: '72%',
-                      width: '100px',
-                      height: '40px',
-                      objectFit: 'contain',
-                      zIndex: 10,
-                      pointerEvents: 'none',
-                      background: 'transparent',
-                    }}
-                  />
-                )}
-                {/* Company stamp in center */}
-                {profileData?.stampImg && (
-                  <img
-                    src={getImageUrl(profileData.stampImg)}
-                    alt="Company Stamp"
-                    style={{
-                      position: 'absolute',
-                      left: '44%',
-                      top: '70%',
-                      width: '70px',
-                      height: '70px',
-                      objectFit: 'contain',
-                      zIndex: 10,
-                      pointerEvents: 'none',
-                      background: 'transparent',
-                    }}
-                  />
-                )}
-                {/* HOD sign above H.O.D */}
-                {hodSign && (
-                  <img
-                    src={hodSign}
-                    alt="HOD Signature"
-                    style={{
-                      position: 'absolute',
-                      left: '62%',
-                      top: '72%',
-                      width: '100px',
-                      height: '40px',
-                      objectFit: 'contain',
-                      zIndex: 10,
-                      pointerEvents: 'none',
-                      background: 'transparent',
-                    }}
-                  />
-                )}
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

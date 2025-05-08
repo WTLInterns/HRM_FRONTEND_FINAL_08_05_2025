@@ -1,16 +1,10 @@
 .experience-letter-container {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 2rem;
   padding: 1.5rem;
-  max-width: 1400px;
+  max-width: 1200px;
   margin: 0 auto;
-}
-
-@media (min-width: 1024px) {
-  .experience-letter-container {
-    flex-direction: row;
-  }
 }
 
 .letter-form {
@@ -22,11 +16,42 @@
 }
 
 .letter-preview {
-  flex: 1;
+  flex: none;
+  width: 900px;
+  min-width: 900px;
+  max-width: 900px;
   position: sticky;
   top: 1rem;
   align-self: flex-start;
+  overflow-x: hidden;
+  overflow-y: visible;
+  background: white;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+  border-radius: 8px;
 }
+
+@media (max-width: 768px) {
+  .experience-letter-container {
+    flex-direction: column;
+  }
+
+  .letter-form {
+    width: 100%;
+    margin-bottom: 2rem;
+  }
+
+  .letter-preview {
+    width: 100%;
+    position: static;
+  }
+
+  .lg\:col-span-2 {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 1rem;
+  }
+}
+
 
 .letter-form h2 {
   margin-bottom: 1.5rem;
@@ -120,7 +145,7 @@
 }
 
 .employee-item:hover {
-  background-color: #f5f5f5;
+  background-color: #fff;
 }
 
 .action-buttons {
@@ -154,7 +179,7 @@
 }
 
 .download-btn {
-  background-color: #2ecc71;
+  background-color: #fff;
   color: white;
 }
 
@@ -182,7 +207,7 @@
   padding: 20px;
   position: relative;
   min-height: 800px;
-  background-image: radial-gradient(#f9f9f9 5px, transparent 5px);
+  background-image: none;
   background-size: 25px 25px;
   background-color: #ffffff;
 }
@@ -271,7 +296,7 @@
 .appraisal-details {
   margin: 20px 0;
   padding: 15px;
-  background-color: #f9f9f9;
+  background-color: #fff;
   border-left: 3px solid #caa352;
 }
 
@@ -366,6 +391,33 @@
 }
 
 /* Action Button Styles */
+
+/* --- MOBILE SCROLLABILITY & IMAGE CONTAINMENT PATCH --- */
+@media (max-width: 768px) {
+  .experience-letter-container {
+    flex-direction: column;
+    overflow-x: auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .letter-preview {
+    width: 100%;
+    min-width: unset;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    box-sizing: border-box;
+  }
+  .letter-preview img {
+    max-width: 100%;
+    height: auto;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto;
+  }
+}
+/* --- END PATCH --- */
 .action-buttons {
   display: flex;
   gap: 10px;
@@ -392,7 +444,7 @@
 }
 
 .download-btn {
-  background-color: #22c55e;
+  background-color: #fff;
   color: white;
 }
 

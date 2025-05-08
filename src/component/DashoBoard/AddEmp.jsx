@@ -35,6 +35,7 @@ export default function AddEmp() {
   const [salary, setsalary] = useState("");
   const [bankAccountNo, setbankAccountNo] = useState("");
   const [department, setDepartment] = useState("");
+  const [fullScreenImage, setFullScreenImage] = useState(null);
  
   // States for navigation and success messages
   const [showUpdateSuccess, setShowUpdateSuccess] = useState(false);
@@ -88,7 +89,7 @@ export default function AddEmp() {
       setLoading(true);
       try {
         console.log(`Fetching employees for subadmin ID: ${subadminId}`);
-        const response = await axios.get(`https://api.aimdreamplanner.com/api/employee/${subadminId}/employee/all`);
+        const response = await axios.get(`https://api.managifyhr.com/api/employee/${subadminId}/employee/all`);
         console.log("Fetched employees:", response.data);
         setEmployees(response.data);
       } catch (error) {
@@ -277,7 +278,7 @@ export default function AddEmp() {
 
       // Use the dynamic subadminId from state
       const response = await axios.post(
-        `https://api.aimdreamplanner.com/api/subadmin/add-employee/${subadminId}`,
+        `https://api.managifyhr.com/api/subadmin/add-employee/${subadminId}`,
         formData,
         {
           headers: {
@@ -292,7 +293,7 @@ export default function AddEmp() {
       handleReset(e);
      
       // Refresh the employee list
-      const refreshResponse = await axios.get(`https://api.aimdreamplanner.com/api/employee/${subadminId}/employee/all`);
+      const refreshResponse = await axios.get(`https://api.managifyhr.com/api/employee/${subadminId}/employee/all`);
       setEmployees(refreshResponse.data);
      
       // Dispatch event to notify Dashboard of employee updates
@@ -364,7 +365,7 @@ export default function AddEmp() {
      
       // Use the correct API endpoint for updating an employee based on the backend code
       const response = await axios.put(
-        `https://api.aimdreamplanner.com/api/employee/update-employee/${subadminId}/${encodeURIComponent(fullName)}`,
+        `https://api.managifyhr.com/api/employee/update-employee/${subadminId}/${encodeURIComponent(fullName)}`,
         formData,
         {
           headers: {
@@ -379,7 +380,7 @@ export default function AddEmp() {
       handleReset(e);
      
       // Refresh the employee list
-      const refreshResponse = await axios.get(`https://api.aimdreamplanner.com/api/employee/${subadminId}/employee/all`);
+      const refreshResponse = await axios.get(`https://api.managifyhr.com/api/employee/${subadminId}/employee/all`);
       setEmployees(refreshResponse.data);
      
       // Show success message with back button
@@ -413,7 +414,7 @@ export default function AddEmp() {
      
       // Use the dynamic subadminId from state
       const response = await axios.delete(
-        `https://api.aimdreamplanner.com/api/employee/${subadminId}/delete/${empId}`,
+        `https://api.managifyhr.com/api/employee/${subadminId}/delete/${empId}`,
         {
           headers: {
             'Content-Type': 'application/json'
@@ -425,7 +426,7 @@ export default function AddEmp() {
       toast.success("Employee deleted successfully");
      
       // Refresh the employee list
-      const refreshResponse = await axios.get(`https://api.aimdreamplanner.com/api/employee/${subadminId}/employee/all`);
+      const refreshResponse = await axios.get(`https://api.managifyhr.com/api/employee/${subadminId}/employee/all`);
       setEmployees(refreshResponse.data);
      
       // Dispatch event to notify Dashboard of employee updates
@@ -471,7 +472,7 @@ export default function AddEmp() {
    
     // Profile image - using the correct field name from the backend entity (empimg)
     if (employee.empimg) {
-      const profileImageUrl = `https://api.aimdreamplanner.com/images/profile/${employee.empimg}`;
+      const profileImageUrl = `https://api.managifyhr.com/images/profile/${employee.empimg}`;
       console.log("Setting profile image URL:", profileImageUrl);
       setEmpImgPreview(profileImageUrl);
      
@@ -486,7 +487,7 @@ export default function AddEmp() {
    
     // Aadhar image - using the correct field name from the backend entity (adharimg)
     if (employee.adharimg) {
-      const aadharImageUrl = `https://api.aimdreamplanner.com/images/profile/${employee.adharimg}`;
+      const aadharImageUrl = `https://api.managifyhr.com/images/profile/${employee.adharimg}`;
       console.log("Setting aadhar image URL:", aadharImageUrl);
       setAdharImgPreview(aadharImageUrl);
      
@@ -501,7 +502,7 @@ export default function AddEmp() {
    
     // PAN image - using the correct field name from the backend entity (panimg)
     if (employee.panimg) {
-      const panImageUrl = `https://api.aimdreamplanner.com/images/profile/${employee.panimg}`;
+      const panImageUrl = `https://api.managifyhr.com/images/profile/${employee.panimg}`;
       console.log("Setting PAN image URL:", panImageUrl);
       setPanImgPreview(panImageUrl);
      
@@ -519,51 +520,9 @@ export default function AddEmp() {
 
   return (
     <div className={`w-full ${isDarkMode ? 'bg-slate-900 text-white' : 'bg-gray-50 text-gray-800'} p-6 animate-fadeIn`}>
-      {/* Success message with back button after update */}
-      {showUpdateSuccess && (
-        <div className={`mb-4 p-4 rounded-lg ${isDarkMode ? 'bg-green-900/30 border-green-800' : 'bg-green-100 border-green-300'} border flex items-center justify-between`}>
-          <div className="flex items-center">
-            <div className={`p-2 rounded-full ${isDarkMode ? 'bg-green-800' : 'bg-green-200'} mr-3`}>
-              <svg xmlns="/www.w3.org/2000/svg" className={`h-5 w-5 ${isDarkMode ? 'text-green-300' : 'text-green-700'}`} viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <p className={`${isDarkMode ? 'text-green-300' : 'text-green-700'} font-medium`}>Employee updated successfully!</p>
-          </div>
-          <button
-            onClick={() => setShowUpdateSuccess(false)}
-            className={`px-4 py-2 rounded-md ${isDarkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-white hover:bg-gray-100'} ${isDarkMode ? 'text-white' : 'text-gray-800'} border ${isDarkMode ? 'border-slate-600' : 'border-gray-300'} flex items-center gap-2 transition-colors duration-200`}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
-            </svg>
-            Back to Employee List
-          </button>
-        </div>
-      )}
+
      
-      {/* Navigation option after canceling update */}
-      {showCancelNavigation && (
-        <div className={`mb-4 p-4 rounded-lg ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-gray-100 border-gray-300'} border flex items-center justify-between`}>
-          <div className="flex items-center">
-            <div className={`p-2 rounded-full ${isDarkMode ? 'bg-slate-700' : 'bg-gray-200'} mr-3`}>
-              <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`} viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <p className={`${isDarkMode ? 'text-slate-300' : 'text-gray-700'} font-medium`}>Update canceled</p>
-          </div>
-          <button
-            onClick={() => setShowCancelNavigation(false)}
-            className={`px-4 py-2 rounded-md ${isDarkMode ? 'bg-slate-700 hover:bg-slate-600' : 'bg-white hover:bg-gray-100'} ${isDarkMode ? 'text-white' : 'text-gray-800'} border ${isDarkMode ? 'border-slate-600' : 'border-gray-300'} flex items-center gap-2 transition-colors duration-200`}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
-            </svg>
-            Back to Employee List
-          </button>
-        </div>
-      )}
+
 
       <div className="flex justify-between items-center mb-4">
         <h1 className={`text-2xl font-bold ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>Employee Management</h1>
@@ -1056,7 +1015,7 @@ export default function AddEmp() {
                   </div>
                  
                   {/* Image Upload Fields */}
-                  <div className="mt-6 border-t pt-4 border-gray-300">
+                  <div className="mt-6 border-t pt-4 ml-6 border-gray-300">
                     <h4 className={`text-md font-medium mb-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Upload Documents</h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       {/* Employee Image Upload */}
@@ -1066,7 +1025,7 @@ export default function AddEmp() {
                         </label>
                         <div className="flex flex-col items-center space-y-2">
                           {empImgPreview && (
-                            <div className="mb-2 relative">
+                            <div className="mb-2 ml-6 relative">
                               <img
                                 src={empImgPreview}
                                 alt="Employee Preview"
@@ -1516,211 +1475,136 @@ export default function AddEmp() {
                     </div>
                   </div>
                   {/* Image Upload Fields for Update Form */}
-                  <div className="md:col-span-2 mt-6 border-t pt-4 border-gray-300">
-                    <h4 className={`text-md font-medium mb-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Update Documents</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      {/* Employee Image Upload */}
-                      <div className="space-y-2">
-                        <label htmlFor="empImgUpd" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                          Employee Photo:
-                        </label>
-                        <div className="flex flex-col items-center space-y-2">
-                          {/* Current Image Display */}
-                          {empImgPreview && (
-                            <div className="mb-2 relative">
-                              <div className="text-center mb-1">
-                                <span className="text-xs font-medium px-2 py-1 bg-blue-500 text-white rounded-md">
-                                  {empImg ? 'New Image' : 'Current Image'}
-                                </span>
-                              </div>
-                              <div className="border-2 border-blue-400 p-1 rounded-md">
-                                <img
-                                  src={empImgPreview}
-                                  alt="Employee Preview"
-                                  className="h-48 w-48 object-contain rounded-md"
-                                  onError={(e) => {
-                                    console.error("Error loading image:", e);
-                                    e.target.onerror = null;
-                                    e.target.src = 'https://via.placeholder.com/150?text=Image+Not+Found';
-                                  }}
-                                />
-                              </div>
-                              {empImg && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setEmpImg(null);
-                                    // If there was an existing image, restore that preview
-                                    if (selectedEmployee?.empimg) {
-                                      setEmpImgPreview(`https://api.aimdreamplanner.com/images/profile/${selectedEmployee.empimg}`);
-                                    } else {
-                                      setEmpImgPreview("");
-                                    }
-                                  }}
-                                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 text-xs"
-                                >
-                                  <FaTimes />
-                                </button>
-                              )}
-                            </div>
-                          )}
-                          {!empImgPreview && selectedEmployee?.profileImage && (
-                            <div className="text-center mb-2">
-                              <span className="text-xs text-red-500">Image not available or could not be loaded</span>
-                            </div>
-                          )}
-                          <input
-                            id="empImgUpd"
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => {
-                              const file = e.target.files[0];
-                              if (file) {
-                                setEmpImg(file);
-                                setEmpImgPreview(URL.createObjectURL(file));
-                              }
-                            }}
-                            className={`block w-full text-sm ${isDarkMode ? 'text-gray-300 file:bg-slate-700 file:text-white file:border-slate-600' : 'text-gray-700 file:bg-gray-100 file:text-gray-700 file:border-gray-300'} file:cursor-pointer file:rounded-md file:px-4 file:py-2 file:mr-4 file:border`}
-                          />
-                          <p className="text-xs text-gray-500 mt-1">Current image will be kept if no new image is selected</p>
-                        </div>
-                      </div>
-                     
-                      {/* Aadhar Card Image Upload */}
-                      <div className="space-y-2">
-                        <label htmlFor="adharImgUpd" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                          Aadhar Card Image:
-                        </label>
-                        <div className="flex flex-col items-center space-y-2">
-                          {/* Current Image Display */}
-                          {adharImgPreview && (
-                            <div className="mb-2 relative">
-                              <div className="text-center mb-1">
-                                <span className="text-xs font-medium px-2 py-1 bg-blue-500 text-white rounded-md">
-                                  {adharImg ? 'New Image' : 'Current Image'}
-                                </span>
-                              </div>
-                              <div className="border-2 border-blue-400 p-1 rounded-md">
-                                <img
-                                  src={adharImgPreview}
-                                  alt="Aadhar Preview"
-                                  className="h-48 w-64 object-contain rounded-md"
-                                  onError={(e) => {
-                                    console.error("Error loading Aadhar image:", e);
-                                    e.target.onerror = null;
-                                    e.target.src = 'https://via.placeholder.com/150?text=Aadhar+Image+Not+Found';
-                                  }}
-                                />
-                              </div>
-                              {adharImg && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setAdharImg(null);
-                                    // If there was an existing image, restore that preview
-                                    if (selectedEmployee?.adharimg) {
-                                      setAdharImgPreview(`https://api.aimdreamplanner.com/images/profile/${selectedEmployee.adharimg}`);
-                                    } else {
-                                      setAdharImgPreview("");
-                                    }
-                                  }}
-                                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 text-xs"
-                                >
-                                  <FaTimes />
-                                </button>
-                              )}
-                            </div>
-                          )}
-                          {!adharImgPreview && selectedEmployee?.aadharImage && (
-                            <div className="text-center mb-2">
-                              <span className="text-xs text-red-500">Image not available or could not be loaded</span>
-                            </div>
-                          )}
-                          <input
-                            id="adharImgUpd"
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => {
-                              const file = e.target.files[0];
-                              if (file) {
-                                setAdharImg(file);
-                                setAdharImgPreview(URL.createObjectURL(file));
-                              }
-                            }}
-                            className={`block w-full text-sm ${isDarkMode ? 'text-gray-300 file:bg-slate-700 file:text-white file:border-slate-600' : 'text-gray-700 file:bg-gray-100 file:text-gray-700 file:border-gray-300'} file:cursor-pointer file:rounded-md file:px-4 file:py-2 file:mr-4 file:border`}
-                          />
-                          <p className="text-xs text-gray-500 mt-1">Current image will be kept if no new image is selected</p>
-                        </div>
-                      </div>
-                     
-                      {/* PAN Card Image Upload */}
-                      <div className="space-y-2">
-                        <label htmlFor="panImgUpd" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                          PAN Card Image:
-                        </label>
-                        <div className="flex flex-col items-center space-y-2">
-                          {/* Current Image Display */}
-                          {panImgPreview && (
-                            <div className="mb-2 relative">
-                              <div className="text-center mb-1">
-                                <span className="text-xs font-medium px-2 py-1 bg-blue-500 text-white rounded-md">
-                                  {panImg ? 'New Image' : 'Current Image'}
-                                </span>
-                              </div>
-                              <div className="border-2 border-blue-400 p-1 rounded-md">
-                                <img
-                                  src={panImgPreview}
-                                  alt="PAN Preview"
-                                  className="h-48 w-64 object-contain rounded-md"
-                                  onError={(e) => {
-                                    console.error("Error loading PAN image:", e);
-                                    e.target.onerror = null;
-                                    e.target.src = 'https://via.placeholder.com/150?text=PAN+Image+Not+Found';
-                                  }}
-                                />
-                              </div>
-                              {panImg && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setPanImg(null);
-                                    // If there was an existing image, restore that preview
-                                    if (selectedEmployee?.panimg) {
-                                      setPanImgPreview(`https://api.aimdreamplanner.com/images/profile/${selectedEmployee.panimg}`);
-                                    } else {
-                                      setPanImgPreview("");
-                                    }
-                                  }}
-                                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 text-xs"
-                                >
-                                  <FaTimes />
-                                </button>
-                              )}
-                            </div>
-                          )}
-                          {!panImgPreview && selectedEmployee?.panImage && (
-                            <div className="text-center mb-2">
-                              <span className="text-xs text-red-500">Image not available or could not be loaded</span>
-                            </div>
-                          )}
-                          <input
-                            id="panImgUpd"
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => {
-                              const file = e.target.files[0];
-                              if (file) {
-                                setPanImg(file);
-                                setPanImgPreview(URL.createObjectURL(file));
-                              }
-                            }}
-                            className={`block w-full text-sm ${isDarkMode ? 'text-gray-300 file:bg-slate-700 file:text-white file:border-slate-600' : 'text-gray-700 file:bg-gray-100 file:text-gray-700 file:border-gray-300'} file:cursor-pointer file:rounded-md file:px-4 file:py-2 file:mr-4 file:border`}
-                          />
-                          <p className="text-xs text-gray-500 mt-1">Current image will be kept if no new image is selected</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  <div className="mt-6 border-t pt-4 border-gray-300">
+  <h4 className={`text-md font-medium mb-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Upload Documents</h4>
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    {/* Employee Image Upload */}
+    <div className="space-y-2">
+      <label htmlFor="empImg" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+        Employee Photo:
+      </label>
+      <div className="flex flex-col items-center space-y-2">
+        {empImgPreview && (
+          <div className="mb-2 relative">
+            <img
+              src={empImgPreview}
+              alt="Employee Preview"
+              className="h-32 w-32 object-cover rounded-md border-2 border-gray-300 cursor-pointer"
+              onClick={() => window.open(empImgPreview, '_blank')}
+            />
+            <button
+              type="button"
+              onClick={() => {
+                setEmpImg(null);
+                setEmpImgPreview("");
+              }}
+              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 text-xs"
+            >
+              <FaTimes />
+            </button>
+          </div>
+        )}
+        <input
+          id="empImg"
+          type="file"
+          accept="image/*"
+          onChange={(e) => {
+            const file = e.target.files[0];
+            if (file) {
+              setEmpImg(file);
+              setEmpImgPreview(URL.createObjectURL(file));
+            }
+          }}
+          className={`block w-full text-sm ${isDarkMode ? 'text-gray-300 file:bg-slate-700 file:text-white file:border-slate-600' : 'text-gray-700 file:bg-gray-100 file:text-gray-700 file:border-gray-300'} file:cursor-pointer file:rounded-md file:px-4 file:py-2 file:mr-4 file:border`}
+        />
+      </div>
+    </div>
+   
+    {/* Aadhar Card Image Upload */}
+    <div className="space-y-2">
+      <label htmlFor="adharImg" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+        Aadhar Card Image:
+      </label>
+      <div className="flex flex-col items-center space-y-2">
+        {adharImgPreview && (
+          <div className="mb-2 relative">
+            <img
+              src={adharImgPreview}
+              alt="Aadhar Preview"
+              className="h-32 w-48 object-cover rounded-md border-2 border-gray-300 cursor-pointer"
+              onClick={() => window.open(adharImgPreview, '_blank')}
+            />
+            <button
+              type="button"
+              onClick={() => {
+                setAdharImg(null);
+                setAdharImgPreview("");
+              }}
+              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 text-xs"
+            >
+              <FaTimes />
+            </button>
+          </div>
+        )}
+        <input
+          id="adharImg"
+          type="file"
+          accept="image/*"
+          onChange={(e) => {
+            const file = e.target.files[0];
+            if (file) {
+              setAdharImg(file);
+              setAdharImgPreview(URL.createObjectURL(file));
+            }
+          }}
+          className={`block w-full text-sm ${isDarkMode ? 'text-gray-300 file:bg-slate-700 file:text-white file:border-slate-600' : 'text-gray-700 file:bg-gray-100 file:text-gray-700 file:border-gray-300'} file:cursor-pointer file:rounded-md file:px-4 file:py-2 file:mr-4 file:border`}
+        />
+      </div>
+    </div>
+   
+    {/* PAN Card Image Upload */}
+    <div className="space-y-2">
+      <label htmlFor="panImg" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+        PAN Card Image:
+      </label>
+      <div className="flex flex-col items-center space-y-2">
+        {panImgPreview && (
+          <div className="mb-2 relative">
+            <img
+              src={panImgPreview}
+              alt="PAN Preview"
+              className="h-32 w-48 object-cover rounded-md border-2 border-gray-300 cursor-pointer"
+              onClick={() => window.open(panImgPreview, '_blank')}
+            />
+            <button
+              type="button"
+              onClick={() => {
+                setPanImg(null);
+                setPanImgPreview("");
+              }}
+              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 text-xs"
+            >
+              <FaTimes />
+            </button>
+          </div>
+        )}
+        <input
+          id="panImg"
+          type="file"
+          accept="image/*"
+          onChange={(e) => {
+            const file = e.target.files[0];
+            if (file) {
+              setPanImg(file);
+              setPanImgPreview(URL.createObjectURL(file));
+            }
+          }}
+          className={`block w-full text-sm ${isDarkMode ? 'text-gray-300 file:bg-slate-700 file:text-white file:border-slate-600' : 'text-gray-700 file:bg-gray-100 file:text-gray-700 file:border-gray-300'} file:cursor-pointer file:rounded-md file:px-4 file:py-2 file:mr-4 file:border`}
+        />
+      </div>
+    </div>
+  </div>
+</div>
                  
                   <div className="md:col-span-2 flex justify-center space-x-4 mt-6">
                     <button type="submit" className={`px-4 py-2 ${isDarkMode ? 'bg-green-600 hover:bg-green-700' : 'bg-green-500 hover:bg-green-600'} text-white rounded-md shadow-md focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors duration-200`}>
