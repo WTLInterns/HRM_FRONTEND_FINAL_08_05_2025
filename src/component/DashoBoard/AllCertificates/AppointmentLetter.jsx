@@ -430,12 +430,7 @@ const AppointmentLetter = () => {
           </button>
           
           <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto justify-end">
-            <button 
-              onClick={handlePrint}
-              className="px-3 py-1.5 sm:px-4 sm:py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition duration-300 flex items-center text-xs sm:text-sm"
-            >
-              <FaPrint className="mr-1 sm:mr-2" /> Print
-            </button>
+         
             <button 
               onClick={handleDownloadPDF}
               disabled={pdfGenerating}
