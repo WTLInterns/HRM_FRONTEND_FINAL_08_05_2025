@@ -1153,7 +1153,7 @@ export default function SalaryReport() {
             </div>
           </div>
           
-          <div className="mt-6">
+        {/*  <div className="mt-6">
             <h3 className={`text-lg font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Net Payable</h3>
             <div className={`p-4 rounded-md ${isDarkMode ? 'bg-slate-700' : 'bg-gray-100'}`}>
               <div className="grid grid-cols-1 gap-4">
@@ -1164,10 +1164,10 @@ export default function SalaryReport() {
                 {/* <div>
                   <p className="text-sm text-gray-400">Amount in Words</p>
                   <p className="font-medium italic">{numberToWords((salaryReport?.netPayable || 0) + (salaryReport?.incentiveAmount || 0))} Rupees Only</p>
-                </div> */}
+                </div> 
               </div>
             </div>
-          </div>
+          </div>  */}
         </div>
       )}
     </div>

@@ -475,26 +475,7 @@ const ExitLetter = () => {
             <FaArrowLeft className="mr-2" /> Back to Certificates
           </button>
           
-          <div className="flex space-x-3">
-            {/* <button 
-              onClick={handlePrint}
-              className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition duration-300 flex items-center"
-            >
-              <FaPrint className="mr-2" /> Print
-            </button> */}
-            <button 
-              onClick={handleDownloadPDF}
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition duration-300 flex items-center"
-            >
-              <FaDownload className="mr-2" /> Download
-            </button>
-            <button 
-              onClick={handleSendEmail}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition duration-300 flex items-center"
-            >
-              <FaEnvelope className="mr-2" /> Email
-            </button>
-          </div>
+          
         </div>
 
         {apiError && (
@@ -503,9 +484,9 @@ const ExitLetter = () => {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="flex flex-col lg:flex-row gap-8" style={{overflowX: 'auto', WebkitOverflowScrolling: 'touch'}}>
           {/* Form Section */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 order-1 lg:order-none">
             <div className={`p-6 rounded-lg shadow-lg ${isDarkMode ? 'bg-slate-700' : 'bg-white'}`}>
               <h2 className="text-xl font-bold mb-4 text-center">Exit Letter Details</h2>
               
@@ -636,105 +617,140 @@ const ExitLetter = () => {
           </div>
 
           {/* Letter Preview Section */}
-          <div className="lg:col-span-2">
-            <div ref={letterRef} className="bg-white text-black p-8 rounded-lg shadow-xl min-h-[29.7cm] max-w-[21cm] mx-auto relative border border-gray-200">
-              {/* Company Header */}
-              <div className="flex justify-between items-center mb-12">
-                <div className="flex-shrink-0">
-                  {subadmin && subadmin.companylogo ? (
-                    <img 
-                      src={`https://api.managifyhr.com/images/profile/${subadmin.companylogo}`} 
-                      alt="Company Logo" 
-                      className="h-20 object-contain" 
-                      onError={(e) => {
-                        e.target.src = 'https://via.placeholder.com/150x50?text=LOGO';
-                      }}
-                    />
-                  ) : (
-                    <div className="text-4xl font-bold">LOGO</div>
-                  )}
+          <div className="lg:col-span-2 order-2 lg:order-none w-full">
+            {/* Action Buttons */}
+            <div className="flex gap-4 mb-6 justify-end">
+              <button
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded shadow transition-colors duration-150"
+                onClick={handleDownloadPDF}
+                type="button"
+              >
+                <FaDownload /> Download
+              </button>
+              <button
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded shadow transition-colors duration-150"
+                onClick={handleSendEmail}
+                type="button"
+              >
+                <FaEnvelope /> Email
+              </button>
+            </div>
+            <div ref={letterRef} className="bg-white text-black p-8 rounded-lg shadow-xl min-h-[29.7cm] w-[21cm] mx-auto relative border border-gray-200" style={{overflow: 'hidden'}}>
+              {/* Decorative corner elements */}
+              <div className="absolute top-0 left-0 w-16 h-16 border-t-2 border-l-2 border-gray-300 rounded-tl-lg"></div>
+              <div className="absolute top-0 right-0 w-16 h-16 border-t-2 border-r-2 border-gray-300 rounded-tr-lg"></div>
+              <div className="absolute bottom-0 left-0 w-16 h-16 border-b-2 border-l-2 border-gray-300 rounded-bl-lg"></div>
+              <div className="absolute bottom-0 right-0 w-16 h-16 border-b-2 border-r-2 border-gray-300 rounded-br-lg"></div>
+
+              {/* Subtle watermark */}
+              {subadmin && (
+                <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none">
+                  <h1 className="text-9xl font-bold text-center transform rotate-12 text-gray-500">{subadmin.registercompanyname}</h1>
                 </div>
-                <div className="text-right">
-                  <h1 className="text-2xl font-bold">{subadmin?.registercompanyname || "COMPANY NAME"}</h1>
+              )}
+
+              {/* Company Letterhead */}
+              <div className="mb-10">
+                <div className="flex justify-between items-start mb-4">
+                  {/* Company Logo */}
+                  <div className="flex-shrink-0 mr-4">
+                    {subadmin && subadmin.companylogo ? (
+                      <img 
+                        src={`https://api.managifyhr.com/images/profile/${subadmin.companylogo}`} 
+                        alt="Company Logo" 
+                        className="h-20 object-contain" 
+                        onError={(e) => {
+                          e.target.src = 'https://via.placeholder.com/150x50?text=Company+Logo';
+                        }}
+                      />
+                    ) : null}
+                  </div>
+                  {/* Company Details */}
+                  <div className="flex flex-col items-end text-right">
+                    <h2 className="font-bold text-xl text-gray-800">{subadmin?.registercompanyname || "Your Company Name"}</h2>
+                    <p className="text-sm text-gray-600">{subadmin?.address || "Company Address"}</p>
+                    <p className="text-sm text-gray-600">GST: {subadmin?.gstno || "GSTIN"}</p>
+                  </div>
                 </div>
+                <hr className="border-t-2 border-gray-300 my-3" />
               </div>
 
               {/* Letter Title */}
               <div className="text-center mb-8">
-                <h1 className="text-3xl font-bold">Exit Letter</h1>
+                <h1 className="text-2xl font-bold text-gray-800">Exit Letter To Employee</h1>
+                <p className="text-gray-600 mt-2">Sample Letter</p>
               </div>
 
               {/* Letter Content */}
               <div className="space-y-4">
-                <p className="font-bold">Subject: Exit Letter - Confirmation of Resignation</p>
-
-                <p>Date: {formData.exitDate ? formatDate(formData.exitDate) : "[Insert Date]"}</p>
-
-                <p>Employee ID: {formData.employeeId || "[Employee ID]"}</p>
-
-                <p>Designation: {formData.designation || "[Designation]"}</p>
-
-                <p>Dear {formData.employeeName || "[Employee Name]"},</p>
-
-                <p className="text-justify">
-                  An exit letter is a formal document issued by a company to an employee when they leave the
-                  organization. Its purpose is as follows:
-                </p>
-
-                <ul className="list-disc pl-6 space-y-2">
-                  <li>
-                    <span className="font-semibold">Confirmation:</span> It confirms the end of the employee's tenure
-                  </li>
-                  <li>
-                    <span className="font-semibold">Clearance:</span> States that the employee has completed all necessary handovers and formalities
-                  </li>
-                  <li>
-                    <span className="font-semibold">Reference:</span> Often used by the employee as a reference for future job opportunities
-                  </li>
-                  <li>
-                    <span className="font-semibold">Professional Closure:</span> Provides a respectful and professional end to the employment relationship
-                  </li>
-                </ul>
-
-                <div className="mt-12">
-                  <p>Sincerely,</p>
-                  <div className="h-32"></div>
-                  <div className="mt-8">
-                    {subadmin && subadmin.signature ? (
-                      <div className="border-b border-gray-300 pb-1 w-48">
-                        <img 
-                          src={`https://api.managifyhr.com/images/profile/${subadmin.signature}`} 
-                          alt="Signature" 
-                          className="h-16 mb-2 object-contain" 
-                          onError={(e) => {
-                            e.target.src = 'https://via.placeholder.com/150x50?text=Signature';
-                          }}
-                        />
-                      </div>
-                    ) : (
-                      <div className="h-12 w-32 bg-gray-200 flex items-center justify-center mb-1">
-                        <span className="text-gray-500">[Sender Name]</span>
-                      </div>
-                    )}
-                    <p className="font-bold">{formData.signatoryName || "[Sender Name]"}</p>
-                    <p>{formData.signatoryTitle || "[Designation]"}</p>
-                    <p>{subadmin?.registercompanyname || "[Company Name]"}</p>
+                <div className="flex justify-between mb-8">
+                  <div>
+                    <p className="mb-1">Mr./Ms. {formData.employeeName || "_________"}</p>
+                    <p className="mb-1">Designation: {formData.designation || "_________"}</p>
+                    <p>Employee ID: {formData.employeeId || "_________"}</p>
+                  </div>
+                  <div>
+                    <p>Date: {formData.exitDate ? formatDate(formData.exitDate) : "_________"}</p>
                   </div>
                 </div>
 
-                {/* Company Stamp */}
-                {subadmin && subadmin.stampImg && (
-                  <div className="absolute bottom-24 right-8">
-                    <img 
-                      src={`https://api.managifyhr.com/images/profile/${subadmin.stampImg}`} 
-                      alt="Company Stamp" 
-                      className="h-28 w-auto object-contain opacity-90" 
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                      }}
-                    />
+                <div className="mb-6">
+                  <p className="font-bold mb-4">Subject: Exit/Relieving Letter</p>
+                  <p>Dear {formData.employeeName || "_________"},</p>
+                </div>
+
+                <p className="mb-2">This is to formally acknowledge your resignation and confirm your exit from the company.</p>
+
+                <p className="text-justify mb-4">
+                  We thank you for your contributions during your tenure with us. We wish you all the best in your future endeavors. This letter serves as a formal relieving letter from your duties and responsibilities at our company as of {formData.exitDate ? formatDate(formData.exitDate) : "_________"}.
+                </p>
+
+                <p className="text-justify mb-4">
+                  Please ensure all company property is returned and all exit formalities are completed.
+                </p>
+
+                <p className="mb-4">With best wishes,</p>
+
+                <div className="mt-16">
+                  <p>Sincerely yours,</p>
+                  <p className="font-bold">{subadmin?.registercompanyname || "Company Name"}</p>
+                  {/* Signature Section */}
+                  <div className="mt-8 flex justify-between items-start">
+                    <div>
+                      {subadmin && subadmin.signature ? (
+                        <div className="border-b border-gray-300 pb-1 w-48">
+                          <img 
+                            src={`https://api.managifyhr.com/images/profile/${subadmin.signature}`} 
+                            alt="Signature" 
+                            className="h-16 mb-2 object-contain" 
+                            onError={(e) => {
+                              e.target.src = 'https://via.placeholder.com/150x50?text=Signature';
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <div className="h-12 w-32 bg-gray-200 flex items-center justify-center mb-1">
+                          <span className="text-gray-500">Signature</span>
+                        </div>
+                      )}
+                      <p className="font-bold mt-2">{formData.signatoryName || (subadmin ? `${subadmin.name} ${subadmin.lastname}` : "Authorized Signatory")}</p>
+                      <p>{formData.signatoryTitle || "Authorized Signatory"}</p>
+                    </div>
+                    {/* Company Stamp */}
+                    {subadmin && subadmin.stampImg && (
+                      <div>
+                        <img 
+                          src={`https://api.managifyhr.com/images/profile/${subadmin.stampImg}`} 
+                          alt="Company Stamp" 
+                          className="h-28 w-auto object-contain opacity-90" 
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                          }}
+                        />
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
             </div>
           </div>

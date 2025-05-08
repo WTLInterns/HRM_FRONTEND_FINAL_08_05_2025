@@ -1064,7 +1064,7 @@ const ProfileForm = () => {
           
           {/* Stamp Image */}
           <ImageUploadPreview
-            label="Stamp Image"
+            label="Stamp Image *"
             preview={stampImgFile ? stampImgPreview : stampImgPreview}
             file={stampImgFile}
             loading={stampLoading}
@@ -1076,7 +1076,7 @@ const ProfileForm = () => {
           
           {/* Signature */}
           <ImageUploadPreview
-            label="Signature"
+            label="Signature *"
             preview={signatureFile ? signaturePreview : signaturePreview}
             file={signatureFile}
             loading={signatureLoading}

@@ -389,7 +389,7 @@ const Login = () => {
                   onClick={forceCleanLogin}
                   className="text-xs text-gray-400 hover:text-blue-400 hover:underline transition-all duration-300"
                 >
-                  Force Clean Login
+                  Clear 
                 </button>
               </div>
             </form>
