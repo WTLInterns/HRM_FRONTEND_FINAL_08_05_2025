@@ -9,6 +9,14 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 const IncrementLetter = () => {
+  // Mobile warning logic
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth <= 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
   const { isDarkMode } = useApp();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -663,6 +671,11 @@ const IncrementLetter = () => {
             </div>
           </div>
 
+          {isMobile && (
+            <div className="mobile-warning-blink overflow-x-auto pb-4 mb-6">
+              To View Certificate In Full Size Please Open It In Desktop Site Mode.
+            </div>
+          )}
           {/* Letter Preview Section */}
           <div className="lg:col-span-2">
             <div ref={letterRef} className="bg-white text-black p-8 rounded-lg shadow-xl min-h-[29.7cm] w-[21cm] mx-auto relative border border-gray-200" style={{overflow: 'hidden'}}>
@@ -707,6 +720,7 @@ const IncrementLetter = () => {
                 <hr className="border-t-2 border-gray-300 my-3" />
               </div>
 
+              
               {/* Sample Letter Text */}
               <div className="text-center mb-8">
                 <h1 className="text-2xl font-bold text-gray-800">Increment Letter To Employee</h1>
@@ -799,5 +813,31 @@ const IncrementLetter = () => {
     </motion.div>
   );
 };
+
+// Blinking warning CSS (add to global style or inject here if not already present)
+const style = document.createElement('style');
+style.innerHTML = `
+.mobile-warning-blink {
+  color: #fff;
+  background: #e53e3e;
+  font-weight: bold;
+  text-align: center;
+  padding: 10px 0;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  animation: blink-red 1.2s linear infinite;
+  font-size: 1rem;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(229,62,62,0.15);
+}
+@keyframes blink-red {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+`;
+if (!document.head.querySelector('style[data-mobile-warning]')) {
+  style.setAttribute('data-mobile-warning', 'true');
+  document.head.appendChild(style);
+}
 
 export default IncrementLetter; 

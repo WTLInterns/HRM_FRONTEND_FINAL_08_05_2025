@@ -4,7 +4,8 @@ import "react-calendar/dist/Calendar.css";
 import axios from "axios";
 import "./calendar-custom.css";
 import "./animations.css";
-import { FaCalendarAlt, FaUserCheck, FaSearch, FaTimes } from 'react-icons/fa';
+import { FaCalendarAlt, FaUserCheck, FaSearch, FaTimes, FaDownload } from 'react-icons/fa';
+import { exportAttendanceToExcel } from './excelExport';
 import { toast } from "react-hot-toast";
 import { useApp } from "../../context/AppContext";
 
@@ -21,6 +22,7 @@ export default function ViewAttendance() {
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [selectedDate, setSelectedDate] = useState(null);
   const [tooltipContent, setTooltipContent] = useState({});
+  const [showDetailModal, setShowDetailModal] = useState(false);
   const { isDarkMode } = useApp();
 
   // Fetch logged-in subadmin and employee list
@@ -30,7 +32,7 @@ export default function ViewAttendance() {
       const user = JSON.parse(userData);
       setLoggedUser(user);
       axios
-        .get(`https://api.managifyhr.com/api/employee/${user.id}/employee/all`)
+        .get(`http://localhost:8282/api/employee/${user.id}/employee/all`)
         .then(res => setEmployeeList(res.data))
         .catch(err => console.error("Failed to load employee list:", err));
     }
@@ -84,7 +86,7 @@ export default function ViewAttendance() {
       const subadminId = loggedUser.id;
       const encodedName = encodeURIComponent(empFullName);
       const res = await axios.get(
-        `https://api.managifyhr.com/api/employee/${subadminId}/${encodedName}/attendance`
+        `http://localhost:8282/api/employee/${subadminId}/${encodedName}/attendance`
       );
       setAttendanceData(res.data);
       setEmpName(res.data[0]?.employee?.firstName || "Employee");
@@ -118,8 +120,15 @@ export default function ViewAttendance() {
     const d = new Date(value);
     d.setHours(12,0,0,0);
     const dateStr = d.toISOString().split('T')[0];
+    const record = attendanceData.find(i => i.date === dateStr) || {};
     setSelectedDate(dateStr);
-    setTooltipContent(attendanceData.find(i => i.date === dateStr) || {});
+    setTooltipContent(record);
+    // Only open modal for Absent, Leave, Paid Leave
+    if (["Absent", "Leave", "Paid Leave"].includes(record.status)) {
+      setShowDetailModal(true);
+    } else {
+      setShowDetailModal(false);
+    }
   };
 
   const statusColors = {
@@ -240,9 +249,24 @@ const tileContent = ({ date, view }) => {
         <div className={`text-center py-8 ${isDarkMode ? "text-gray-300" : "text-gray-500"}`}>Loading...</div>
       ) : attendanceData.length > 0 ? (
         <div className={`${isDarkMode ? "bg-slate-800 border-blue-900" : "bg-blue-50 border-blue-200"} p-6 rounded-lg shadow-lg border animate-slideIn`}>
-          <h2 className={`text-2xl font-semibold mb-4 flex items-center gap-2 ${isDarkMode ? "text-gray-100" : "text-gray-800"}`}>
-            <FaCalendarAlt className={isDarkMode ? "text-blue-400" : "text-blue-600"} /> Attendance for {empName}
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className={`text-2xl font-semibold flex items-center gap-2 ${isDarkMode ? "text-gray-100" : "text-gray-800"}`}>
+              <FaCalendarAlt className={isDarkMode ? "text-blue-400" : "text-blue-600"} /> Attendance for {empName}
+            </h2>
+            {attendanceData.length > 0 && (
+              <button
+                onClick={() => {
+                  // Use filteredAttendanceData for the current month/year
+                  let empObj = employeeList.find(e => `${e.firstName} ${e.lastName}`.toLowerCase() === empFullName.trim().toLowerCase());
+                  if (!empObj) empObj = employeeList[0] || {};
+                  exportAttendanceToExcel(filteredAttendanceData, empObj);
+                }}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg shadow transition-all duration-200 ${isDarkMode ? 'bg-blue-700 text-white hover:bg-blue-800' : 'bg-blue-500 text-white hover:bg-blue-600'}`}
+              >
+                <FaDownload /> Download
+              </button>
+            )}
+          </div>
           <Calendar
             value={null}
             onActiveStartDateChange={handleMonthChange}
@@ -252,20 +276,26 @@ const tileContent = ({ date, view }) => {
             showNeighboringMonth={false}
           />
           {renderAttendanceSummary(filteredAttendanceData)}
-          {selectedDate && tooltipContent.status && (
-            <div className={`${isDarkMode ? "bg-slate-700 border-blue-900" : "bg-blue-100 border-blue-300"} mt-6 p-6 rounded-lg shadow-lg border animate-slideIn transform transition-all duration-300 hover:scale-[1.02] hover:shadow-xl`}>
-              <h3 className={`text-lg font-semibold mb-3 flex items-center gap-2 ${isDarkMode ? "text-gray-100" : "text-gray-800"}`}>
-                <FaCalendarAlt className={`${isDarkMode ? "text-blue-400" : "text-blue-600 animate-pulse"}`} /> Attendance Details for {formatDate(selectedDate)}
-              </h3>
-              <div className={`p-4 rounded-lg border ${statusColors[tooltipContent.status]} transform transition-all duration-300 hover:scale-[1.02]`}>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <p className={`${isDarkMode ? "text-gray-400" : "text-gray-600"} text-sm`}>Status</p>
-                    <p className="font-semibold text-lg">{tooltipContent.status}</p>
-                  </div>
-                  <div className="space-y-2">
-                    <p className={`${isDarkMode ? "text-gray-400" : "text-gray-600"} text-sm`}>Employee</p>
-                    <p className="font-semibold text-lg">{tooltipContent.employee?.firstName || "N/A"}</p>
+          {/* Attendance Detail Modal */}
+          {showDetailModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+              <div className={`rounded-lg shadow-lg border w-full max-w-xl p-6 ${isDarkMode ? "bg-slate-800 border-blue-900 text-gray-100" : "bg-white border-blue-300 text-gray-900"}`}>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className={`text-lg font-semibold flex items-center gap-2 ${isDarkMode ? "text-gray-100" : "text-gray-800"}`}>
+                    <FaCalendarAlt className={`${isDarkMode ? "text-blue-400" : "text-blue-600 animate-pulse"}`} /> Attendance Details for {formatDate(selectedDate)}
+                  </h3>
+                  <button onClick={() => setShowDetailModal(false)} className="text-xl font-bold hover:text-red-500 transition-colors duration-200">&times;</button>
+                </div>
+                <div className={`p-4 rounded-lg border ${statusColors[tooltipContent.status]}`}>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <p className={`${isDarkMode ? "text-gray-400" : "text-gray-600"} text-sm`}>Status</p>
+                      <p className="font-semibold text-lg">{tooltipContent.status}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <p className={`${isDarkMode ? "text-gray-400" : "text-gray-600"} text-sm`}>Reason</p>
+                      <p className="font-semibold text-lg">{tooltipContent.reason || "N/A"}</p>
+                    </div>
                   </div>
                 </div>
               </div>

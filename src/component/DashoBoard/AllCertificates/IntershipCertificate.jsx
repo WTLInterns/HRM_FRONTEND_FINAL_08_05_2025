@@ -15,6 +15,13 @@ import { BsSearch } from "react-icons/bs";
 import Loading from "../../../component/Loading";
 
 const InternshipCertificate = () => {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth <= 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
   const { isDarkMode } = useApp();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -393,6 +400,11 @@ const InternshipCertificate = () => {
           {/* Certificate Preview */}
           <div className="lg:col-span-2">
             <div className={`p-6 rounded-lg shadow-lg ${isDarkMode ? 'bg-slate-700' : 'bg-white'} mb-4`}>
+              {isMobile && (
+                <div className="mobile-warning-blink">
+                  To View Certificate In Full Size Please Open It In Desktop Site Mode.
+                </div>
+              )}
               <h2 className="text-xl font-bold mb-4">Certificate Preview</h2>
               {/* Mobile horizontal scroll wrapper */}
               <div style={{ overflowX: 'auto', maxWidth: '100vw', WebkitOverflowScrolling: 'touch' }}>
@@ -584,5 +596,31 @@ const InternshipCertificate = () => {
     </motion.div>
   );
 };
+
+// Blinking warning style for mobile
+const style = document.createElement('style');
+style.innerHTML = `
+  .mobile-warning-blink {
+    color: #fff;
+    background: #e3342f;
+    padding: 10px;
+    border-radius: 6px;
+    margin-bottom: 16px;
+    text-align: center;
+    font-weight: bold;
+    font-size: 1rem;
+    animation: blink-red 1s linear infinite;
+    box-shadow: 0 2px 8px rgba(227,52,47,0.12);
+    z-index: 20;
+  }
+  @keyframes blink-red {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+`;
+if (typeof window !== 'undefined' && !document.getElementById('mobile-warning-blink-style')) {
+  style.id = 'mobile-warning-blink-style';
+  document.head.appendChild(style);
+}
 
 export default InternshipCertificate;

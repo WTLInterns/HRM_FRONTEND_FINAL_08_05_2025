@@ -9,6 +9,14 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 const RelievingLetter = () => {
+  // Mobile warning logic
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth <= 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
   const { isDarkMode } = useApp();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -98,6 +106,19 @@ const RelievingLetter = () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  // ...rest of logic
+
+  // --- RENDER STARTS HERE ---
+  // (Find the section between form and letter preview, and add the warning)
+
+  const MobileWarning = () => (
+  isMobile && (
+    <div className="mobile-warning-blink overflow-x-auto pb-4 mb-6">
+      To View Certificate In Full Size Please Open It In Desktop Site Mode.
+    </div>
+  )
+);
 
   const handleSearchChange = (e) => {
     const value = e.target.value;
@@ -1063,6 +1084,8 @@ const RelievingLetter = () => {
 
           {/* Letter Preview Section */}
           <div className="lg:col-span-2">
+            {/* Place MobileWarning above the letter preview */}
+            <MobileWarning />
             <div ref={letterRef} className="bg-white text-black p-8 rounded-lg shadow-xl min-h-[29.7cm] w-[21cm] mx-auto relative border border-gray-200" style={{overflow: 'hidden'}}>
               {/* Decorative elements */}
               <div className="absolute top-0 right-0 w-32 h-32 bg-green-50 rounded-bl-full opacity-50 -z-1"></div>

@@ -9,6 +9,15 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 const ExitLetter = () => {
+  // Mobile warning logic
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth <= 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   const { isDarkMode } = useApp();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -618,6 +627,11 @@ const ExitLetter = () => {
 
           {/* Letter Preview Section */}
           <div className="lg:col-span-2 order-2 lg:order-none w-full">
+            {isMobile && (
+              <div className="mobile-warning-blink overflow-x-auto pb-4 mb-6">
+                To View Certificate In Full Size Please Open It In Desktop Site Mode.
+              </div>
+            )}
             {/* Action Buttons */}
             <div className="flex gap-4 mb-6 justify-end">
               <button

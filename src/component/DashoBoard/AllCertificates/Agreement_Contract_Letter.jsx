@@ -8,7 +8,16 @@ import { motion } from 'framer-motion';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
+
 const Agreement_Contract_Letter = () => {
+  // Mobile warning logic
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth <= 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
   const { isDarkMode } = useApp();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -572,12 +581,17 @@ const Agreement_Contract_Letter = () => {
 
           {/* Letter Preview Section */}
           <div className="lg:col-span-2 w-full" style={{overflowX: 'auto', WebkitOverflowScrolling: 'touch'}}>
-  <div
-    ref={letterRef}
-    id="letter-content"
-    className="bg-white text-black p-8 rounded-lg shadow-xl min-h-[29.7cm] w-[900px] mx-auto relative border border-gray-200"
-    style={{ overflowX: 'auto', overflowY: 'visible' }}
-  >
+            {isMobile && (
+              <div className="mobile-warning-blink overflow-x-auto pb-4">
+                To View Certificate In Full Size Please Open It In Desktop Site Mode.
+              </div>
+            )}
+            <div
+              ref={letterRef}
+              id="letter-content"
+              className="bg-white text-black p-8 rounded-lg shadow-xl min-h-[29.7cm] w-[900px] mx-auto relative border border-gray-200"
+              style={{ overflowX: 'auto', overflowY: 'visible' }}
+            >
               {/* Company Letterhead */}
               <div className="mb-10">
                 <div className="flex justify-between items-start mb-4">
@@ -758,5 +772,31 @@ const Agreement_Contract_Letter = () => {
     </motion.div>
   );
 };
+
+// Blinking warning CSS (add to global style or inject here if not already present)
+const style = document.createElement('style');
+style.innerHTML = `
+.mobile-warning-blink {
+  color: #fff;
+  background: #e53e3e;
+  font-weight: bold;
+  text-align: center;
+  padding: 10px 0;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  animation: blink-red 1.2s linear infinite;
+  font-size: 1rem;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(229,62,62,0.15);
+}
+@keyframes blink-red {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+`;
+if (!document.head.querySelector('style[data-mobile-warning]')) {
+  style.setAttribute('data-mobile-warning', 'true');
+  document.head.appendChild(style);
+}
 
 export default Agreement_Contract_Letter;

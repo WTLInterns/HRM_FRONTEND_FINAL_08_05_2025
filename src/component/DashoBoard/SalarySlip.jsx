@@ -9,6 +9,7 @@ import axios from "axios"
 import { toast } from "react-hot-toast"
 import { CloudCog } from "lucide-react"
 import { useApp } from "../../context/AppContext"
+import SalarySlipModal from "./SalarySlipModal";
 
 // Helper: format date from "YYYY-MM-DD" to "DD-MM-YYYY"
 const formatDate = (dateStr) => {
@@ -122,6 +123,21 @@ export default function SalaryReport() {
   const [professionalTax, setProfessionalTax] = useState(200) // Fixed Rs. 200 for professional tax
   const [pfAmount, setPfAmount] = useState(0) // New state for PF amount
   
+  // State for popups
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [showDownloadPopup, setShowDownloadPopup] = useState(false);
+
+  // Handlers for closing popups
+  const handleClosePopup = () => {
+    setShowSuccessPopup(false);
+    setShowReport(true); // Show the modal only after popup is dismissed
+  };
+  const handleCloseDownloadPopup = () => {
+    setShowDownloadPopup(false);
+    setShowReport(false); // Close the modal and go back to Salary Slip page
+  };
+
+
   // Get company details from localStorage
   const getCompanyDetails = () => {
     return {
@@ -210,7 +226,7 @@ export default function SalaryReport() {
       
       // Using the new API endpoint format
       const response = await axios.get(
-        `https://api.managifyhr.com/api/employee/employee/${encodeURIComponent(user.registercompanyname)}/${encodeURIComponent(employeeName)}/attendance/report?startDate=${startDate}&endDate=${endDate}`
+        `http://localhost:8282/api/employee/employee/${encodeURIComponent(user.registercompanyname)}/${encodeURIComponent(employeeName)}/attendance/report?startDate=${startDate}&endDate=${endDate}`
       )
       
       // Fetch the complete employee details to ensure we have department and bank details
@@ -278,8 +294,8 @@ export default function SalaryReport() {
       setTotalDeductions(calculatedTotalDeductions)
       setSalaryReport(updatedData)
       setS(updatedData) // Set s to the same data for consistency
-      setShowReport(true)
       setYearlyCTC(data.grossSalary * 12) // Set yearly CTC based on gross salary
+      setShowSuccessPopup(true); // Show popup after successful report generation
     } catch (err) {
       console.error("Error fetching salary report:", err)
       setError(err.message || "Failed to fetch data")
@@ -290,6 +306,7 @@ export default function SalaryReport() {
   }
 
   const generateSalarySlipPDF = () => {
+    setShowDownloadPopup(true);
     try {
       // Get user data from localStorage
       const userData = JSON.parse(localStorage.getItem('user'));
@@ -403,43 +420,42 @@ export default function SalaryReport() {
         // Outer container start
         const slipStartY = yPos;
 
-        // 1) HEADER with green background
-        const headerBoxHeight = 14;
+        // 1) HEADER with company name and address side by side
+        const headerBoxHeight = 16;
+        const companyColWidth = contentWidth * 0.5;
+        const addressColWidth = contentWidth * 0.5;
         doc.setFillColor(...faintGreen);
-        doc.rect(margin, yPos, contentWidth, headerBoxHeight, "F");
         doc.setDrawColor(...black);
         doc.setLineWidth(0.1);
+        // Draw the full header row
+        doc.rect(margin, yPos, contentWidth, headerBoxHeight, "F");
         doc.rect(margin, yPos, contentWidth, headerBoxHeight, "S");
-        doc.setTextColor(0, 0, 0);
-        doc.setFontSize(20);
+        // Company Name (left)
+        doc.setFontSize(15);
         doc.setFont("helvetica", "bold");
-        
-        // Use dynamic company name
-        const companyName = userData.registercompanyname.toUpperCase();
-        doc.textWithLink(
-          companyName,
-          margin + (contentWidth / 2),
-          yPos + headerBoxHeight / 2,
-          {
-            url: "#",
-            align: "center",
-          }
-        );
+        doc.setTextColor(0, 0, 0);
+        const companyName = userData.registercompanyname ? userData.registercompanyname.toUpperCase() : "COMPANY NAME";
+        doc.text(companyName, margin + 4, yPos + headerBoxHeight / 2 + 1, {
+          align: "left",
+          baseline: "middle"
+        });
+        // Company Address (right, wrapped if needed)
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "normal");
+        const companyAddress = userData.address ? userData.address : "COMPANY ADDRESS";
+        // Wrap address to fit inside the right column
+        const addressMaxWidth = addressColWidth - 8; // padding from both sides
+        const addressLines = doc.splitTextToSize(companyAddress, addressMaxWidth);
+        // Calculate vertical offset for centering if wrapped
+        const addressLineHeight = 5.2;
+        const addressBlockHeight = addressLines.length * addressLineHeight;
+        const addressY = yPos + (headerBoxHeight - addressBlockHeight) / 2 + addressLineHeight - 1;
+        doc.text(addressLines, margin + companyColWidth + 4, addressY, {
+          align: "left",
+          baseline: "top"
+        });
         yPos += headerBoxHeight;
 
-        // 2) Company address row with dynamic address
-        createCell(
-          margin,
-          yPos,
-          contentWidth,
-          12,
-          `Company Address :- ${userData.address}`,
-          12,
-          "center",
-          true,
-          faintGreen
-        );
-        yPos += 12;
 
         // Example: "PAY SLIP FOR MARCH-2025"
         const paySlipMonth = startDate
@@ -772,7 +788,7 @@ export default function SalaryReport() {
         createCell(margin + sigColumnWidth, yPos, sigColumnWidth, signatureRowHeight, "", 10, "left")
 
         // Left column: Signature image'
-        const signature = `https://api.managifyhr.com/images/profile/${user.signature}`
+        const signature = `http://localhost:8282/images/profile/${user.signature}`
         try {
           doc.addImage(
             signature,
@@ -796,7 +812,7 @@ export default function SalaryReport() {
         }
 
         // Right column: Company logo
-        const logo = `https://api.managifyhr.com/images/profile/${user.companylogo}`
+        const logo = `http://localhost:8282/images/profile/${user.companylogo}`
         try {
           doc.addImage(
            logo,
@@ -841,18 +857,50 @@ export default function SalaryReport() {
   };
 
   return (
-    <div className={`px-6 py-8 ${isDarkMode ? 'bg-slate-900 text-white' : 'bg-gray-50 text-gray-800'}`}>
-      <h1 className={`text-2xl font-bold mb-6 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>Salary Slip Generator</h1>
-      
-      {/* Form */}
-      <div className={`${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} p-5 rounded-lg shadow-lg border`}>
-        <div className="grid grid-cols-1 md:grid-cols-1 gap-4 mb-4">
-          <div>
+    <>
+      {/* Success Popup Modal for Generate Report */}
+      {showSuccessPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg max-w-xs w-full p-6 flex flex-col items-center">
+            <span className="text-green-600 text-4xl mb-2">✔️</span>
+            <div className="text-lg font-semibold mb-4 text-center">Report generated successfully</div>
+            <button
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-semibold shadow"
+              onClick={handleClosePopup}
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
 
-            <label htmlFor="employeeName" className={`block mb-2 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-              Employee Full Name
-            </label>
-            <div className="relative">
+      {/* Popup Modal for Download PDF on main page */}
+      {showDownloadPopup && !showReport && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg max-w-xs w-full p-6 flex flex-col items-center">
+            <span className="text-green-600 text-4xl mb-2">⬇️</span>
+            <div className="text-lg font-semibold mb-4 text-center">PDF downloaded successfully</div>
+            <button
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-semibold shadow"
+              onClick={handleCloseDownloadPopup}
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
+      <div className={`px-6 py-8 ${isDarkMode ? 'bg-slate-900 text-white' : 'bg-gray-50 text-gray-800'}`}>
+        <h1 className={`text-2xl font-bold mb-6 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>Salary Slip Generator</h1>
+        
+        {/* Form */}
+        <div className={`${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} p-5 rounded-lg shadow-lg border`}>
+          <div className="grid grid-cols-1 md:grid-cols-1 gap-4 mb-4">
+            <div>
+
+              <label htmlFor="employeeName" className={`block mb-2 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                Employee Full Name
+              </label>
+              <div className="relative">
   <input
     type="text"
     id="employeeName"
@@ -866,7 +914,7 @@ export default function SalaryReport() {
       if (value.trim().length > 0 && user && user.id) {
         try {
           // Fetch employee list from backend for autocomplete (like ViewAttendance)
-          const res = await axios.get(`https://api.managifyhr.com/api/employee/${user.id}/employee/all`);
+          const res = await axios.get(`http://localhost:8282/api/employee/${user.id}/employee/all`);
           const employeeList = res.data || [];
           const query = value.trim().toLowerCase();
           const list = employeeList.map(emp => ({
@@ -916,103 +964,108 @@ export default function SalaryReport() {
     </ul>
   )}
 </div>
-            {validation.employeeName && <p className="text-red-500 text-xs mt-1">{validation.employeeName}</p>}
+              {validation.employeeName && <p className="text-red-500 text-xs mt-1">{validation.employeeName}</p>}
+            </div>
           </div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="startDate" className={`block mb-2 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-              Start Date
-            </label>
-            <input
-              type="date"
-              id="startDate"
-              className={`w-full p-2.5 rounded-md ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} border focus:ring-blue-500 focus:border-blue-500`}
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              required
-            />
-            {validation.startDate && <p className="text-red-500 text-xs mt-1">{validation.startDate}</p>}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="startDate" className={`block mb-2 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                Start Date
+              </label>
+              <input
+                type="date"
+                id="startDate"
+                className={`w-full p-2.5 rounded-md ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} border focus:ring-blue-500 focus:border-blue-500`}
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                required
+              />
+              {validation.startDate && <p className="text-red-500 text-xs mt-1">{validation.startDate}</p>}
+            </div>
+            <div>
+              <label htmlFor="endDate" className={`block mb-2 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                End Date
+              </label>
+              <input
+                type="date"
+                id="endDate"
+                className={`w-full p-2.5 rounded-md ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} border focus:ring-blue-500 focus:border-blue-500`}
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                required
+              />
+              {validation.endDate && <p className="text-red-500 text-xs mt-1">{validation.endDate}</p>}
+            </div>
           </div>
-          <div>
-            <label htmlFor="endDate" className={`block mb-2 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-              End Date
-            </label>
-            <input
-              type="date"
-              id="endDate"
-              className={`w-full p-2.5 rounded-md ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} border focus:ring-blue-500 focus:border-blue-500`}
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              required
-            />
-            {validation.endDate && <p className="text-red-500 text-xs mt-1">{validation.endDate}</p>}
-          </div>
-        </div>
-        
-        {/* Incentive Amount Field */}
-        <div className="grid grid-cols-1 md:grid-cols-1 gap-4 mt-4">
-          <div>
-            <label htmlFor="incentiveAmount" className={`block mb-2 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-              Incentive Amount
-            </label>
-            <input
-              type="number"
-              id="incentiveAmount"
-              className={`w-full p-2.5 rounded-md ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} border focus:ring-blue-500 focus:border-blue-500`}
-              placeholder="Enter Incentive Amount"
-              value={incentiveAmount}
-              onChange={(e) => setIncentiveAmount(e.target.value)}
-              min="0"
-              step="0.01"
-            />
-          </div>
-        </div>
-        
-        <div className="flex flex-wrap gap-3 mt-4">
-          <button
-            onClick={handleSubmit}
-            // disabled={loading || !employeeName || !startDate || !endDate}
-            className={`px-4 py-2 text-white rounded-md transition-colors ${isDarkMode ? 'bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:text-gray-300' : 'bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 disabled:text-gray-100'} disabled:cursor-not-allowed`}
-          >
-            {loading ? "Processing..." : "Generate Report"}
-          </button>
           
-          {salaryReport && (
-            <>
-              <button
-                onClick={generateSalarySlipPDF}
-                className={`px-4 py-2 text-white rounded-md transition-colors ${isDarkMode ? 'bg-green-600 hover:bg-green-700' : 'bg-green-500 hover:bg-green-600'}`}
-              >
-                Download PDF
-              </button>
-              <button
-                onClick={() => {
-                  setEmployeeName("");
-                  setStartDate("");
-                  setEndDate("");
-                  setIncentiveAmount(0);
-                  setValidation({ employeeName: '', startDate: '', endDate: '' });
-                  setError(null);
-                  setSalaryReport(null);
-                  setShowReport(false);
-                  setFilteredSuggestions([]);
-                }}
-                className={`px-4 py-2 text-white rounded-md transition-colors ${isDarkMode ? 'bg-red-600 hover:bg-red-700' : 'bg-red-500 hover:bg-red-600'}`}
-              >
-                Clear
-              </button>
-            </>
-          )}
+          {/* Incentive Amount Field */}
+          <div className="grid grid-cols-1 md:grid-cols-1 gap-4 mt-4">
+            <div>
+              <label htmlFor="incentiveAmount" className={`block mb-2 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                Incentive Amount
+              </label>
+              <input
+                type="number"
+                id="incentiveAmount"
+                className={`w-full p-2.5 rounded-md ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'} border focus:ring-blue-500 focus:border-blue-500`}
+                placeholder="Enter Incentive Amount"
+                value={incentiveAmount}
+                onChange={(e) => setIncentiveAmount(e.target.value)}
+                min="0"
+                step="0.01"
+              />
+            </div>
+          </div>
+          
+          <div className="flex flex-wrap gap-3 mt-4">
+            <button
+              onClick={handleSubmit}
+              // disabled={loading || !employeeName || !startDate || !endDate}
+              className={`px-4 py-2 text-white rounded-md transition-colors ${isDarkMode ? 'bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:text-gray-300' : 'bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 disabled:text-gray-100'} disabled:cursor-not-allowed`}
+            >
+              {loading ? "Processing..." : "Generate Report"}
+            </button>
+            
+            {salaryReport && (
+              <>
+                <button
+                  onClick={generateSalarySlipPDF}
+                  className={`px-4 py-2 text-white rounded-md transition-colors ${isDarkMode ? 'bg-green-600 hover:bg-green-700' : 'bg-green-500 hover:bg-green-600'}`}
+                >
+                  Download PDF
+                </button>
+                <button
+                  onClick={() => {
+                    setEmployeeName("");
+                    setStartDate("");
+                    setEndDate("");
+                    setIncentiveAmount(0);
+                    setValidation({ employeeName: '', startDate: '', endDate: '' });
+                    setError(null);
+                    setSalaryReport(null);
+                    setShowReport(false);
+                    setFilteredSuggestions([]);
+                  }}
+                  className={`px-4 py-2 text-white rounded-md transition-colors ${isDarkMode ? 'bg-red-600 hover:bg-red-700' : 'bg-red-500 hover:bg-red-600'}`}
+                >
+                  Clear
+                </button>
+              </>
+            )}
+          </div>
+          {error && <div className="mt-3 text-red-500">{error}</div>}
         </div>
-        {error && <div className="mt-3 text-red-500">{error}</div>}
-      </div>
 
-      {/* Salary Preview */}
-      {salaryReport && (
-        <div className={`p-5 rounded-lg shadow-lg border mt-8 ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+        {/* Salary Preview Modal */}
+        <SalarySlipModal
+          isOpen={showReport && !!salaryReport}
+          onClose={() => setShowReport(false)}
+          onDownload={generateSalarySlipPDF}
+          showDownloadPopup={showDownloadPopup}
+          onCloseDownloadPopup={handleCloseDownloadPopup}
+        >
+          {/* Salary Report Preview Content */}
           <h2 className={`text-xl font-semibold mb-4 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>Salary Report Preview</h2>
-          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <h3 className={`text-lg font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Employee Information</h3>
@@ -1039,7 +1092,6 @@ export default function SalaryReport() {
                 </div>
               </div>
             </div>
-            
             <div>
               <h3 className={`text-lg font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Bank Details</h3>
               <div className={`p-4 rounded-md ${isDarkMode ? 'bg-slate-700' : 'bg-gray-100'}`}>
@@ -1064,7 +1116,6 @@ export default function SalaryReport() {
               </div>
             </div>
           </div>
-          
           <div className="mt-6">
             <h3 className={`text-lg font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Attendance Summary</h3>
             <div className={`p-4 rounded-md ${isDarkMode ? 'bg-slate-700' : 'bg-gray-100'}`}>
@@ -1088,43 +1139,41 @@ export default function SalaryReport() {
               </div>
             </div>
           </div>
-          
           <div className="mt-6">
             <h3 className={`text-lg font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Salary Details</h3>
             <div className={`p-4 rounded-md ${isDarkMode ? 'bg-slate-700' : 'bg-gray-100'}`}>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <div>
                   <p className="text-sm text-gray-400">Basic</p>
-                  <p className="font-medium">₹{salaryReport?.basic || 0}</p>
+                  <p className="font-medium">₹{Math.round(salaryReport?.basic || 0)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-400">HRA</p>
-                  <p className="font-medium">₹{salaryReport?.hra || 0}</p>
+                  <p className="font-medium">₹{Math.round(salaryReport?.hra || 0)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-400">DA Allowance</p>
-                  <p className="font-medium">₹{salaryReport?.daAllowance || 0}</p>
+                  <p className="font-medium">₹{Math.round(salaryReport?.daAllowance || 0)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-400">Special Allowance</p>
-                  <p className="font-medium">₹{salaryReport?.specialAllowance || 0}</p>
+                  <p className="font-medium">₹{Math.round(salaryReport?.specialAllowance || 0)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-400">Total Allowance</p>
-                  <p className="font-medium">₹{salaryReport?.totalAllowance || 0}</p>
+                  <p className="font-medium">₹{Math.round(salaryReport?.totalAllowance || 0)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-400">Gross Salary</p>
-                  <p className="font-medium">₹{salaryReport?.grossSalary || 0}</p>
+                  <p className="font-medium">₹{Math.round(salaryReport?.grossSalary || 0)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-400">Incentive Amount</p>
-                  <p className="font-medium">₹{salaryReport?.incentiveAmount || 0}</p>
+                  <p className="font-medium">₹{Math.round(salaryReport?.incentiveAmount || 0)}</p>
                 </div>
               </div>
             </div>
           </div>
-          
           <div className="mt-6">
             <h3 className={`text-lg font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Deductions</h3>
             <div className={`p-4 rounded-md ${isDarkMode ? 'bg-slate-700' : 'bg-gray-100'}`}>
@@ -1135,7 +1184,7 @@ export default function SalaryReport() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-400">TDS</p>
-                  <p className="font-medium">₹{salaryReport?.tds || 0}</p>
+                  <p className="font-medium">₹{Math.round(salaryReport?.tds || 0)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-400">PF</p>
@@ -1143,33 +1192,18 @@ export default function SalaryReport() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-400">Advance</p>
-                  <p className="font-medium">₹{salaryReport?.advance || 0}</p>
+                  <p className="font-medium">₹{Math.round(salaryReport?.advance || 0)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-400">Total Deductions</p>
-                  <p className="font-medium">₹{totalDeductions}</p>
+                  <p className="font-medium">₹{Math.round(totalDeductions)}</p>
                 </div>
               </div>
             </div>
           </div>
-          
-        {/*  <div className="mt-6">
-            <h3 className={`text-lg font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Net Payable</h3>
-            <div className={`p-4 rounded-md ${isDarkMode ? 'bg-slate-700' : 'bg-gray-100'}`}>
-              <div className="grid grid-cols-1 gap-4">
-                <div>
-                  <p className="text-sm text-gray-400">Net Payable Salary</p>
-                  <p className="font-medium text-xl text-green-400">₹{(salaryReport?.netPayable || 0) + (salaryReport?.incentiveAmount || 0)}</p>
-                </div>
-                {/* <div>
-                  <p className="text-sm text-gray-400">Amount in Words</p>
-                  <p className="font-medium italic">{numberToWords((salaryReport?.netPayable || 0) + (salaryReport?.incentiveAmount || 0))} Rupees Only</p>
-                </div> 
-              </div>
-            </div>
-          </div>  */}
-        </div>
-      )}
-    </div>
+          {/* Net Payable section can be added here if needed */}
+        </SalarySlipModal>
+      </div>
+    </>
   )
 }

@@ -10,6 +10,14 @@ import jsPDF from 'jspdf';
 import './JoiningLetterPdf.css';
 
 const JoiningLetter = () => {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth <= 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   const { isDarkMode } = useApp();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -563,6 +571,11 @@ const JoiningLetter = () => {
               </div>
               
               {/* Letter Content Preview */}
+              {isMobile && (
+                <div className="mobile-warning-blink overflow-x-auto pb-4">
+                  To View Certificate In Full Size Please Open It In Desktop Site Mode.
+                </div>
+              )}
               <div 
                 ref={letterRef}
                 className="bg-white text-black p-8 rounded-md shadow joining-letter-certificate"
@@ -801,5 +814,32 @@ const JoiningLetter = () => {
     </motion.div>
   );
 };
+
+// Blinking warning style for mobile
+const style = document.createElement('style');
+style.innerHTML = `
+  .mobile-warning-blink {
+    color: #dc2626;
+    background: #fff0f0;
+    border: 1.5px solid #dc2626;
+    border-radius: 6px;
+    padding: 10px 0;
+    font-size: 1rem;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 16px;
+    animation: blink-red 1s linear infinite;
+    letter-spacing: 0.5px;
+    z-index: 5;
+  }
+  @keyframes blink-red {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+`;
+if (!document.head.querySelector('style[data-mobile-warning]')) {
+  style.setAttribute('data-mobile-warning', 'true');
+  document.head.appendChild(style);
+}
 
 export default JoiningLetter; 

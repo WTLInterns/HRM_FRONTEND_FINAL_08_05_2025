@@ -11,6 +11,15 @@ import html2canvas from 'html2canvas';
 import "./Experience.css";
 
 const ExperienceLetter = () => {
+  // Mobile warning logic
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth <= 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   const { isDarkMode } = useApp();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -920,6 +929,11 @@ const ExperienceLetter = () => {
             </div>
           </div>
 
+          {isMobile && (
+            <div className="mobile-warning-blink overflow-x-auto pb-4 mb-6">
+              To View Certificate In Full Size Please Open It In Desktop Site Mode.
+            </div>
+          )}
           {/* Letter Preview Section - Enhanced with beautiful design */}
           <div className="lg:col-span-2 overflow-x-auto">
             <div ref={letterRef} className="bg-white text-black p-8 rounded-lg shadow-xl min-h-[29.7cm] w-[21cm] mx-auto relative border border-gray-200">

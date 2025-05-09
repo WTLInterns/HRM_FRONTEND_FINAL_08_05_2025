@@ -11,6 +11,12 @@ import { useApp } from "../../context/AppContext";
 
 export default function Attendance() {
   const { isDarkMode } = useApp();
+  // ...existing states...
+  const [showReasonModal, setShowReasonModal] = useState(false);
+  const [pendingStatus, setPendingStatus] = useState(null);
+  const [pendingDate, setPendingDate] = useState(null);
+  const [reasonInput, setReasonInput] = useState("");
+  const [reasonError, setReasonError] = useState("");
   // Component States
   const [employeeName, setEmployeeName] = useState("");
   const [selectedDates, setSelectedDates] = useState([]);
@@ -43,7 +49,7 @@ export default function Attendance() {
       
       // Fetch employee list for autocomplete
       axios
-        .get(`https://api.managifyhr.com/api/employee/${subAdminId}/employee/all`)
+        .get(`http://localhost:8282/api/employee/${subAdminId}/employee/all`)
         .then(res => {
           console.log("Loaded employee list:", res.data.length, "employees");
           setEmployeeList(res.data);
@@ -114,7 +120,7 @@ export default function Attendance() {
   const checkExistingAttendance = async (fullName, date) => {
     try {
       console.log(`Checking attendance for ${fullName} on ${date}`);
-      const response = await axios.get(`https://api.managifyhr.com/api/employee/bulk/${encodeURIComponent(fullName)}/${date}`);
+      const response = await axios.get(`http://localhost:8282/api/employee/bulk/${encodeURIComponent(fullName)}/${date}`);
       console.log('Existing attendance response:', response.data);
       return response.data;
     } catch (error) {
@@ -157,6 +163,23 @@ export default function Attendance() {
 
   // Handle status selection.
   const handleStatusSelect = async (status) => {
+    // If status is 'Absent', 'Leave', or 'Paid Leave', show reason modal
+    if (["Absent", "Leave", "Paid Leave"].includes(status)) {
+      setPendingStatus(status);
+      setPendingDate(selectedDate);
+      setReasonInput("");
+      setReasonError("");
+      setShowStatusDropdown(false);
+      setShowReasonModal(true);
+      return;
+    }
+    // Otherwise, proceed as before
+    await handleStatusWithReason(status, "");
+  };
+
+
+  // Handle status selection with reason (for both normal and modal)
+  const handleStatusWithReason = async (status, reason) => {
     if (!employeeName || employeeName.trim() === '') {
       toast.error('Please enter employee name first', {
         duration: 3000,
@@ -197,15 +220,15 @@ export default function Attendance() {
       const attendancePayload = [{
         date: apiFormattedDate,
         status: status,
-        employeeName: employeeName
+        reason: reason || ""
       }];
       
       console.log('Initial payload:', attendancePayload);
       
       let response;
       let existingStatus = '';
-      let updateUrl = `https://api.managifyhr.com/api/employee/${subAdminId}/${encodedEmployeeName}/attendance/update/bulk`;
-      let addUrl = `https://api.managifyhr.com/api/employee/${subAdminId}/${encodedEmployeeName}/attendance/add/bulk`;
+      let updateUrl = `http://localhost:8282/api/employee/${subAdminId}/${encodedEmployeeName}/attendance/update/bulk`;
+      let addUrl = `http://localhost:8282/api/employee/${subAdminId}/${encodedEmployeeName}/attendance/add/bulk`;
       
       if (existingAttendance && existingAttendance.length > 0) {
         // Attendance exists, use PUT to update
@@ -346,7 +369,8 @@ export default function Attendance() {
               date: selectedDate,
               status,
               employeeName,
-              id: newRecord.id
+              id: newRecord.id,
+              reason: reason || ""
             }
           ]);
         }
@@ -421,6 +445,14 @@ export default function Attendance() {
   // On form submission, split the attendanceRecords into new and update records.
   // Remove any accidental id from new records, then send them to the backend.
   const handleSubmit = async (e) => {
+    // Ensure all Absent/Leave/Paid Leave records have a reason
+    for (const rec of attendanceRecords) {
+      if (["Absent", "Leave", "Paid Leave"].includes(rec.status) && (!rec.reason || rec.reason.trim() === "")) {
+        setError(`Reason required for ${rec.status} on ${formatDate(rec.date)}`);
+        toast.error(`Reason required for ${rec.status} on ${formatDate(rec.date)}`);
+        return;
+      }
+    }
     e.preventDefault();
     if (!validateForm()) return;
 
@@ -428,11 +460,8 @@ export default function Attendance() {
       setSubmitting(true);
       setError(null);
 
-      // Make sure each record is up-to-date with employeeName.
-      const updatedRecords = attendanceRecords.map(record => ({
-        ...record,
-        employeeName: employeeName
-      }));
+      // Remove employeeName from records for backend payload
+      const updatedRecords = attendanceRecords.map(({employeeName, ...rest}) => ({...rest}));
 
       // Retrieve user details.
       const storedUser = JSON.parse(localStorage.getItem("user"));
@@ -463,7 +492,7 @@ export default function Attendance() {
         promises.push(
           axios
             .post(
-              `https://api.managifyhr.com/api/employee/${subAdminId}/${encodedEmployeeName}/attendance/add/bulk`,
+              `http://localhost:8282/api/employee/${subAdminId}/${encodedEmployeeName}/attendance/add/bulk`,
               newRecords,
               config
             )
@@ -478,7 +507,7 @@ export default function Attendance() {
         promises.push(
           axios
             .put(
-              `https://api.managifyhr.com/api/employee/${subAdminId}/${encodedEmployeeName}/attendance/update/bulk`,
+              `http://localhost:8282/api/employee/${subAdminId}/${encodedEmployeeName}/attendance/update/bulk`,
               updateRecords,
               config
             )
@@ -718,6 +747,9 @@ export default function Attendance() {
                           </div>
                           <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                             {record.status}
+                            {(["Absent", "Leave", "Paid Leave"].includes(record.status) && record.reason) && (
+                              <span className="ml-2 italic text-yellow-600">Reason: {record.reason}</span>
+                            )}
                           </div>
                         </div>
                         <button
@@ -760,7 +792,53 @@ export default function Attendance() {
           </div>
         </div>
       </div>
-    </div>
+    {/* Reason Modal */}
+    {showReasonModal && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+        <div className={`p-6 rounded-lg shadow-lg w-full max-w-md ${isDarkMode ? 'bg-slate-800 text-white' : 'bg-white text-gray-900'}`}>
+          <h2 className="text-lg font-bold mb-4">Enter Reason</h2>
+          <div className="mb-4">
+            <label className="block mb-2 font-medium">Reason for {pendingStatus}:</label>
+            <textarea
+              className={`w-full p-2 rounded border ${isDarkMode ? 'bg-slate-700 border-gray-600 text-white' : 'bg-gray-50 border-gray-300 text-gray-900'}`}
+              rows={3}
+              value={reasonInput}
+              onChange={e => setReasonInput(e.target.value)}
+              placeholder="Enter reason..."
+              autoFocus
+            />
+            {reasonError && <div className="text-red-500 text-sm mt-1">{reasonError}</div>}
+          </div>
+          <div className="flex justify-end gap-2">
+            <button
+              className={`px-4 py-2 rounded ${isDarkMode ? 'bg-gray-600 hover:bg-gray-500 text-white' : 'bg-gray-300 hover:bg-gray-400 text-gray-800'}`}
+              onClick={() => { setShowReasonModal(false); setPendingStatus(null); setPendingDate(null); setReasonInput(""); setReasonError(""); }}
+            >
+              Cancel
+            </button>
+            <button
+              className={`px-4 py-2 rounded ${isDarkMode ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-blue-500 hover:bg-blue-400 text-white'}`}
+              onClick={async () => {
+                if (!reasonInput.trim()) {
+                  setReasonError("Reason is required.");
+                  return;
+                }
+                setReasonError("");
+                setShowReasonModal(false);
+                // Call the real handler
+                await handleStatusWithReason(pendingStatus, reasonInput.trim());
+                // Update record in state with reason
+                setAttendanceRecords(prev => prev.map(r => (r.date === pendingDate ? { ...r, status: pendingStatus, reason: reasonInput.trim() } : r)));
+                setPendingStatus(null); setPendingDate(null); setReasonInput("");
+              }}
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+  </div>
   );
 }
 
