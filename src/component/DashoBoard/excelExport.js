@@ -10,8 +10,10 @@ export function exportAttendanceToExcel(attendanceData, employeeObj) {
     return `${day}-${month}-${year}`;
   }
 
+  // Sort attendanceData by date (ascending)
+  const sortedAttendance = [...attendanceData].sort((a, b) => new Date(a.date) - new Date(b.date));
   // Prepare the data for Excel (only marked attendance)
-  const formattedData = attendanceData.map((rec) => ({
+  const formattedData = sortedAttendance.map((rec) => ({
     'Employee ID': rec.employee?.empId || employeeObj?.empId || '',
     'Employee Name': rec.employee ? `${rec.employee.firstName} ${rec.employee.lastName}` : (employeeObj ? `${employeeObj.firstName} ${employeeObj.lastName}` : ''),
     Date: formatDate(rec.date),

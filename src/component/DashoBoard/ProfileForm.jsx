@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { FaCalendarAlt, FaRegEnvelope, FaPhone, FaUser, FaStamp, FaSignature, FaEdit, FaSave, FaTimes, FaCheck, FaIdCard, FaBriefcase, FaBuilding, FaUserTie, FaImage } from "react-icons/fa";
+import { FaCalendarAlt, FaRegEnvelope, FaPhone, FaUser, FaStamp, FaSignature, FaEdit, FaSave, FaTimes, FaCheck, FaIdCard, FaBriefcase, FaBuilding, FaUserTie, FaImage, FaCompass, FaMapPin, FaMap, FaGlobe } from "react-icons/fa";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { useApp } from "../../context/AppContext";
@@ -197,7 +197,9 @@ const ProfileForm = () => {
     gstno: "",
     cinno: "",
     companyurl: "",
-    address: ""
+    address: "",
+    latitude: "",
+    longitude: ""
   });
   
   // Loading and error states
@@ -274,7 +276,10 @@ const ProfileForm = () => {
             gstno: userData.gstno || "",
             cinno: userData.cinno || "",
             companyurl: userData.companyurl || "",
-            address: userData.address || ""
+            address: userData.address || "",
+            latitude: userData.latitude || "",
+            longitude: userData.longitude || ""
+
           });
           
           setTempData({
@@ -291,7 +296,9 @@ const ProfileForm = () => {
             gstno: userData.gstno || "",
             cinno: userData.cinno || "",
             companyurl: userData.companyurl || "",
-            address: userData.address || ""
+            address: userData.address || "",
+            latitude: userData.latitude || "",
+            longitude: userData.longitude || ""
           });
           
           // Also update the localStorage with this more complete data
@@ -479,7 +486,9 @@ const ProfileForm = () => {
         gstno: tempData.gstno || '',
         cinno: tempData.cinno || '',
         companyurl: tempData.companyurl || '',
-        address: tempData.address || ''
+        address: tempData.address || '',
+        latitude: tempData.latitude || '',
+        longitude: tempData.longitude || ''
       });
       
       // Required fields from API endpoint
@@ -495,6 +504,8 @@ const ProfileForm = () => {
       formData.append('cinno', tempData.cinno || '');
       formData.append('companyurl', tempData.companyurl || '');
       formData.append('address', tempData.address || '');
+      formData.append('latitude', tempData.latitude || '');
+      formData.append('longitude', tempData.longitude || '');
       
       // The logic for handling files - for each file, either upload a new one or pass the existing filename
       let hasUploadedFiles = false;
@@ -1036,6 +1047,43 @@ const ProfileForm = () => {
                   )}
                 </div>
               </div>
+
+              <div>
+                <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>Latitude</label>
+                <div className={`flex items-center ${isDarkMode ? 'bg-slate-700' : 'bg-gray-100'} px-3 py-2 rounded-md ${editMode ? (isDarkMode ? 'border border-blue-400' : 'border border-blue-300') : ''}`}>
+                  <FaGlobe className={`mr-2 ${isDarkMode ? 'text-blue-300' : 'text-blue-500'}`} />
+                  {editMode ? (
+                    <input
+                      type="text"
+                      name="latitude"
+                      value={tempData.latitude}
+                      onChange={handleInputChange}
+                      className={`w-full ${isDarkMode ? 'bg-slate-700 text-white' : 'bg-gray-100 text-gray-800'} focus:outline-none`}
+                    />
+                  ) : (
+                    <div className="font-medium">{profileData.latitude || 'Not provided'}</div>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>Longitude</label>
+                <div className={`flex items-center ${isDarkMode ? 'bg-slate-700' : 'bg-gray-100'} px-3 py-2 rounded-md ${editMode ? (isDarkMode ? 'border border-blue-400' : 'border border-blue-300') : ''}`}>
+                  <FaGlobe className={`mr-2 ${isDarkMode ? 'text-blue-300' : 'text-blue-500'}`} />
+                  {editMode ? (
+                    <input
+                      type="text"
+                      name="longitude"
+                      value={tempData.longitude}
+                      onChange={handleInputChange}
+                      className={`w-full ${isDarkMode ? 'bg-slate-700 text-white' : 'bg-gray-100 text-gray-800'} focus:outline-none`}
+                    />
+                  ) : (
+                    <div className="font-medium">{profileData.longitude || 'Not provided'}</div>
+                  )}
+                </div>
+              </div>
+                
             </div>
           </div>
         </div>
