@@ -158,45 +158,67 @@ export default function AddEmp() {
   const validateFields = () => {
     // Email validation
     const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+    if (!email) {
+      toast.error("Please fill Email ID (e.g., johndoe@email.com)");
+      return false;
+    }
     if (!emailRegex.test(email)) {
-      toast.error("Please enter a valid email address");
+      toast.error("Please enter a valid Email ID (e.g., johndoe@email.com)");
       return false;
     }
 
     // Contact number validation (10 digits)
     const phoneRegex = /^[6-9]\d{9}$/;
+    if (!phone) {
+      toast.error("Please fill Contact No (10 digits, starts with 6-9)");
+      return false;
+    }
     if (!phoneRegex.test(phone)) {
-      toast.error(
-        "Please enter a valid 10-digit mobile number starting with 6, 7, 8, or 9"
-      );
+      toast.error("Please enter a valid Contact No (10 digits, starts with 6-9)");
       return false;
     }
 
     // Aadhar number validation (12 digits)
     const aadharRegex = /^\d{12}$/;
+    if (!aadharNo) {
+      toast.error("Please fill Aadhar No (12 digits)");
+      return false;
+    }
     if (!aadharRegex.test(aadharNo)) {
-      toast.error("Please enter a valid 12-digit Aadhar number");
+      toast.error("Please enter a valid Aadhar No (12 digits)");
       return false;
     }
 
-    // PAN card validation (5 letters, 4 numbers, 1 letter)
-    const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
-    if (!panRegex.test(panCard.toUpperCase())) {
-      toast.error("Please enter a valid PAN number (e.g., ABCDE1234F)");
+    // PAN card validation (ABCDE1234F)
+    const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/i;
+    if (!panCard) {
+      toast.error("Please fill PAN Card (e.g., ABCDE1234F)");
+      return false;
+    }
+    if (!panRegex.test(panCard)) {
+      toast.error("Please enter a valid PAN Card (e.g., ABCDE1234F)");
       return false;
     }
 
     // Bank account number validation (9-18 digits)
     const bankAccountRegex = /^\d{9,18}$/;
+    if (!bankAccountNo) {
+      toast.error("Please fill Bank Account No (9-18 digits)");
+      return false;
+    }
     if (!bankAccountRegex.test(bankAccountNo)) {
-      toast.error("Please enter a valid bank account number (9-18 digits)");
+      toast.error("Please enter a valid Bank Account No (9-18 digits)");
       return false;
     }
 
     // IFSC code validation (4 letters, 7 alphanumeric)
     const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+    if (!bankIfscCode) {
+      toast.error("Please fill IFSC Code (e.g., SBIN0001234)");
+      return false;
+    }
     if (!ifscRegex.test(bankIfscCode.toUpperCase())) {
-      toast.error("Please enter a valid IFSC code (e.g., SBIN0001234)");
+      toast.error("Please enter a valid IFSC Code (e.g., SBIN0001234)");
       return false;
     }
 
@@ -277,14 +299,14 @@ export default function AddEmp() {
       formData.append("branchName", branchName);
       formData.append("salary", salary);
       formData.append("department", department);
-// Always send password: if not changed, use original; if changed, use new; never omit
-if (password && password.trim() !== "") {
-  formData.append("password", password);
-} else if (selectedEmployee && selectedEmployee.password) {
-  formData.append("password", selectedEmployee.password);
-} else {
-  formData.append("password", "");
-}
+      // Always send password: if not changed, use original; if changed, use new; never omit
+      if (password && password.trim() !== "") {
+        formData.append("password", password);
+      } else if (selectedEmployee && selectedEmployee.password) {
+        formData.append("password", selectedEmployee.password);
+      } else {
+        formData.append("password", "");
+      }
 
       // Add image files if they exist
       if (empImg) {
@@ -370,14 +392,14 @@ if (password && password.trim() !== "") {
       formData.append("branchName", branchName);
       formData.append("salary", salary);
       formData.append("department", department);
-// Always send password: if not changed, use original; if changed, use new; never omit
-if (password && password.trim() !== "") {
-  formData.append("password", password);
-} else if (selectedEmployee && selectedEmployee.password) {
-  formData.append("password", selectedEmployee.password);
-} else {
-  formData.append("password", "");
-}
+      // Always send password: if not changed, use original; if changed, use new; never omit
+      if (password && password.trim() !== "") {
+        formData.append("password", password);
+      } else if (selectedEmployee && selectedEmployee.password) {
+        formData.append("password", selectedEmployee.password);
+      } else {
+        formData.append("password", "");
+      }
 
       // Add image files if they exist
       if (empImg) {
@@ -502,7 +524,6 @@ if (password && password.trim() !== "") {
       // const fullName = employee.firstName;
       const fullName = `${employee.firstName} ${employee.lastName}`;
 
-
       console.log(
         `Sending login details to employee ${fullName} under subadmin ${subadminId}`
       );
@@ -530,28 +551,28 @@ if (password && password.trim() !== "") {
 
   // When clicking the edit icon, populate update modal with employee info
   const handleEditEmp = (employee) => {
-  setSelectedEmployee(employee);
-  setFname(employee.firstName);
-  setLname(employee.lastName);
-  setEmail(employee.email);
-  setPhone(employee.phone);
-  setaadharNo(employee.aadharNo);
-  setpanCard(employee.panCard);
-  seteducation(employee.education);
-  setbloodGroup(employee.bloodGroup);
-  setjobRole(employee.jobRole);
-  setgender(employee.gender);
-  setaddress(employee.address);
-  setbirthDate(employee.birthDate);
-  setjoiningDate(employee.joiningDate);
-  setstatus(employee.status);
-  setbankName(employee.bankName);
-  setbankAccountNo(employee.bankAccountNo);
-  setbankIfscCode(employee.bankIfscCode);
-  setbranchName(employee.branchName);
-  setsalary(employee.salary);
-  setDepartment(employee.department || "");
-  setPassword(employee.password || ""); // Set password only once
+    setSelectedEmployee(employee);
+    setFname(employee.firstName);
+    setLname(employee.lastName);
+    setEmail(employee.email);
+    setPhone(employee.phone);
+    setaadharNo(employee.aadharNo);
+    setpanCard(employee.panCard);
+    seteducation(employee.education);
+    setbloodGroup(employee.bloodGroup);
+    setjobRole(employee.jobRole);
+    setgender(employee.gender);
+    setaddress(employee.address);
+    setbirthDate(employee.birthDate);
+    setjoiningDate(employee.joiningDate);
+    setstatus(employee.status);
+    setbankName(employee.bankName);
+    setbankAccountNo(employee.bankAccountNo);
+    setbankIfscCode(employee.bankIfscCode);
+    setbranchName(employee.branchName);
+    setsalary(employee.salary);
+    setDepartment(employee.department || "");
+    setPassword(employee.password || ""); // Set password only once
     seteducation(employee.education);
     setbloodGroup(employee.bloodGroup);
     setjobRole(employee.jobRole);
@@ -873,40 +894,40 @@ if (password && password.trim() !== "") {
                   </span>
                 </div>
                 <div className="mt-3 pt-3 border-t flex justify-end space-x-3 text-sm">
-  <button
-    onClick={() => handleEditEmp(employee)}
-    className={`p-2 rounded-full ${
-      isDarkMode
-        ? "bg-blue-600 hover:bg-blue-700"
-        : "bg-blue-500 hover:bg-blue-600"
-    } text-white transition-all duration-200 hover:scale-110`}
-    title="Edit Employee"
-  >
-    <FiEdit size={18} />
-  </button>
-  <button
-    onClick={() => handleDeleteEmp(employee.empId)}
-    className={`p-2 rounded-full ${
-      isDarkMode
-        ? "bg-red-600 hover:bg-red-700"
-        : "bg-red-500 hover:bg-red-600"
-    } text-white transition-all duration-200 hover:scale-110`}
-    title="Delete Employee"
-  >
-    <RiDeleteBin6Line size={18} />
-  </button>
-  <button
-    onClick={() => handleSendEmail(employee.empId)}
-    className={`p-2 rounded-full ${
-      isDarkMode
-        ? "bg-blue-600 hover:bg-blue-700"
-        : "bg-blue-600 hover:bg-blue-700"
-    } text-white transition-all duration-200 hover:scale-110`}
-    title="Send Email"
-  >
-    <MdOutlineEmail size={18} />
-  </button>
-</div>
+                  <button
+                    onClick={() => handleEditEmp(employee)}
+                    className={`p-2 rounded-full ${
+                      isDarkMode
+                        ? "bg-blue-600 hover:bg-blue-700"
+                        : "bg-blue-500 hover:bg-blue-600"
+                    } text-white transition-all duration-200 hover:scale-110`}
+                    title="Edit Employee"
+                  >
+                    <FiEdit size={18} />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteEmp(employee.empId)}
+                    className={`p-2 rounded-full ${
+                      isDarkMode
+                        ? "bg-red-600 hover:bg-red-700"
+                        : "bg-red-500 hover:bg-red-600"
+                    } text-white transition-all duration-200 hover:scale-110`}
+                    title="Delete Employee"
+                  >
+                    <RiDeleteBin6Line size={18} />
+                  </button>
+                  <button
+                    onClick={() => handleSendEmail(employee.empId)}
+                    className={`p-2 rounded-full ${
+                      isDarkMode
+                        ? "bg-blue-600 hover:bg-blue-700"
+                        : "bg-blue-600 hover:bg-blue-700"
+                    } text-white transition-all duration-200 hover:scale-110`}
+                    title="Send Email"
+                  >
+                    <MdOutlineEmail size={18} />
+                  </button>
+                </div>
               </div>
             ))
         )}
@@ -1067,7 +1088,7 @@ if (password && password.trim() !== "") {
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        placeholder="Enter your email address"
+                        placeholder="Enter your email address (e.g., johndoe@email.com)"
                         className={`block w-full px-4 py-2 ${
                           isDarkMode
                             ? "bg-slate-700 border-slate-600 text-white placeholder-gray-400"
@@ -1089,7 +1110,7 @@ if (password && password.trim() !== "") {
                         id="contact"
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
-                        placeholder="Enter your 10-digit contact number"
+                        placeholder="Enter your 10-digit contact number (starts with 6-9)"
                         className={`block w-full px-4 py-2 ${
                           isDarkMode
                             ? "bg-slate-700 border-slate-600 text-white placeholder-gray-400"
@@ -1110,7 +1131,24 @@ if (password && password.trim() !== "") {
                       <input
                         id="aadharNo"
                         value={aadharNo}
-                        onChange={(e) => setaadharNo(e.target.value)}
+                        maxLength={12}
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (/^\d{0,12}$/.test(value)) {
+                            setaadharNo(value);
+                          } else {
+                            toast.error("Aadhar number must be digits only");
+                          }
+                        }}
+                        onPaste={(e) => {
+                          const paste = e.clipboardData.getData('text');
+                          if (!/^\d{1,12}$/.test(paste)) {
+                            e.preventDefault();
+                            toast.error("Aadhar number must be 12 digits only");
+                          }
+                        }}
                         placeholder="Enter your 12-digit Aadhar number"
                         className={`block w-full px-4 py-2 ${
                           isDarkMode
@@ -1133,7 +1171,7 @@ if (password && password.trim() !== "") {
                         id="panCard"
                         value={panCard}
                         onChange={(e) => setpanCard(e.target.value)}
-                        placeholder="Enter your PAN card (e.g., ABCDE1234F)"
+                        placeholder="e.g., ABCDE1234F"
                         className={`block w-full px-4 py-2 ${
                           isDarkMode
                             ? "bg-slate-700 border-slate-600 text-white placeholder-gray-400"
