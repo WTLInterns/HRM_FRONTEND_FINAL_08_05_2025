@@ -428,6 +428,11 @@ const Dashboard = () => {
       to: "/dashboard/certificates", 
       label: "Certificates", 
       icon: <FaFileAlt /> 
+    },
+    {
+      to: "/dashboard/expenses",
+      label: "Expenses",
+      icon: <FaArrowDown /> // You can replace with FaMoneyBillWave or another icon if you prefer
     }
   ];
 

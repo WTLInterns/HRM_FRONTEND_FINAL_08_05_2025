@@ -17,6 +17,7 @@ import ExitLetter from "../AllCertificates/ExitLetter";
 import IncrementLetter from "../AllCertificates/IncrementLetter";
 import AchievementCertificate from "../AllCertificates/AchievementCertificate";
 import IntershipCertificate from "../AllCertificates/IntershipCertificate";
+import Expenses from "../Expenses";
 
 const DashoBoardRouter = () => {
   console.log("Dashboard Router Component Rendering");
@@ -48,6 +49,7 @@ const DashoBoardRouter = () => {
         <Route path="achievement" element={<AchievementCertificate />} />
         <Route path="performance" element={<PerformanceCertificate />} />
         <Route path="post-appraisal" element={<PostAppraisal />} />
+        <Route path="expenses" element={<Expenses />} />
       </Routes>
     </>
   );
