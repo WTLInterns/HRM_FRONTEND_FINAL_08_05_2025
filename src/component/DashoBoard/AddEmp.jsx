@@ -95,7 +95,7 @@ export default function AddEmp() {
       try {
         console.log(`Fetching employees for subadmin ID: ${subadminId}`);
         const response = await axios.get(
-          `http://localhost:8282/api/employee/${subadminId}/employee/all`
+          `https://api.managifyhr.com/api/employee/${subadminId}/employee/all`
         );
         console.log("Fetched employees:", response.data);
         setEmployees(response.data);
@@ -303,7 +303,7 @@ if (password && password.trim() !== "") {
 
       // Use the dynamic subadminId from state
       const response = await axios.post(
-        `http://localhost:8282/api/subadmin/add-employee/${subadminId}`,
+        `https://api.managifyhr.com/api/subadmin/add-employee/${subadminId}`,
         formData,
         {
           headers: {
@@ -319,7 +319,7 @@ if (password && password.trim() !== "") {
 
       // Refresh the employee list
       const refreshResponse = await axios.get(
-        `http://localhost:8282/api/employee/${subadminId}/employee/all`
+        `https://api.managifyhr.com/api/employee/${subadminId}/employee/all`
       );
       setEmployees(refreshResponse.data);
 
@@ -405,7 +405,7 @@ if (password && password.trim() !== "") {
 
       // Use the correct API endpoint for updating an employee based on the backend code
       const response = await axios.put(
-        `http://localhost:8282/api/employee/update-employee/${subadminId}/${encodeURIComponent(fullName)}`,
+        `https://api.managifyhr.com/api/employee/update-employee/${subadminId}/${encodeURIComponent(fullName)}`,
         formData,
         {
           headers: {
@@ -421,7 +421,7 @@ if (password && password.trim() !== "") {
 
       // Refresh the employee list
       const refreshResponse = await axios.get(
-        `http://localhost:8282/api/employee/${subadminId}/employee/all`
+        `https://api.managifyhr.com/api/employee/${subadminId}/employee/all`
       );
       setEmployees(refreshResponse.data);
 
@@ -458,7 +458,7 @@ if (password && password.trim() !== "") {
 
       // Use the dynamic subadminId from state
       const response = await axios.delete(
-        `http://localhost:8282/api/employee/${subadminId}/delete/${empId}`,
+        `https://api.managifyhr.com/api/employee/${subadminId}/delete/${empId}`,
         {
           headers: {
             "Content-Type": "application/json",
@@ -471,7 +471,7 @@ if (password && password.trim() !== "") {
 
       // Refresh the employee list
       const refreshResponse = await axios.get(
-        `http://localhost:8282/api/employee/${subadminId}/employee/all`
+        `https://api.managifyhr.com/api/employee/${subadminId}/employee/all`
       );
       setEmployees(refreshResponse.data);
 
@@ -508,7 +508,7 @@ if (password && password.trim() !== "") {
       );
 
       const response = await axios.post(
-        `http://localhost:8282/api/employee/${subadminId}/${encodeURIComponent(
+        `https://api.managifyhr.com/api/employee/${subadminId}/${encodeURIComponent(
           fullName
         )}/send-login-details`,
         {},
@@ -577,7 +577,7 @@ if (password && password.trim() !== "") {
 
     // Profile image - using the correct field name from the backend entity (empimg)
     if (employee.empimg) {
-      const profileImageUrl = `http://localhost:8282/images/profile/${employee.empimg}`;
+      const profileImageUrl = `https://api.managifyhr.com/images/profile/${employee.empimg}`;
       console.log("Setting profile image URL:", profileImageUrl);
       setEmpImgPreview(profileImageUrl);
 
@@ -592,7 +592,7 @@ if (password && password.trim() !== "") {
 
     // Aadhar image - using the correct field name from the backend entity (adharimg)
     if (employee.adharimg) {
-      const aadharImageUrl = `http://localhost:8282/images/profile/${employee.adharimg}`;
+      const aadharImageUrl = `https://api.managifyhr.com/images/profile/${employee.adharimg}`;
       console.log("Setting aadhar image URL:", aadharImageUrl);
       setAdharImgPreview(aadharImageUrl);
 
@@ -607,7 +607,7 @@ if (password && password.trim() !== "") {
 
     // PAN image - using the correct field name from the backend entity (panimg)
     if (employee.panimg) {
-      const panImageUrl = `http://localhost:8282/images/profile/${employee.panimg}`;
+      const panImageUrl = `https://api.managifyhr.com/images/profile/${employee.panimg}`;
       console.log("Setting PAN image URL:", panImageUrl);
       setPanImgPreview(panImageUrl);
 
