@@ -245,7 +245,7 @@ const ExperienceLetter = () => {
           
           // If image src is relative path to profile image, convert to absolute URL
           if (img.src.includes('/images/profile/') && !img.src.startsWith('http')) {
-            const newSrc = `https://aimdreamplanner.com${img.src.startsWith('/') ? '' : '/'}${img.src}`;
+            const newSrc = `https://api.managifyhr.com${img.src.startsWith('/') ? '' : '/'}${img.src}`;
             console.log(`Converting relative URL to absolute: ${img.src} -> ${newSrc}`);
             img.src = newSrc;
           } else {
@@ -336,7 +336,7 @@ const ExperienceLetter = () => {
             
             // Fix image URLs for server resources
             if (img.src.includes('/images/profile/') && !img.src.startsWith('http')) {
-              img.src = `https://aimdreamplanner.com${img.src.startsWith('/') ? '' : '/'}${img.src}`;
+              img.src = `https://api.managifyhr.com${img.src.startsWith('/') ? '' : '/'}${img.src}`;
             }
           });
         }
@@ -499,7 +499,7 @@ const ExperienceLetter = () => {
           
           // If image src is relative path to profile image, convert to absolute URL
           if (img.src.includes('/images/profile/') && !img.src.startsWith('http')) {
-            const newSrc = `https://aimdreamplanner.com${img.src.startsWith('/') ? '' : '/'}${img.src}`;
+            const newSrc = `https://api.managifyhr.com${img.src.startsWith('/') ? '' : '/'}${img.src}`;
             console.log(`Converting relative URL to absolute: ${img.src} -> ${newSrc}`);
             img.src = newSrc;
           } else {
@@ -598,7 +598,7 @@ const ExperienceLetter = () => {
             
             // Fix image URLs for server resources
             if (img.src.includes('/images/profile/') && !img.src.startsWith('http')) {
-              img.src = `https://aimdreamplanner.com${img.src.startsWith('/') ? '' : '/'}${img.src}`;
+              img.src = `https://api.managifyhr.com${img.src.startsWith('/') ? '' : '/'}${img.src}`;
             }
           });
         }

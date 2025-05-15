@@ -83,7 +83,7 @@ const Dashboard = () => {
   const [logoLoadAttempt, setLogoLoadAttempt] = useState(0);
   
   // Get backend URL
-  const BACKEND_URL = useMemo(() => "https://aimdreamplanner.com", []);
+  const BACKEND_URL = useMemo(() => "https://api.managifyhr.com", []);
   
   // Default image
   const defaultImage = "/image/admin-profile.jpg";
