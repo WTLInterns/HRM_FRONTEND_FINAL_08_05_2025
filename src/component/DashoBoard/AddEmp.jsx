@@ -351,8 +351,9 @@ export default function AddEmp() {
       toast.error(
         "Failed to register employee: " +
           (err.response?.data?.message || err.message)
+              console.error(err);
+
       );
-      console.error(err);
     }
   };
 
